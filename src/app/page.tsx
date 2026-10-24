@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Sparkles,
@@ -165,16 +166,16 @@ export default function Home() {
           </nav>
 
           <div className="flex items-center gap-2 sm:gap-3">
-            <a
-              href="#features"
+            <Link
+              href="/sign-in"
               className={buttonVariants({
                 variant: "ghost",
                 size: "sm",
-                className: "hidden sm:inline-flex text-slate-700 dark:text-slate-300",
+                className: "text-slate-700 dark:text-slate-300",
               })}
             >
-              Explore features
-            </a>
+              Sign in
+            </Link>
             <a
               href="#preview"
               className={buttonVariants({

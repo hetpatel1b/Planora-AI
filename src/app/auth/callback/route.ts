@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
   // Validate the destination using our open-redirect guard
   const safeDestination = getSafeRedirectUrl(next, "/dashboard");
 
-  // Handle provider-level error (e.g. user canceled Google OAuth flow)
+  // Handle provider-level error (e.g. user canceled OAuth flow)
   if (error) {
     const errorRedirectUrl = new URL("/sign-in", request.url);
     errorRedirectUrl.searchParams.set(

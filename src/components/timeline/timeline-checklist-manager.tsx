@@ -352,7 +352,7 @@ export function TimelineChecklistManager({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex shrink-0 items-center gap-1 opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+        <div className="flex shrink-0 items-center gap-1 opacity-90 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 focus-within:opacity-100 transition-opacity">
           <Button
             type="button"
             variant="ghost"
@@ -503,7 +503,14 @@ export function TimelineChecklistManager({
               {metrics.completionRate}%
             </span>
           </div>
-          <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+          <div
+            className="h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800"
+            role="progressbar"
+            aria-valuenow={Math.min(100, Math.max(0, metrics.completionRate))}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label={`Overall timeline progress: ${metrics.completionRate} percent`}
+          >
             <div
               className="h-full rounded-full bg-emerald-500 transition-all duration-500 ease-out"
               style={{ width: `${Math.min(100, Math.max(0, metrics.completionRate))}%` }}
@@ -583,6 +590,7 @@ export function TimelineChecklistManager({
               placeholder="Search tasks..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              aria-label="Search checklist tasks"
               className="h-8 pl-8 text-xs"
             />
           </div>
@@ -591,6 +599,7 @@ export function TimelineChecklistManager({
           <select
             value={priorityFilter}
             onChange={(e) => setPriorityFilter(e.target.value)}
+            aria-label="Filter checklist tasks by priority"
             className="h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-700 shadow-xs outline-none dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300"
           >
             <option value="ALL">All Priorities</option>
@@ -685,7 +694,7 @@ export function TimelineChecklistManager({
           {timelineGroups.today.length > 0 && (
             <div className="space-y-3">
               <div className="flex items-center gap-2 border-b border-amber-100 pb-2 dark:border-amber-950">
-                <Clock className="size-4 text-amber-600 dark:text-amber-400" />
+                <Clock className="size-4 text-amber-700 dark:text-amber-400" />
                 <h3 className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider">
                   Due Today ({timelineGroups.today.length})
                 </h3>

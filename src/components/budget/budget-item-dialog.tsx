@@ -236,9 +236,11 @@ function BudgetItemDialogModal({
                 className="text-xs"
                 maxLength={50}
                 required
+                aria-invalid={!!fieldErrors.category}
+                aria-describedby={fieldErrors.category ? "custom-category-error" : undefined}
               />
               {fieldErrors.category && (
-                <p className="text-[11px] font-medium text-rose-500">
+                <p id="custom-category-error" className="text-[11px] font-medium text-rose-500">
                   {fieldErrors.category[0]}
                 </p>
               )}
@@ -260,9 +262,11 @@ function BudgetItemDialogModal({
               className="text-xs"
               maxLength={120}
               required
+              aria-invalid={!!fieldErrors.item_name}
+              aria-describedby={fieldErrors.item_name ? "item-name-error" : undefined}
             />
             {fieldErrors.item_name && (
-              <p className="text-[11px] font-medium text-rose-500">
+              <p id="item-name-error" className="text-[11px] font-medium text-rose-500">
                 {fieldErrors.item_name[0]}
               </p>
             )}
@@ -289,10 +293,12 @@ function BudgetItemDialogModal({
                   disabled={isSubmitting}
                   className="pl-8 text-xs font-mono"
                   required
+                  aria-invalid={!!fieldErrors.estimated_amount}
+                  aria-describedby={fieldErrors.estimated_amount ? "item-estimated-error" : undefined}
                 />
               </div>
               {fieldErrors.estimated_amount && (
-                <p className="text-[11px] font-medium text-rose-500">
+                <p id="item-estimated-error" className="text-[11px] font-medium text-rose-500">
                   {fieldErrors.estimated_amount[0]}
                 </p>
               )}
@@ -316,13 +322,15 @@ function BudgetItemDialogModal({
                   onChange={(e) => setActualAmount(e.target.value)}
                   disabled={isSubmitting}
                   className="pl-8 text-xs font-mono"
+                  aria-invalid={!!fieldErrors.actual_amount}
+                  aria-describedby={fieldErrors.actual_amount ? "item-actual-error item-actual-hint" : "item-actual-hint"}
                 />
               </div>
-              <p className="text-[10px] text-slate-400">
+              <p id="item-actual-hint" className="text-[10px] text-slate-400">
                 Defaults to $0.00 if left blank.
               </p>
               {fieldErrors.actual_amount && (
-                <p className="text-[11px] font-medium text-rose-500">
+                <p id="item-actual-error" className="text-[11px] font-medium text-rose-500">
                   {fieldErrors.actual_amount[0]}
                 </p>
               )}
@@ -342,9 +350,11 @@ function BudgetItemDialogModal({
               disabled={isSubmitting}
               className="h-20 text-xs leading-relaxed"
               maxLength={1000}
+              aria-invalid={!!fieldErrors.notes}
+              aria-describedby={fieldErrors.notes ? "item-notes-error" : undefined}
             />
             {fieldErrors.notes && (
-              <p className="text-[11px] font-medium text-rose-500">
+              <p id="item-notes-error" className="text-[11px] font-medium text-rose-500">
                 {fieldErrors.notes[0]}
               </p>
             )}

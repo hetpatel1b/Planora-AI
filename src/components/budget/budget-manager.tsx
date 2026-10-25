@@ -154,7 +154,7 @@ export function BudgetManager({
       {/* Zero Target Budget Guidance Banner */}
       {targetBudget === 0 && (
         <div className="flex items-start gap-3 rounded-2xl border border-amber-200/80 bg-amber-50/70 p-4 text-xs text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
-          <Info className="size-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+          <Info className="size-4 shrink-0 text-amber-700 dark:text-amber-400 mt-0.5" />
           <div>
             <p className="font-semibold">No Target Budget Established</p>
             <p className="mt-0.5 text-amber-800 dark:text-amber-300">
@@ -225,7 +225,7 @@ export function BudgetManager({
                   summary.isOverBudget
                     ? "text-rose-600 dark:text-rose-400"
                     : summary.utilizationPercent >= 85
-                    ? "text-amber-600 dark:text-amber-400"
+                    ? "text-amber-700 dark:text-amber-400"
                     : "text-slate-900 dark:text-white"
                 }`}
               >
@@ -234,7 +234,14 @@ export function BudgetManager({
               </span>
             </div>
             {/* Visual Progress Bar (Width clamped 0-100%) */}
-            <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+            <div
+              className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800"
+              role="progressbar"
+              aria-valuenow={Math.round(summary.visualProgressPercent)}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label={`Budget utilization: ${summary.utilizationPercent.toFixed(1)} percent`}
+            >
               <div
                 className={`h-full transition-all duration-300 ${
                   summary.isOverBudget
@@ -459,6 +466,7 @@ export function BudgetManager({
                 placeholder="Search items or notes..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                aria-label="Search budget items"
                 className="h-8 pl-8 text-xs"
               />
             </div>
@@ -469,6 +477,7 @@ export function BudgetManager({
                 <select
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
+                  aria-label="Filter budget items by category"
                   className="h-8 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 shadow-xs focus:border-indigo-500 focus:outline-hidden dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
                 >
                   <option value="ALL">All Categories</option>

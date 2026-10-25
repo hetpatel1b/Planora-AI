@@ -297,11 +297,10 @@ function SignUpContent() {
                     <button
                       type="button"
                       onClick={() => setShowPassword((prev) => !prev)}
-                      className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 transition hover:text-slate-600 dark:hover:text-slate-200"
+                      className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 transition hover:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-r-md dark:hover:text-slate-200"
                       aria-label={
                         showPassword ? "Hide password" : "Show password"
                       }
-                      tabIndex={-1}
                     >
                       {showPassword ? (
                         <EyeOff className="size-4" />
@@ -336,13 +335,12 @@ function SignUpContent() {
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword((prev) => !prev)}
-                      className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 transition hover:text-slate-600 dark:hover:text-slate-200"
+                      className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 transition hover:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-r-md dark:hover:text-slate-200"
                       aria-label={
                         showConfirmPassword
                           ? "Hide confirm password"
                           : "Show confirm password"
                       }
-                      tabIndex={-1}
                     >
                       {showConfirmPassword ? (
                         <EyeOff className="size-4" />

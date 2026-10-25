@@ -444,7 +444,11 @@ export function PlanBlueprintViewer({
             return (
               <div
                 key={idx}
-                onClick={() => !isAccepted && handleToggleTask(idx)}
+                onClick={(e) => {
+                  if (isAccepted) return;
+                  if ((e.target as HTMLElement).closest('input[type="checkbox"], label')) return;
+                  handleToggleTask(idx);
+                }}
                 className={`flex items-start gap-3 py-3 px-2 rounded-lg transition ${
                   !isAccepted ? "cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/40" : ""
                 } ${isSelected ? "bg-indigo-50/30 dark:bg-indigo-950/20" : ""}`}
@@ -563,7 +567,11 @@ export function PlanBlueprintViewer({
             return (
               <div
                 key={idx}
-                onClick={() => !isAccepted && handleToggleBudgetItem(idx)}
+                onClick={(e) => {
+                  if (isAccepted) return;
+                  if ((e.target as HTMLElement).closest('input[type="checkbox"], label')) return;
+                  handleToggleBudgetItem(idx);
+                }}
                 className={`flex items-start gap-3 py-3 px-2 rounded-lg transition ${
                   !isAccepted ? "cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/40" : ""
                 } ${isSelected ? "bg-indigo-50/30 dark:bg-indigo-950/20" : ""}`}

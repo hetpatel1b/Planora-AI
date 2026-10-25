@@ -120,8 +120,8 @@ export default function Home() {
       <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/80 backdrop-blur-md dark:border-slate-800 dark:bg-slate-950/80">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
-            <a
-              href="#"
+            <Link
+              href="/"
               className="group flex items-center gap-2 text-xl font-bold tracking-tight text-slate-900 dark:text-white"
               aria-label="Planora AI home"
             >
@@ -129,7 +129,7 @@ export default function Home() {
               <span className="rounded-md bg-gradient-to-r from-violet-600 to-indigo-600 px-1.5 py-0.5 text-xs font-black tracking-wider text-white">
                 AI
               </span>
-            </a>
+            </Link>
             <span className="hidden rounded-full border border-violet-200 bg-violet-50/80 px-2.5 py-0.5 text-xs font-medium text-violet-700 sm:inline-block dark:border-violet-900/50 dark:bg-violet-950/50 dark:text-violet-300">
               Phases 1–4 Implemented
             </span>
@@ -457,7 +457,7 @@ export default function Home() {
                         <p className="text-xs font-semibold text-slate-900 dark:text-slate-100">
                           AV Production & Live Stream Dry Run
                         </p>
-                        <p className="text-[11px] text-amber-600 dark:text-amber-400">
+                        <p className="text-[11px] text-amber-700 dark:text-amber-400">
                           Due in 3 days • Pending Tech Spec
                         </p>
                       </div>

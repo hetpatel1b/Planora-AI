@@ -243,6 +243,8 @@ export function EventForm({
                 id="event-type"
                 value={eventType}
                 onChange={(e) => setEventType(e.target.value)}
+                aria-invalid={!!fieldErrors.event_type}
+                aria-describedby={fieldErrors.event_type ? "event-type-error" : undefined}
                 className="flex h-9 w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/60 focus-visible:border-indigo-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
               >
                 {EVENT_TYPE_PRESETS.map((preset) => (
@@ -254,18 +256,23 @@ export function EventForm({
             </div>
             {isCustomType && (
               <div className="pt-2">
+                <Label htmlFor="custom-event-type" className="sr-only">
+                  Custom Event Type
+                </Label>
                 <Input
                   id="custom-event-type"
                   type="text"
                   placeholder="Specify custom event type"
+                  aria-label="Specify custom event type"
                   value={customEventType}
                   onChange={(e) => setCustomEventType(e.target.value)}
                   aria-invalid={!!fieldErrors.event_type}
+                  aria-describedby={fieldErrors.event_type ? "event-type-error" : undefined}
                 />
               </div>
             )}
             {fieldErrors.event_type && (
-              <p className="text-xs font-medium text-rose-600 dark:text-rose-400">
+              <p id="event-type-error" className="text-xs font-medium text-rose-600 dark:text-rose-400">
                 {fieldErrors.event_type[0]}
               </p>
             )}
@@ -280,6 +287,8 @@ export function EventForm({
               id="event-status"
               value={status}
               onChange={(e) => setStatus(e.target.value as EventStatus)}
+              aria-invalid={!!fieldErrors.status}
+              aria-describedby={fieldErrors.status ? "event-status-error" : undefined}
               className="flex h-9 w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/60 focus-visible:border-indigo-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
             >
               {EVENT_STATUSES.map((st) => (
@@ -299,7 +308,7 @@ export function EventForm({
               ))}
             </select>
             {fieldErrors.status && (
-              <p className="text-xs font-medium text-rose-600 dark:text-rose-400">
+              <p id="event-status-error" className="text-xs font-medium text-rose-600 dark:text-rose-400">
                 {fieldErrors.status[0]}
               </p>
             )}
@@ -334,15 +343,16 @@ export function EventForm({
                 value={eventDate}
                 onChange={(e) => setEventDate(e.target.value)}
                 aria-invalid={!!fieldErrors.event_date}
+                aria-describedby={fieldErrors.event_date ? "event-date-error event-date-hint" : "event-date-hint"}
                 className="pl-3"
               />
             </div>
             {fieldErrors.event_date && (
-              <p className="text-xs font-medium text-rose-600 dark:text-rose-400">
+              <p id="event-date-error" className="text-xs font-medium text-rose-600 dark:text-rose-400">
                 {fieldErrors.event_date[0]}
               </p>
             )}
-            <p className="text-[11px] text-slate-400">
+            <p id="event-date-hint" className="text-[11px] text-slate-400">
               Can be left empty for preliminary concept drafts.
             </p>
           </div>
@@ -358,10 +368,11 @@ export function EventForm({
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
                 aria-invalid={!!fieldErrors.location}
+                aria-describedby={fieldErrors.location ? "location-error" : undefined}
               />
             </div>
             {fieldErrors.location && (
-              <p className="text-xs font-medium text-rose-600 dark:text-rose-400">
+              <p id="location-error" className="text-xs font-medium text-rose-600 dark:text-rose-400">
                 {fieldErrors.location[0]}
               </p>
             )}
@@ -383,10 +394,11 @@ export function EventForm({
                 value={guestCount}
                 onChange={(e) => setGuestCount(e.target.value)}
                 aria-invalid={!!fieldErrors.guest_count}
+                aria-describedby={fieldErrors.guest_count ? "guest-count-error" : undefined}
               />
             </div>
             {fieldErrors.guest_count && (
-              <p className="text-xs font-medium text-rose-600 dark:text-rose-400">
+              <p id="guest-count-error" className="text-xs font-medium text-rose-600 dark:text-rose-400">
                 {fieldErrors.guest_count[0]}
               </p>
             )}
@@ -408,10 +420,11 @@ export function EventForm({
                 value={budget}
                 onChange={(e) => setBudget(e.target.value)}
                 aria-invalid={!!fieldErrors.budget}
+                aria-describedby={fieldErrors.budget ? "event-budget-error" : undefined}
               />
             </div>
             {fieldErrors.budget && (
-              <p className="text-xs font-medium text-rose-600 dark:text-rose-400">
+              <p id="event-budget-error" className="text-xs font-medium text-rose-600 dark:text-rose-400">
                 {fieldErrors.budget[0]}
               </p>
             )}
@@ -446,9 +459,10 @@ export function EventForm({
               onChange={(e) => setPreferences(e.target.value)}
               rows={3}
               aria-invalid={!!fieldErrors.preferences}
+              aria-describedby={fieldErrors.preferences ? "preferences-error" : undefined}
             />
             {fieldErrors.preferences && (
-              <p className="text-xs font-medium text-rose-600 dark:text-rose-400">
+              <p id="preferences-error" className="text-xs font-medium text-rose-600 dark:text-rose-400">
                 {fieldErrors.preferences[0]}
               </p>
             )}
@@ -464,9 +478,10 @@ export function EventForm({
               onChange={(e) => setConstraints(e.target.value)}
               rows={3}
               aria-invalid={!!fieldErrors.constraints}
+              aria-describedby={fieldErrors.constraints ? "constraints-error" : undefined}
             />
             {fieldErrors.constraints && (
-              <p className="text-xs font-medium text-rose-600 dark:text-rose-400">
+              <p id="constraints-error" className="text-xs font-medium text-rose-600 dark:text-rose-400">
                 {fieldErrors.constraints[0]}
               </p>
             )}
@@ -482,9 +497,10 @@ export function EventForm({
               onChange={(e) => setCulturalRequirements(e.target.value)}
               rows={3}
               aria-invalid={!!fieldErrors.cultural_requirements}
+              aria-describedby={fieldErrors.cultural_requirements ? "cultural-error" : undefined}
             />
             {fieldErrors.cultural_requirements && (
-              <p className="text-xs font-medium text-rose-600 dark:text-rose-400">
+              <p id="cultural-error" className="text-xs font-medium text-rose-600 dark:text-rose-400">
                 {fieldErrors.cultural_requirements[0]}
               </p>
             )}

@@ -50,18 +50,22 @@ export function EventCard({ event, onDeleted }: EventCardProps) {
             <div className="flex items-center gap-1">
               <Link
                 href={`/dashboard/events/${event.id}/edit`}
-                title="Edit event setup"
+                title={`Edit ${event.name}`}
+                aria-label={`Edit ${event.name}`}
                 className="flex size-7 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition"
               >
                 <Edit3 className="size-3.5" />
+                <span className="sr-only">Edit {event.name}</span>
               </Link>
               <button
                 type="button"
-                title="Delete event"
+                title={`Delete ${event.name}`}
+                aria-label={`Delete ${event.name}`}
                 onClick={() => setIsDeleteDialogOpen(true)}
                 className="flex size-7 items-center justify-center rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/60 dark:hover:text-rose-400 transition"
               >
                 <Trash2 className="size-3.5" />
+                <span className="sr-only">Delete {event.name}</span>
               </button>
             </div>
           </div>

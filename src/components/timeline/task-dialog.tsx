@@ -196,9 +196,11 @@ function TaskDialogModal({
               onChange={(e) => setTitle(e.target.value)}
               disabled={isSubmitting}
               className="text-xs"
+              aria-invalid={!!fieldErrors.title}
+              aria-describedby={fieldErrors.title ? "task-title-error" : undefined}
             />
             {fieldErrors.title && (
-              <p className="text-[11px] text-rose-600 dark:text-rose-400">
+              <p id="task-title-error" className="text-[11px] text-rose-600 dark:text-rose-400">
                 {fieldErrors.title[0]}
               </p>
             )}
@@ -218,9 +220,11 @@ function TaskDialogModal({
               onChange={(e) => setDescription(e.target.value)}
               disabled={isSubmitting}
               className="text-xs"
+              aria-invalid={!!fieldErrors.description}
+              aria-describedby={fieldErrors.description ? "task-description-error" : undefined}
             />
             {fieldErrors.description && (
-              <p className="text-[11px] text-rose-600 dark:text-rose-400">
+              <p id="task-description-error" className="text-[11px] text-rose-600 dark:text-rose-400">
                 {fieldErrors.description[0]}
               </p>
             )}
@@ -240,9 +244,11 @@ function TaskDialogModal({
                 onChange={(e) => setDueDateInput(e.target.value)}
                 disabled={isSubmitting}
                 className="text-xs"
+                aria-invalid={!!fieldErrors.due_date}
+                aria-describedby={fieldErrors.due_date ? "task-due-date-error" : undefined}
               />
               {fieldErrors.due_date && (
-                <p className="text-[11px] text-rose-600 dark:text-rose-400">
+                <p id="task-due-date-error" className="text-[11px] text-rose-600 dark:text-rose-400">
                   {fieldErrors.due_date[0]}
                 </p>
               )}

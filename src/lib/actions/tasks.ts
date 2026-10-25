@@ -1,7 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getAuthenticatedUser } from "@/lib/supabase/server";
+import { getEventById } from "@/lib/actions/events";
 import {
   createTaskSchema,
   updateTaskSchema,
@@ -32,11 +33,10 @@ export async function getTasksByEventId(
       };
     }
 
-    const supabase = await createClient();
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getAuthenticatedUser();
 
     if (authError || !user) {
       return {
@@ -45,20 +45,16 @@ export async function getTasksByEventId(
       };
     }
 
-    // Verify event ownership
-    const { data: event, error: eventCheckError } = await supabase
-      .from("events")
-      .select("id")
-      .eq("id", eventIdParse.data)
-      .eq("user_id", user.id)
-      .single();
-
-    if (eventCheckError || !event) {
+    // Verify event ownership using cached getEventById (zero duplicate query if already loaded)
+    const eventResult = await getEventById(eventIdParse.data);
+    if (!eventResult.success) {
       return {
         success: false,
-        error: "Event not found or access denied.",
+        error: eventResult.error,
       };
     }
+
+    const supabase = await createClient();
 
     // Retrieve tasks ordered by due_date ascending, then created_at
     const { data: tasks, error: queryError } = await supabase
@@ -106,11 +102,10 @@ export async function createTaskAction(
       };
     }
 
-    const supabase = await createClient();
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getAuthenticatedUser();
 
     if (authError || !user) {
       return {
@@ -119,18 +114,12 @@ export async function createTaskAction(
       };
     }
 
-    // Verify event ownership
-    const { data: event, error: eventCheckError } = await supabase
-      .from("events")
-      .select("id")
-      .eq("id", eventIdParse.data)
-      .eq("user_id", user.id)
-      .single();
-
-    if (eventCheckError || !event) {
+    // Verify event ownership using cached getEventById
+    const eventResult = await getEventById(eventIdParse.data);
+    if (!eventResult.success) {
       return {
         success: false,
-        error: "Event not found or access denied.",
+        error: eventResult.error,
       };
     }
 
@@ -144,6 +133,7 @@ export async function createTaskAction(
     }
 
     const payload = parseResult.data;
+    const supabase = await createClient();
 
     const { data: newTask, error: insertError } = await supabase
       .from("tasks")
@@ -212,11 +202,10 @@ export async function updateTaskAction(
       };
     }
 
-    const supabase = await createClient();
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getAuthenticatedUser();
 
     if (authError || !user) {
       return {
@@ -235,6 +224,7 @@ export async function updateTaskAction(
     }
 
     const updates = parseResult.data;
+    const supabase = await createClient();
 
     const { data: updatedTask, error: updateError } = await supabase
       .from("tasks")
@@ -276,6 +266,8 @@ export async function updateTaskAction(
 
 /**
  * Convenience action for toggling a task's status (e.g. pending <-> completed).
+ * Note: revalidatePath is intentionally omitted because the client maintains
+ * optimistic UI state with verified rollback on failure.
  */
 export async function toggleTaskStatusAction(
   id: string,
@@ -307,11 +299,10 @@ export async function toggleTaskStatusAction(
       };
     }
 
-    const supabase = await createClient();
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getAuthenticatedUser();
 
     if (authError || !user) {
       return {
@@ -320,6 +311,7 @@ export async function toggleTaskStatusAction(
       };
     }
 
+    const supabase = await createClient();
     const { data: updatedTask, error: updateError } = await supabase
       .from("tasks")
       .update({
@@ -337,12 +329,6 @@ export async function toggleTaskStatusAction(
         success: false,
         error: "Failed to update task status.",
       };
-    }
-
-    try {
-      revalidatePath(`/dashboard/events/${eventIdParse.data}`);
-    } catch {
-      // Ignore in non-Next.js testing environments
     }
 
     return {
@@ -382,11 +368,10 @@ export async function deleteTaskAction(
       };
     }
 
-    const supabase = await createClient();
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getAuthenticatedUser();
 
     if (authError || !user) {
       return {
@@ -395,6 +380,7 @@ export async function deleteTaskAction(
       };
     }
 
+    const supabase = await createClient();
     const { error: deleteError } = await supabase
       .from("tasks")
       .delete()

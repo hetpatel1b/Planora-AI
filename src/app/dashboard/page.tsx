@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getAuthenticatedUser } from "@/lib/supabase/server";
 import { signOutAction } from "@/app/auth/actions";
 import { listEvents } from "@/lib/actions/events";
 import { formatCurrency } from "@/lib/currency-utils";
@@ -29,10 +29,9 @@ export const metadata = {
 };
 
 export default async function DashboardPage() {
-  const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await getAuthenticatedUser();
 
   // Defense-in-depth: Server Component check ensures unauthenticated users are redirected
   if (!user) {

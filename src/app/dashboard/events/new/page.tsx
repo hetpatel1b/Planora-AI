@@ -1,7 +1,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getAuthenticatedUser } from "@/lib/supabase/server";
 import { EventForm } from "@/components/events/event-form";
 import { ArrowLeft, Sparkles } from "lucide-react";
 
@@ -11,10 +11,9 @@ export const metadata = {
 };
 
 export default async function NewEventPage() {
-  const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await getAuthenticatedUser();
 
   if (!user) {
     redirect("/sign-in?redirectTo=/dashboard/events/new");

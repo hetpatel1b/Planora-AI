@@ -37,32 +37,41 @@ type FilterStatus = "ALL" | "pending" | "in_progress" | "completed" | "vendor";
 
 /**
  * Evaluates whether a task is overdue relative to current local time.
+ * Supports passing an optional reference timestamp (nowMs) to avoid repeated allocations in loops.
  */
-function isTaskOverdue(dueDateStr: string | null, status: TaskStatus): boolean {
+function isTaskOverdue(
+  dueDateStr: string | null,
+  status: TaskStatus,
+  nowMs: number = Date.now()
+): boolean {
   if (!dueDateStr || status === "completed" || status === "cancelled") {
     return false;
   }
   const due = new Date(dueDateStr).getTime();
-  const now = new Date().getTime();
-  return due < now;
+  return due < nowMs;
 }
 
 /**
  * Categorizes a task into a timeline bucket.
+ * Supports passing a precalculated todayStartMs to avoid redundant Date instantiations in batch loops.
  */
 function getTimelineBucket(
   dueDateStr: string | null,
-  status: TaskStatus
+  status: TaskStatus,
+  todayStartMs?: number
 ): "overdue" | "today" | "this_week" | "upcoming" | "unscheduled" {
   if (!dueDateStr) return "unscheduled";
   if (status === "completed" || status === "cancelled") return "upcoming";
 
   const dueDate = new Date(dueDateStr);
-  const now = new Date();
-
-  // Strip time for clean day comparison
   const dueDay = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate()).getTime();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
+  const today =
+    todayStartMs ??
+    (() => {
+      const now = new Date();
+      return new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    })();
 
   const diffDays = Math.round((dueDay - today) / (1000 * 60 * 60 * 24));
 
@@ -161,8 +170,11 @@ export function TimelineChecklistManager({
     const upcoming: TaskRow[] = [];
     const unscheduled: TaskRow[] = [];
 
+    const now = new Date();
+    const todayStartMs = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
     for (const t of filteredTasks) {
-      const bucket = getTimelineBucket(t.due_date, t.status);
+      const bucket = getTimelineBucket(t.due_date, t.status, todayStartMs);
       if (bucket === "overdue") overdue.push(t);
       else if (bucket === "today") today.push(t);
       else if (bucket === "this_week") thisWeek.push(t);
@@ -178,6 +190,7 @@ export function TimelineChecklistManager({
       unscheduled,
     };
   }, [filteredTasks]);
+
 
   // Quick completion toggle handler
   const handleToggleStatus = async (task: TaskRow) => {

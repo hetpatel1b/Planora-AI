@@ -1,7 +1,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getAuthenticatedUser } from "@/lib/supabase/server";
 import { getEventById } from "@/lib/actions/events";
 import { EventForm } from "@/components/events/event-form";
 import { ArrowLeft, Edit3 } from "lucide-react";
@@ -24,10 +24,9 @@ export async function generateMetadata({ params }: EditEventPageProps) {
 export default async function EditEventPage({ params }: EditEventPageProps) {
   const { id } = await params;
 
-  const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await getAuthenticatedUser();
 
   if (!user) {
     redirect(`/sign-in?redirectTo=/dashboard/events/${id}/edit`);

@@ -44,15 +44,28 @@ export async function proxy(request: NextRequest) {
     },
   });
 
+  const pathname = request.nextUrl.pathname;
+  const isDashboardRoute = pathname.startsWith("/dashboard");
+  const isAuthRoute = pathname === "/sign-in" || pathname === "/sign-up";
+
+  // Check if any Supabase session cookie is present
+  const hasAuthCookie = request.cookies
+    .getAll()
+    .some((c) => c.name.startsWith("sb-") && c.name.includes("-auth-token"));
+
+  // If visiting an unauthenticated public route without session cookies,
+  // skip the external GoTrue network roundtrip.
+  if (!isDashboardRoute && !isAuthRoute && !hasAuthCookie) {
+    return response;
+  }
+
   // Server-verified identity check using getUser()
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const pathname = request.nextUrl.pathname;
-
   // Protect /dashboard and any nested routes
-  if (pathname.startsWith("/dashboard")) {
+  if (isDashboardRoute) {
     if (!user) {
       const redirectUrl = new URL("/sign-in", request.url);
       redirectUrl.searchParams.set("redirectTo", pathname);
@@ -61,7 +74,7 @@ export async function proxy(request: NextRequest) {
   }
 
   // Redirect authenticated users trying to access sign-in or sign-up
-  if ((pathname === "/sign-in" || pathname === "/sign-up") && user) {
+  if (isAuthRoute && user) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 

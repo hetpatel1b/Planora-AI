@@ -25,6 +25,52 @@ export interface FormatCurrencyOptions {
   maximumFractionDigits?: number;
 }
 
+const DEFAULT_USD_FORMATTER = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 2,
+});
+
+const MONEY_USD_FORMATTER = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+const FORMATTER_CACHE = new Map<string, Intl.NumberFormat>();
+const MAX_CACHE_SIZE = 50;
+
+function getFormatter(
+  locale: string,
+  currency: string,
+  minDigits: number,
+  maxDigits: number
+): Intl.NumberFormat {
+  if (locale === "en-US" && currency === "USD") {
+    if (minDigits === 0 && maxDigits === 2) return DEFAULT_USD_FORMATTER;
+    if (minDigits === 2 && maxDigits === 2) return MONEY_USD_FORMATTER;
+  }
+
+  const key = `${locale}_${currency}_${minDigits}_${maxDigits}`;
+  let formatter = FORMATTER_CACHE.get(key);
+  if (!formatter) {
+    if (FORMATTER_CACHE.size >= MAX_CACHE_SIZE) {
+      const firstKey = FORMATTER_CACHE.keys().next().value;
+      if (firstKey) FORMATTER_CACHE.delete(firstKey);
+    }
+    formatter = new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency,
+      minimumFractionDigits: minDigits,
+      maximumFractionDigits: maxDigits,
+    });
+    FORMATTER_CACHE.set(key, formatter);
+  }
+  return formatter;
+}
+
 /**
  * Formats a numeric currency value (in dollars) with standard locale formatting.
  *
@@ -45,12 +91,7 @@ export function formatCurrency(
   const maxDigits = options?.maximumFractionDigits ?? 2;
 
   try {
-    return new Intl.NumberFormat(locale, {
-      style: "currency",
-      currency,
-      minimumFractionDigits: minDigits,
-      maximumFractionDigits: maxDigits,
-    }).format(validAmount);
+    return getFormatter(locale, currency, minDigits, maxDigits).format(validAmount);
   } catch {
     if (minDigits === 2 && maxDigits === 2) {
       return `$${validAmount.toFixed(2)}`;

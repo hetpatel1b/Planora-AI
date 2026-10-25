@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import type { Database } from "@/types/database.types";
@@ -38,3 +39,16 @@ export async function createClient() {
     },
   });
 }
+
+/**
+ * Request-scoped helper that retrieves the verified user session for the current request.
+ * Uses React cache() to deduplicate repeated calls across Server Components,
+ * metadata generators, and internal helpers within the same render pass.
+ *
+ * Guarantees cryptographic/server-verified identity via supabase.auth.getUser().
+ * Does NOT persist or share identity across requests or different users.
+ */
+export const getAuthenticatedUser = cache(async () => {
+  const supabase = await createClient();
+  return supabase.auth.getUser();
+});

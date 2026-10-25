@@ -1,7 +1,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getAuthenticatedUser } from "@/lib/supabase/server";
 import { getEventById } from "@/lib/actions/events";
 import { getBudgetItemsByEventId } from "@/lib/actions/budget";
 import { getLatestPlanRevisionAction } from "@/lib/actions/plan";
@@ -50,10 +50,9 @@ export async function generateMetadata({ params }: EventDetailPageProps) {
 export default async function EventDetailPage({ params }: EventDetailPageProps) {
   const { id } = await params;
 
-  const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await getAuthenticatedUser();
 
   if (!user) {
     redirect(`/sign-in?redirectTo=/dashboard/events/${id}`);

@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getAuthenticatedUser } from "@/lib/supabase/server";
 import {
   createBudgetItemSchema,
   updateBudgetItemSchema,
@@ -30,11 +30,10 @@ export async function getBudgetItemsByEventId(
       };
     }
 
-    const supabase = await createClient();
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getAuthenticatedUser();
 
     if (authError || !user) {
       return {
@@ -42,6 +41,8 @@ export async function getBudgetItemsByEventId(
         error: "Authentication required to view budget items.",
       };
     }
+
+    const supabase = await createClient();
 
     const { data: items, error: selectError } = await supabase
       .from("budget_items")
@@ -90,11 +91,10 @@ export async function createBudgetItemAction(
       };
     }
 
-    const supabase = await createClient();
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getAuthenticatedUser();
 
     if (authError || !user) {
       return {
@@ -102,6 +102,8 @@ export async function createBudgetItemAction(
         error: "Authentication required. Please sign in to add an expense.",
       };
     }
+
+    const supabase = await createClient();
 
     const parseResult = createBudgetItemSchema.safeParse(input);
     if (!parseResult.success) {
@@ -195,11 +197,10 @@ export async function updateBudgetItemAction(
       };
     }
 
-    const supabase = await createClient();
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getAuthenticatedUser();
 
     if (authError || !user) {
       return {
@@ -207,6 +208,8 @@ export async function updateBudgetItemAction(
         error: "Authentication required to update this budget item.",
       };
     }
+
+    const supabase = await createClient();
 
     const parseResult = updateBudgetItemSchema.safeParse(input);
     if (!parseResult.success) {
@@ -279,11 +282,10 @@ export async function deleteBudgetItemAction(
       };
     }
 
-    const supabase = await createClient();
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getAuthenticatedUser();
 
     if (authError || !user) {
       return {
@@ -291,6 +293,8 @@ export async function deleteBudgetItemAction(
         error: "Authentication required to delete this budget item.",
       };
     }
+
+    const supabase = await createClient();
 
     // Defense-in-depth: Scoped strictly to item id, event id, and user id
     const { data: deletedRow, error: deleteError } = await supabase

@@ -1,7 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getAuthenticatedUser } from "@/lib/supabase/server";
+import { getEventById } from "@/lib/actions/events";
 import { generateEventPlan, type EventPlanInput } from "@/lib/plan-generator";
 import {
   aiPlanBlueprintSchema,
@@ -56,11 +57,10 @@ export async function generateEventPlanAction(
       };
     }
 
-    const supabase = await createClient();
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getAuthenticatedUser();
 
     if (authError || !user) {
       return {
@@ -69,20 +69,16 @@ export async function generateEventPlanAction(
       };
     }
 
-    // Verify event ownership and fetch saved event details
-    const { data: event, error: eventError } = await supabase
-      .from("events")
-      .select("*")
-      .eq("id", eventIdParse.data)
-      .eq("user_id", user.id)
-      .single();
-
-    if (eventError || !event) {
+    // Verify event ownership and fetch saved event details via cached getEventById
+    const eventResult = await getEventById(eventIdParse.data);
+    if (!eventResult.success) {
       return {
         success: false,
-        error: "Event not found or access denied.",
+        error: eventResult.error,
       };
     }
+
+    const event = eventResult.data;
 
     // Map database fields to EventPlanInput
     const planInput: EventPlanInput = {
@@ -141,11 +137,10 @@ export async function getLatestPlanRevisionAction(
       };
     }
 
-    const supabase = await createClient();
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getAuthenticatedUser();
 
     if (authError || !user) {
       return {
@@ -154,20 +149,16 @@ export async function getLatestPlanRevisionAction(
       };
     }
 
-    // Verify event ownership
-    const { data: event, error: eventCheckError } = await supabase
-      .from("events")
-      .select("id")
-      .eq("id", eventIdParse.data)
-      .eq("user_id", user.id)
-      .single();
-
-    if (eventCheckError || !event) {
+    // Verify event ownership via cached getEventById (zero duplicate query if already loaded)
+    const eventResult = await getEventById(eventIdParse.data);
+    if (!eventResult.success) {
       return {
         success: false,
-        error: "Event not found or access denied.",
+        error: eventResult.error,
       };
     }
+
+    const supabase = await createClient();
 
     // 1. Query for explicitly active revision
     const { data: activeRevisions, error: activeQueryError } = await supabase
@@ -266,11 +257,10 @@ export async function acceptPlanBlueprintAction(
       selectedBudgetItemIndexes = [],
     } = parseResult.data;
 
-    const supabase = await createClient();
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getAuthenticatedUser();
 
     if (authError || !user) {
       return {
@@ -280,19 +270,16 @@ export async function acceptPlanBlueprintAction(
     }
 
     // Verify event ownership and fetch event date for task due date calculation
-    const { data: event, error: eventError } = await supabase
-      .from("events")
-      .select("id, event_date")
-      .eq("id", eventId)
-      .eq("user_id", user.id)
-      .single();
-
-    if (eventError || !event) {
+    const eventResult = await getEventById(eventId);
+    if (!eventResult.success) {
       return {
         success: false,
-        error: "Event not found or access denied.",
+        error: eventResult.error,
       };
     }
+
+    const event = eventResult.data;
+    const supabase = await createClient();
 
     // Validate task index bounds and uniqueness
     const taskCount = blueprint.suggestedTasks.length;

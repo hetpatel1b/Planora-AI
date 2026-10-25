@@ -1,7 +1,8 @@
 "use server";
 
+import { cache } from "react";
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getAuthenticatedUser } from "@/lib/supabase/server";
 import {
   createEventSchema,
   updateEventSchema,
@@ -22,11 +23,10 @@ export async function createEventAction(
   input: unknown
 ): Promise<ActionResult<EventRow>> {
   try {
-    const supabase = await createClient();
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getAuthenticatedUser();
 
     if (authError || !user) {
       return {
@@ -34,6 +34,8 @@ export async function createEventAction(
         error: "Authentication required. Please sign in to create an event.",
       };
     }
+
+    const supabase = await createClient();
 
     const parseResult = createEventSchema.safeParse(input);
     if (!parseResult.success) {
@@ -105,11 +107,10 @@ export async function updateEventAction(
       };
     }
 
-    const supabase = await createClient();
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getAuthenticatedUser();
 
     if (authError || !user) {
       return {
@@ -117,6 +118,8 @@ export async function updateEventAction(
         error: "Authentication required. Please sign in to update this event.",
       };
     }
+
+    const supabase = await createClient();
 
     const parseResult = updateEventSchema.safeParse(input);
     if (!parseResult.success) {
@@ -178,11 +181,10 @@ export async function deleteEventAction(
       };
     }
 
-    const supabase = await createClient();
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getAuthenticatedUser();
 
     if (authError || !user) {
       return {
@@ -190,6 +192,8 @@ export async function deleteEventAction(
         error: "Authentication required. Please sign in to delete this event.",
       };
     }
+
+    const supabase = await createClient();
 
     // Defense-in-depth: Explicit tenant match + RLS events_delete_own
     const { data: deletedRow, error: deleteError } = await supabase
@@ -220,11 +224,38 @@ export async function deleteEventAction(
 }
 
 /**
+ * Request-scoped cached event loader.
+ * Deduplicates identical event queries within the same request lifecycle (e.g.
+ * generateMetadata and EventDetailPage sharing the same fetch).
+ */
+const fetchEventByIdCached = cache(
+  async (id: string, userId: string): Promise<ActionResult<EventRow>> => {
+    const supabase = await createClient();
+    const { data: event, error: selectError } = await supabase
+      .from("events")
+      .select("*")
+      .eq("id", id)
+      .eq("user_id", userId)
+      .single();
+
+    if (selectError || !event) {
+      return {
+        success: false,
+        error: "Event not found or you do not have permission to view it.",
+      };
+    }
+
+    return { success: true, data: event };
+  }
+);
+
+/**
  * Fetches a single event by ID for the authenticated owner.
  * 
  * Security:
  * - Scopes select by ID and user_id.
  * - Prevents cross-tenant event inspection.
+ * - Deduplicates reads within the same request lifecycle via React cache().
  */
 export async function getEventById(
   id: string
@@ -238,11 +269,10 @@ export async function getEventById(
       };
     }
 
-    const supabase = await createClient();
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getAuthenticatedUser();
 
     if (authError || !user) {
       return {
@@ -251,21 +281,7 @@ export async function getEventById(
       };
     }
 
-    const { data: event, error: selectError } = await supabase
-      .from("events")
-      .select("*")
-      .eq("id", idParse.data)
-      .eq("user_id", user.id)
-      .single();
-
-    if (selectError || !event) {
-      return {
-        success: false,
-        error: "Event not found or you do not have permission to view it.",
-      };
-    }
-
-    return { success: true, data: event };
+    return await fetchEventByIdCached(idParse.data, user.id);
   } catch (error) {
     console.error("[getEventById] Unexpected failure:", error);
     return {
@@ -284,11 +300,10 @@ export async function getEventById(
  */
 export async function listEvents(): Promise<ActionResult<EventRow[]>> {
   try {
-    const supabase = await createClient();
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getAuthenticatedUser();
 
     if (authError || !user) {
       return {
@@ -296,6 +311,8 @@ export async function listEvents(): Promise<ActionResult<EventRow[]>> {
         error: "Authentication required to list events.",
       };
     }
+
+    const supabase = await createClient();
 
     const { data: events, error: selectError } = await supabase
       .from("events")

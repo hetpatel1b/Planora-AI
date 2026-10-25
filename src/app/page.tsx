@@ -1,5 +1,8 @@
 import Link from "next/link";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
+import { getAuthenticatedUser } from "@/lib/supabase/server";
+import { LandingHeaderAuth } from "@/components/landing/landing-header-auth";
+import { LandingHeroCta } from "@/components/landing/landing-hero-cta";
 import {
   Sparkles,
   Layers,
@@ -9,7 +12,6 @@ import {
   Sliders,
   ShieldAlert,
   FileDown,
-  ArrowRight,
   CheckCircle2,
   Calendar,
   Users,
@@ -21,8 +23,18 @@ import {
   Send,
 } from "lucide-react";
 
-export default function Home() {
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
   const currentYear = new Date().getFullYear();
+
+  let user = null;
+  try {
+    const { data } = await getAuthenticatedUser();
+    user = data?.user ? { id: data.user.id, email: data.user.email } : null;
+  } catch {
+    user = null;
+  }
 
   const features = [
     {
@@ -139,6 +151,14 @@ export default function Home() {
             aria-label="Primary navigation"
             className="hidden items-center gap-6 text-sm font-medium text-slate-600 md:flex dark:text-slate-300"
           >
+            {user && (
+              <Link
+                href="/dashboard"
+                className="font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 transition"
+              >
+                Dashboard
+              </Link>
+            )}
             <a
               href="#features"
               className="transition hover:text-indigo-600 dark:hover:text-indigo-400"
@@ -165,29 +185,7 @@ export default function Home() {
             </a>
           </nav>
 
-          <div className="flex items-center gap-2 sm:gap-3">
-            <Link
-              href="/sign-in"
-              className={buttonVariants({
-                variant: "ghost",
-                size: "sm",
-                className: "text-slate-700 dark:text-slate-300",
-              })}
-            >
-              Sign in
-            </Link>
-            <a
-              href="#preview"
-              className={buttonVariants({
-                variant: "default",
-                size: "sm",
-                className:
-                  "bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm transition-colors",
-              })}
-            >
-              Start planning
-            </a>
-          </div>
+          <LandingHeaderAuth initialUser={user} />
         </div>
       </header>
 
@@ -215,31 +213,7 @@ export default function Home() {
                 detection into one cohesive workspace.
               </p>
 
-              <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
-                <a
-                  href="#preview"
-                  className={buttonVariants({
-                    variant: "default",
-                    size: "lg",
-                    className:
-                      "w-full sm:w-auto bg-indigo-600 text-white hover:bg-indigo-700 shadow-md font-medium px-6 py-2.5",
-                  })}
-                >
-                  <span>Start planning</span>
-                  <ArrowRight className="size-4" aria-hidden="true" />
-                </a>
-                <a
-                  href="#features"
-                  className={buttonVariants({
-                    variant: "outline",
-                    size: "lg",
-                    className:
-                      "w-full sm:w-auto border-slate-300 bg-white text-slate-800 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 px-6 py-2.5",
-                  })}
-                >
-                  Explore features
-                </a>
-              </div>
+              <LandingHeroCta initialUser={user} />
 
               {/* Value proposition badges */}
               <div className="mt-12 grid grid-cols-2 gap-3 pt-6 text-left sm:grid-cols-4 sm:border-t sm:border-slate-200/80 sm:pt-8 dark:border-slate-800">

@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import type { TaskRow, TaskPriority, TaskStatus } from "@/lib/validations/task";
+import type { TaskRow, TaskStatus } from "@/lib/validations/task";
 import { toggleTaskStatusAction } from "@/lib/actions/tasks";
 import { formatEventDate, getStatusBadgeVariant, formatStatusLabel } from "@/lib/date-utils";
 import { TaskDialog } from "@/components/timeline/task-dialog";
@@ -9,6 +9,7 @@ import { DeleteTaskDialog } from "@/components/timeline/delete-task-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { PriorityBadge } from "@/components/shared/priority-badge";
 import {
   Calendar,
   Clock,
@@ -33,22 +34,6 @@ export interface TimelineChecklistManagerProps {
 type ViewMode = "timeline" | "checklist";
 type FilterStatus = "ALL" | "pending" | "in_progress" | "completed" | "vendor";
 
-/**
- * Returns a priority badge corresponding to the task's priority level.
- */
-function PriorityBadge({ priority }: { priority: TaskPriority }) {
-  switch (priority) {
-    case "urgent":
-      return <Badge variant="destructive">Urgent</Badge>;
-    case "high":
-      return <Badge variant="warning">High</Badge>;
-    case "medium":
-      return <Badge variant="default">Medium</Badge>;
-    case "low":
-    default:
-      return <Badge variant="secondary">Low</Badge>;
-  }
-}
 
 /**
  * Evaluates whether a task is overdue relative to current local time.

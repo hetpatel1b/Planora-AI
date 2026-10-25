@@ -12,7 +12,7 @@ import {
 import { eventIdSchema } from "@/lib/validations/event";
 import { createBudgetItemSchema } from "@/lib/validations/budget";
 import { createTaskSchema } from "@/lib/validations/task";
-import type { ActionResult } from "@/lib/actions/events";
+import type { ActionResult } from "@/types/actions";
 import type { Json } from "@/types/database.types";
 
 /**
@@ -45,9 +45,7 @@ function calculateTaskDueDate(
  * This operation is purely read-only: it does NOT mutate the database.
  */
 export async function generateEventPlanAction(
-  eventId: string,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabaseClient?: any
+  eventId: string
 ): Promise<ActionResult<AIPlanBlueprint>> {
   try {
     const eventIdParse = eventIdSchema.safeParse(eventId);
@@ -58,7 +56,7 @@ export async function generateEventPlanAction(
       };
     }
 
-    const supabase = supabaseClient ?? (await createClient());
+    const supabase = await createClient();
     const {
       data: { user },
       error: authError,
@@ -132,9 +130,7 @@ export async function generateEventPlanAction(
  * scoping queries by authenticated user ID and event ID.
  */
 export async function getLatestPlanRevisionAction(
-  eventId: string,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabaseClient?: any
+  eventId: string
 ): Promise<ActionResult<PlanRevisionRow | null>> {
   try {
     const eventIdParse = eventIdSchema.safeParse(eventId);
@@ -145,7 +141,7 @@ export async function getLatestPlanRevisionAction(
       };
     }
 
-    const supabase = supabaseClient ?? (await createClient());
+    const supabase = await createClient();
     const {
       data: { user },
       error: authError,
@@ -251,9 +247,7 @@ export async function getLatestPlanRevisionAction(
  * - Revalidates the event workspace route upon success.
  */
 export async function acceptPlanBlueprintAction(
-  input: unknown,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabaseClient?: any
+  input: unknown
 ): Promise<ActionResult<PlanRevisionRow>> {
   try {
     const parseResult = acceptPlanBlueprintInputSchema.safeParse(input);
@@ -272,7 +266,7 @@ export async function acceptPlanBlueprintAction(
       selectedBudgetItemIndexes = [],
     } = parseResult.data;
 
-    const supabase = supabaseClient ?? (await createClient());
+    const supabase = await createClient();
     const {
       data: { user },
       error: authError,

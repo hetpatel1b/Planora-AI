@@ -11,8 +11,20 @@ import type {
 import { acceptPlanBlueprintAction } from "@/lib/actions/plan";
 import { toCents, fromCents } from "@/lib/budget-math";
 import { formatEventDate } from "@/lib/date-utils";
+import { formatMoney } from "@/lib/currency-utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { PriorityBadge } from "@/components/shared/priority-badge";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
 import {
   Sparkles,
   CheckCircle2,
@@ -26,7 +38,6 @@ import {
   Layers,
   ShieldCheck,
   Check,
-  X,
   Loader2,
   Tag,
   Info,
@@ -42,38 +53,6 @@ export interface PlanBlueprintViewerProps {
   className?: string;
 }
 
-/**
- * Format currency with strict two decimal places for budget review.
- */
-function formatMoney(amount: number): string {
-  try {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(amount);
-  } catch {
-    return `$${amount.toFixed(2)}`;
-  }
-}
-
-/**
- * Priority badge helper mapping task priority to design tokens.
- */
-function PriorityBadge({ priority }: { priority: string }) {
-  switch (priority.toLowerCase()) {
-    case "urgent":
-      return <Badge variant="destructive">Urgent</Badge>;
-    case "high":
-      return <Badge variant="warning">High</Badge>;
-    case "medium":
-      return <Badge variant="default">Medium</Badge>;
-    case "low":
-    default:
-      return <Badge variant="secondary">Low</Badge>;
-  }
-}
 
 export function PlanBlueprintViewer({
   eventId,
@@ -181,7 +160,6 @@ export function PlanBlueprintViewer({
           isPartial,
           message: result.error,
         });
-        setIsConfirmOpen(false);
         setIsAccepting(false);
         return;
       }
@@ -201,7 +179,6 @@ export function PlanBlueprintViewer({
         isPartial: false,
         message: "An unexpected network or server error occurred while accepting the plan.",
       });
-      setIsConfirmOpen(false);
       setIsAccepting(false);
     }
   };
@@ -704,103 +681,94 @@ export function PlanBlueprintViewer({
       )}
 
       {/* 8. Acceptance Confirmation Modal Dialog */}
-      {isConfirmOpen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="confirm-plan-title"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-xs"
-        >
-          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900">
-            <div className="flex items-start justify-between border-b border-slate-100 pb-3 dark:border-slate-800">
-              <div className="flex items-center gap-2">
-                <div className="flex size-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400">
-                  <ShieldCheck className="size-4" />
-                </div>
-                <div>
-                  <h3 id="confirm-plan-title" className="text-sm font-bold text-slate-950 dark:text-white">
-                    Confirm Plan Acceptance
-                  </h3>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                    Versioned event workspace update
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => !isAccepting && setIsConfirmOpen(false)}
-                disabled={isAccepting}
-                className="rounded-lg p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-                aria-label="Close dialog"
-              >
-                <X className="size-4" />
-              </button>
+      <AlertDialog
+        open={isConfirmOpen}
+        onOpenChange={(open) => {
+          if (!open && !isAccepting) {
+            setIsConfirmOpen(false);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <div className="flex items-start gap-3">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400">
+              <ShieldCheck className="size-5" />
             </div>
-
-            <div className="mt-4 space-y-3 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
-              <p>
-                Saving this blueprint will create a permanent, versioned plan revision in your event history.
-              </p>
-
-              <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 space-y-1.5 dark:border-slate-800/80 dark:bg-slate-950/50">
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Tasks to import:</span>
-                  <span className="font-semibold text-slate-900 dark:text-white">
-                    {selectedTaskCount} of {taskCount}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Budget items to import:</span>
-                  <span className="font-semibold text-slate-900 dark:text-white">
-                    {selectedBudgetCount} of {budgetCount}
-                  </span>
-                </div>
-                <div className="flex justify-between border-t border-slate-200/60 pt-1.5 dark:border-slate-800">
-                  <span className="text-slate-500">Selected budget total:</span>
-                  <span className="font-bold text-slate-900 dark:text-white">
-                    {formatMoney(selectedBudgetTotal)}
-                  </span>
-                </div>
-              </div>
-
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                Note: Existing workspace tasks and budget records will remain safe and will not be overwritten.
-              </p>
-            </div>
-
-            <div className="mt-6 flex items-center justify-end gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setIsConfirmOpen(false)}
-                disabled={isAccepting}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                className="gap-2 bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-500"
-                onClick={handleAcceptConfirm}
-                disabled={isAccepting}
-              >
-                {isAccepting ? (
-                  <>
-                    <Loader2 className="size-3.5 animate-spin" />
-                    <span>Saving Plan Revision...</span>
-                  </>
-                ) : (
-                  <>
-                    <Check className="size-3.5" />
-                    <span>Confirm &amp; Apply Plan</span>
-                  </>
-                )}
-              </Button>
+            <div className="min-w-0 flex-1">
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  Confirm Plan Acceptance
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  Saving this blueprint will create a permanent, versioned plan revision in your event history.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
             </div>
           </div>
-        </div>
-      )}
+
+          <div className="mt-4 space-y-3 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+            <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 space-y-1.5 dark:border-slate-800/80 dark:bg-slate-950/50">
+              <div className="flex justify-between">
+                <span className="text-slate-500">Tasks to import:</span>
+                <span className="font-semibold text-slate-900 dark:text-white">
+                  {selectedTaskCount} of {taskCount}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Budget items to import:</span>
+                <span className="font-semibold text-slate-900 dark:text-white">
+                  {selectedBudgetCount} of {budgetCount}
+                </span>
+              </div>
+              <div className="flex justify-between border-t border-slate-200/60 pt-1.5 dark:border-slate-800">
+                <span className="text-slate-500">Selected budget total:</span>
+                <span className="font-bold text-slate-900 dark:text-white">
+                  {formatMoney(selectedBudgetTotal)}
+                </span>
+              </div>
+            </div>
+
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              Note: Existing workspace tasks and budget records will remain safe and will not be overwritten.
+            </p>
+          </div>
+
+          {acceptanceResult && !acceptanceResult.success && (
+            <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/50 dark:text-rose-300">
+              {acceptanceResult.message}
+            </div>
+          )}
+
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              type="button"
+              disabled={isAccepting}
+              onClick={() => setIsConfirmOpen(false)}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              type="button"
+              variant="default"
+              disabled={isAccepting}
+              onClick={handleAcceptConfirm}
+              className="gap-2 bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-500"
+            >
+              {isAccepting ? (
+                <>
+                  <Loader2 className="size-3.5 animate-spin" />
+                  <span>Saving Plan Revision...</span>
+                </>
+              ) : (
+                <>
+                  <Check className="size-3.5" />
+                  <span>Confirm &amp; Apply Plan</span>
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

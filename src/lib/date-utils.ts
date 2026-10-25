@@ -1,7 +1,7 @@
 /**
- * Planora AI — Date & Currency Utilities
+ * Planora AI — Date Utilities
  * 
- * Provides safe timezone-stable formatting for event dates and financial figures.
+ * Provides safe timezone-stable formatting for event dates and statuses.
  */
 
 /**
@@ -65,19 +65,9 @@ export function dateInputToIsoString(dateInput?: string | null): string | null {
 
 /**
  * Formats currency values cleanly with standard USD formatting.
+ * @deprecated Prefer importing directly from `@/lib/currency-utils`.
  */
-export function formatCurrency(amount: number): string {
-  try {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    }).format(amount);
-  } catch {
-    return `$${amount.toLocaleString()}`;
-  }
-}
+export { formatCurrency } from "@/lib/currency-utils";
 
 /**
  * Returns human-readable label for status values.

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { Database } from "@/types/database.types";
+import { createCurrencyAmountSchema } from "@/lib/validations/currency";
 
 /**
  * Common budget category presets for event expenses.
@@ -66,89 +67,11 @@ export const itemNameSchema = z
  * - Preserves undefined when omitted so partial update schemas do not inject 0.
  * - Maps empty string, whitespace string, or null to 0 for form compatibility.
  */
-export const currencyAmountSchema = z.preprocess(
-  (val, ctx) => {
-    if (val === undefined) return undefined;
-    if (val === null || (typeof val === "string" && val.trim() === "")) {
-      return 0;
-    }
-    let num: number;
-    if (typeof val === "string") {
-      const trimmed = val.trim();
-      if (/e/i.test(trimmed)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Scientific notation is not supported for currency amounts.",
-        });
-        return z.NEVER;
-      }
-      const parts = trimmed.split(".");
-      if (parts.length > 2 || (parts.length === 2 && parts[1].length > 2)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Amount cannot have more than 2 decimal places.",
-        });
-        return z.NEVER;
-      }
-      num = Number(trimmed);
-      if (isNaN(num)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Amount must be a valid number.",
-        });
-        return z.NEVER;
-      }
-    } else if (typeof val === "number") {
-      if (!Number.isFinite(val)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Amount must be a finite number.",
-        });
-        return z.NEVER;
-      }
-      const str = val.toString();
-      if (/e/i.test(str)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Amount cannot have more than 2 decimal places.",
-        });
-        return z.NEVER;
-      }
-      const parts = str.split(".");
-      if (parts.length > 1 && parts[1].length > 2) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Amount cannot have more than 2 decimal places.",
-        });
-        return z.NEVER;
-      }
-      num = val;
-    } else {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Amount must be a valid number.",
-      });
-      return z.NEVER;
-    }
-
-    if (num < 0) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Amount cannot be negative.",
-      });
-      return z.NEVER;
-    }
-    if (num > 9_999_999_999.99) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Amount cannot exceed 9,999,999,999.99.",
-      });
-      return z.NEVER;
-    }
-    return num;
-  },
-  z.number("Amount must be a valid number.").optional()
-);
+export const currencyAmountSchema = createCurrencyAmountSchema({
+  fieldLabel: "Amount",
+  required: false,
+  innerErrorMessage: "Amount must be a valid number.",
+});
 
 /**
  * Helper schema for optional multiline notes.

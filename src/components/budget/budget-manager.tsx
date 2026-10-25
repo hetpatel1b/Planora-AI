@@ -10,6 +10,7 @@ import {
 } from "@/lib/budget-math";
 import { BudgetItemDialog } from "@/components/budget/budget-item-dialog";
 import { DeleteBudgetItemDialog } from "@/components/budget/delete-budget-item-dialog";
+import { formatMoney } from "@/lib/currency-utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -34,19 +35,6 @@ interface BudgetManagerProps {
   targetBudget: number;
   initialItems: BudgetItemRow[];
   initialError?: string | null;
-}
-
-function formatMoney(amount: number): string {
-  try {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(amount);
-  } catch {
-    return `$${amount.toFixed(2)}`;
-  }
 }
 
 export function BudgetManager({
@@ -119,11 +107,6 @@ export function BudgetManager({
     setItems((prev) => prev.filter((item) => item.id !== deletedId));
   };
 
-  // Clamped progress bar percentage (0 to 100 for visual width only)
-  const visualProgressWidth = Math.min(
-    100,
-    Math.max(0, summary.utilizationPercent)
-  );
 
   return (
     <section aria-labelledby="budget-manager-title" className="space-y-8">
@@ -260,7 +243,7 @@ export function BudgetManager({
                     ? "bg-amber-500"
                     : "bg-indigo-600 dark:bg-indigo-500"
                 }`}
-                style={{ width: `${visualProgressWidth}%` }}
+                style={{ width: `${summary.visualProgressPercent}%` }}
               />
             </div>
           </div>

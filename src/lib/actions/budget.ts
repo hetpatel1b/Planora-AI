@@ -9,7 +9,7 @@ import {
   eventIdSchema,
   type BudgetItemRow,
 } from "@/lib/validations/budget";
-import type { ActionResult } from "@/lib/actions/events";
+import type { ActionResult } from "@/types/actions";
 
 /**
  * Retrieves all budget line items for an event owned by the authenticated user.
@@ -19,9 +19,7 @@ import type { ActionResult } from "@/lib/actions/events";
  * - Prevents cross-tenant line-item access.
  */
 export async function getBudgetItemsByEventId(
-  eventId: string,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabaseClient?: any
+  eventId: string
 ): Promise<ActionResult<BudgetItemRow[]>> {
   try {
     const eventIdParse = eventIdSchema.safeParse(eventId);
@@ -32,7 +30,7 @@ export async function getBudgetItemsByEventId(
       };
     }
 
-    const supabase = supabaseClient ?? (await createClient());
+    const supabase = await createClient();
     const {
       data: { user },
       error: authError,
@@ -81,9 +79,7 @@ export async function getBudgetItemsByEventId(
  */
 export async function createBudgetItemAction(
   eventId: string,
-  input: unknown,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabaseClient?: any
+  input: unknown
 ): Promise<ActionResult<BudgetItemRow>> {
   try {
     const eventIdParse = eventIdSchema.safeParse(eventId);
@@ -94,7 +90,7 @@ export async function createBudgetItemAction(
       };
     }
 
-    const supabase = supabaseClient ?? (await createClient());
+    const supabase = await createClient();
     const {
       data: { user },
       error: authError,
@@ -180,9 +176,7 @@ export async function createBudgetItemAction(
 export async function updateBudgetItemAction(
   id: string,
   eventId: string,
-  input: unknown,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabaseClient?: any
+  input: unknown
 ): Promise<ActionResult<BudgetItemRow>> {
   try {
     const idParse = budgetItemIdSchema.safeParse(id);
@@ -201,7 +195,7 @@ export async function updateBudgetItemAction(
       };
     }
 
-    const supabase = supabaseClient ?? (await createClient());
+    const supabase = await createClient();
     const {
       data: { user },
       error: authError,
@@ -266,9 +260,7 @@ export async function updateBudgetItemAction(
  */
 export async function deleteBudgetItemAction(
   id: string,
-  eventId: string,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabaseClient?: any
+  eventId: string
 ): Promise<ActionResult<{ id: string }>> {
   try {
     const idParse = budgetItemIdSchema.safeParse(id);
@@ -287,7 +279,7 @@ export async function deleteBudgetItemAction(
       };
     }
 
-    const supabase = supabaseClient ?? (await createClient());
+    const supabase = await createClient();
     const {
       data: { user },
       error: authError,

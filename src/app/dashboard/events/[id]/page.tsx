@@ -11,10 +11,10 @@ import { BudgetManager } from "@/components/budget/budget-manager";
 import { TimelineChecklistManager } from "@/components/timeline/timeline-checklist-manager";
 import {
   formatEventDate,
-  formatCurrency,
   getStatusBadgeVariant,
   formatStatusLabel,
 } from "@/lib/date-utils";
+import { formatCurrency } from "@/lib/currency-utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DeleteEventDialogWrapper } from "@/components/events/delete-event-dialog-wrapper";

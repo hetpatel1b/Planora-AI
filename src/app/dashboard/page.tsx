@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { signOutAction } from "@/app/auth/actions";
 import { listEvents } from "@/lib/actions/events";
-import { formatCurrency } from "@/lib/date-utils";
+import { formatCurrency } from "@/lib/currency-utils";
 import { Button } from "@/components/ui/button";
 import { EventCard } from "@/components/events/event-card";
 import { EmptyEvents } from "@/components/events/empty-events";

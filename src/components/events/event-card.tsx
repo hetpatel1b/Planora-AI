@@ -5,10 +5,10 @@ import Link from "next/link";
 import { type EventRow } from "@/lib/validations/event";
 import {
   formatEventDate,
-  formatCurrency,
   getStatusBadgeVariant,
   formatStatusLabel,
 } from "@/lib/date-utils";
+import { formatCurrency } from "@/lib/currency-utils";
 import { Badge } from "@/components/ui/badge";
 import { DeleteEventDialog } from "@/components/events/delete-event-dialog";
 import {

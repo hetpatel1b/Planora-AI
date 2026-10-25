@@ -3,7 +3,16 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { deleteEventAction } from "@/lib/actions/events";
-import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
 import { Trash2, AlertTriangle, Loader2 } from "lucide-react";
 
 interface DeleteEventDialogProps {
@@ -26,19 +35,6 @@ export function DeleteEventDialog({
   const router = useRouter();
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-
-  // Close on Escape key
-  React.useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isOpen && !isDeleting) {
-        onClose();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, isDeleting, onClose]);
-
-  if (!isOpen) return null;
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -66,34 +62,32 @@ export function DeleteEventDialog({
   };
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="delete-dialog-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-150"
+    <AlertDialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open && !isDeleting) {
+          onClose();
+        }
+      }}
     >
-      <div
-        className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <AlertDialogContent>
         <div className="flex items-start gap-4">
           <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-600 dark:bg-rose-950/80 dark:text-rose-400">
             <AlertTriangle className="size-5" />
           </div>
-          <div>
-            <h3
-              id="delete-dialog-title"
-              className="text-base font-bold text-slate-900 dark:text-white"
-            >
-              Delete Event Workspace
-            </h3>
-            <p className="mt-1.5 text-xs leading-relaxed text-slate-600 dark:text-slate-400">
-              Are you sure you want to delete{" "}
-              <span className="font-semibold text-slate-900 dark:text-white">
-                &ldquo;{eventName}&rdquo;
-              </span>
-              ? All setup data, constraints, and workspace records for this event will be permanently removed.
-            </p>
+          <div className="min-w-0 flex-1">
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                Delete Event Workspace
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete{" "}
+                <span className="font-semibold text-slate-900 dark:text-white">
+                  &ldquo;{eventName}&rdquo;
+                </span>
+                ? All setup data, constraints, and workspace records for this event will be permanently removed.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
           </div>
         </div>
 
@@ -103,20 +97,16 @@ export function DeleteEventDialog({
           </div>
         )}
 
-        <div className="mt-6 flex items-center justify-end gap-3 border-t border-slate-100 pt-4 dark:border-slate-800">
-          <Button
+        <AlertDialogFooter>
+          <AlertDialogCancel
             type="button"
-            variant="outline"
-            size="sm"
             disabled={isDeleting}
             onClick={onClose}
           >
             Cancel
-          </Button>
-          <Button
+          </AlertDialogCancel>
+          <AlertDialogAction
             type="button"
-            variant="destructive"
-            size="sm"
             disabled={isDeleting}
             onClick={handleDelete}
             className="gap-1.5 bg-rose-600 text-white hover:bg-rose-700 dark:bg-rose-600 dark:hover:bg-rose-700"
@@ -132,9 +122,9 @@ export function DeleteEventDialog({
                 <span>Delete Event</span>
               </>
             )}
-          </Button>
-        </div>
-      </div>
-    </div>
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

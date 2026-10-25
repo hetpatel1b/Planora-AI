@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { Database } from "@/types/database.types";
 import { TASK_PRIORITIES } from "@/lib/validations/task";
+import { createCurrencyAmountSchema } from "@/lib/validations/currency";
 
 /**
  * Validates a single suggested milestone or schedule block in an event blueprint.
@@ -69,92 +70,11 @@ export const planSuggestedTaskSchema = z
  * - Strictly enforces at most 2 decimal places without silently mutating user/LLM input.
  * - Rejects scientific notation, NaN, Infinity, negative values, and non-numeric inputs.
  */
-export const planEstimatedAmountSchema = z.preprocess(
-  (val, ctx) => {
-    if (val === null || (typeof val === "string" && val.trim() === "")) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Estimated amount is required.",
-      });
-      return z.NEVER;
-    }
-    let num: number;
-    if (typeof val === "string") {
-      const trimmed = val.trim();
-      if (/e/i.test(trimmed)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Scientific notation is not supported for currency amounts.",
-        });
-        return z.NEVER;
-      }
-      const parts = trimmed.split(".");
-      if (parts.length > 2 || (parts.length === 2 && parts[1].length > 2)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Estimated amount cannot have more than 2 decimal places.",
-        });
-        return z.NEVER;
-      }
-      num = Number(trimmed);
-      if (isNaN(num)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Estimated amount must be a valid number.",
-        });
-        return z.NEVER;
-      }
-    } else if (typeof val === "number") {
-      if (!Number.isFinite(val)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Estimated amount must be a finite number.",
-        });
-        return z.NEVER;
-      }
-      const str = val.toString();
-      if (/e/i.test(str)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Estimated amount cannot have more than 2 decimal places.",
-        });
-        return z.NEVER;
-      }
-      const parts = str.split(".");
-      if (parts.length > 1 && parts[1].length > 2) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Estimated amount cannot have more than 2 decimal places.",
-        });
-        return z.NEVER;
-      }
-      num = val;
-    } else {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Estimated amount must be a valid number.",
-      });
-      return z.NEVER;
-    }
-
-    if (num < 0) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Estimated amount cannot be negative.",
-      });
-      return z.NEVER;
-    }
-    if (num > 9_999_999_999.99) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Estimated amount cannot exceed 9,999,999,999.99.",
-      });
-      return z.NEVER;
-    }
-    return num;
-  },
-  z.number("Estimated amount must be a number.")
-);
+export const planEstimatedAmountSchema = createCurrencyAmountSchema({
+  fieldLabel: "Estimated amount",
+  required: true,
+  innerErrorMessage: "Estimated amount must be a number.",
+});
 
 /**
  * Validates a proposed budget allocation item recommended by the event blueprint.

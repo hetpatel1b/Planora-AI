@@ -11,7 +11,7 @@ import {
   type TaskRow,
   type TaskStatus,
 } from "@/lib/validations/task";
-import type { ActionResult } from "@/lib/actions/events";
+import type { ActionResult } from "@/types/actions";
 
 /**
  * Retrieves all checklist tasks for an event owned by the authenticated user.
@@ -21,9 +21,7 @@ import type { ActionResult } from "@/lib/actions/events";
  * - Prevents cross-tenant task access.
  */
 export async function getTasksByEventId(
-  eventId: string,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabaseClient?: any
+  eventId: string
 ): Promise<ActionResult<TaskRow[]>> {
   try {
     const eventIdParse = eventIdSchema.safeParse(eventId);
@@ -34,7 +32,7 @@ export async function getTasksByEventId(
       };
     }
 
-    const supabase = supabaseClient ?? (await createClient());
+    const supabase = await createClient();
     const {
       data: { user },
       error: authError,
@@ -97,9 +95,7 @@ export async function getTasksByEventId(
  */
 export async function createTaskAction(
   eventId: string,
-  input: unknown,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabaseClient?: any
+  input: unknown
 ): Promise<ActionResult<TaskRow>> {
   try {
     const eventIdParse = eventIdSchema.safeParse(eventId);
@@ -110,7 +106,7 @@ export async function createTaskAction(
       };
     }
 
-    const supabase = supabaseClient ?? (await createClient());
+    const supabase = await createClient();
     const {
       data: { user },
       error: authError,
@@ -197,9 +193,7 @@ export async function createTaskAction(
 export async function updateTaskAction(
   id: string,
   eventId: string,
-  input: unknown,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabaseClient?: any
+  input: unknown
 ): Promise<ActionResult<TaskRow>> {
   try {
     const idParse = taskIdSchema.safeParse(id);
@@ -218,7 +212,7 @@ export async function updateTaskAction(
       };
     }
 
-    const supabase = supabaseClient ?? (await createClient());
+    const supabase = await createClient();
     const {
       data: { user },
       error: authError,
@@ -286,9 +280,7 @@ export async function updateTaskAction(
 export async function toggleTaskStatusAction(
   id: string,
   eventId: string,
-  targetStatus: TaskStatus,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabaseClient?: any
+  targetStatus: TaskStatus
 ): Promise<ActionResult<TaskRow>> {
   try {
     const idParse = taskIdSchema.safeParse(id);
@@ -315,7 +307,7 @@ export async function toggleTaskStatusAction(
       };
     }
 
-    const supabase = supabaseClient ?? (await createClient());
+    const supabase = await createClient();
     const {
       data: { user },
       error: authError,
@@ -371,9 +363,7 @@ export async function toggleTaskStatusAction(
  */
 export async function deleteTaskAction(
   id: string,
-  eventId: string,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabaseClient?: any
+  eventId: string
 ): Promise<ActionResult<{ id: string }>> {
   try {
     const idParse = taskIdSchema.safeParse(id);
@@ -392,7 +382,7 @@ export async function deleteTaskAction(
       };
     }
 
-    const supabase = supabaseClient ?? (await createClient());
+    const supabase = await createClient();
     const {
       data: { user },
       error: authError,

@@ -6,6 +6,7 @@ import {
   type PlanProposedBudgetItem,
 } from "@/lib/validations/plan";
 import { TASK_PRIORITIES } from "@/lib/validations/task";
+import { formatCurrency } from "@/lib/currency-utils";
 
 /**
  * Planora AI — Deterministic Event Plan Generator Engine (F02)
@@ -913,11 +914,9 @@ function buildEventSummary(
   const budget = typeof event.budget === "number" ? event.budget : Number(event.budget) || 0;
   const location = event.location?.trim() || null;
 
-  const formattedBudget = new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
+  const formattedBudget = formatCurrency(budget, {
     maximumFractionDigits: 0,
-  }).format(budget);
+  });
 
   let summary = `Strategic event blueprint for "${name}", designed as a ${template.category}.`;
 

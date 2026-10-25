@@ -14,6 +14,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
 import { Loader2, X, Plus, Edit2, CheckSquare } from "lucide-react";
 
 interface TaskDialogProps {
@@ -37,6 +46,7 @@ export function TaskDialog({
     <TaskDialogModal
       key={task ? `edit-${task.id}` : "create-task"}
       eventId={eventId}
+      isOpen={isOpen}
       onClose={onClose}
       onSuccess={onSuccess}
       task={task}
@@ -46,10 +56,11 @@ export function TaskDialog({
 
 function TaskDialogModal({
   eventId,
+  isOpen,
   onClose,
   onSuccess,
   task,
-}: Omit<TaskDialogProps, "isOpen">) {
+}: TaskDialogProps) {
   const isEditing = Boolean(task);
 
   const [title, setTitle] = React.useState(task?.title || "");
@@ -70,17 +81,6 @@ function TaskDialogModal({
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = React.useState<Record<string, string[] | undefined>>({});
-
-  // Close on Escape key
-  React.useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !isSubmitting) {
-        onClose();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isSubmitting, onClose]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -137,37 +137,40 @@ function TaskDialogModal({
   };
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="task-dialog-title"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-xs"
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open && !isSubmitting) onClose();
+      }}
     >
-      <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900">
+      <DialogContent showCloseButton={false}>
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800">
           <div className="flex items-center gap-2.5">
             <div className="flex size-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400">
               {isEditing ? <Edit2 className="size-4" /> : <Plus className="size-4" />}
             </div>
-            <div>
-              <h3 id="task-dialog-title" className="text-sm font-bold text-slate-950 dark:text-white">
+            <DialogHeader className="gap-0.5">
+              <DialogTitle>
                 {isEditing ? "Edit Checklist Task" : "Add Checklist Task"}
-              </h3>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                {isEditing ? "Update details, timeline date, and status" : "Create a new timeline milestone or checklist item"}
-              </p>
-            </div>
+              </DialogTitle>
+              <DialogDescription>
+                {isEditing
+                  ? "Update details, timeline date, and status"
+                  : "Create a new timeline milestone or checklist item"}
+              </DialogDescription>
+            </DialogHeader>
           </div>
-          <button
+          <DialogClose
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
-            className="rounded-lg p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+            className="rounded-lg p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 disabled:opacity-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/60"
             aria-label="Close dialog"
           >
             <X className="size-4" />
-          </button>
+            <span className="sr-only">Close dialog</span>
+          </DialogClose>
         </div>
 
         {/* Form */}
@@ -310,7 +313,7 @@ function TaskDialogModal({
           </div>
 
           {/* Actions */}
-          <div className="flex items-center justify-end gap-2 border-t border-slate-100 pt-4 dark:border-slate-800">
+          <DialogFooter>
             <Button
               type="button"
               variant="outline"
@@ -343,9 +346,9 @@ function TaskDialogModal({
                 </>
               )}
             </Button>
-          </div>
+          </DialogFooter>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

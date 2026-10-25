@@ -31,7 +31,7 @@ Planora AI is designed around eight core feature pillars:
    Guided intake workflow capturing event classification, attendee estimates, primary objectives, target dates, and initial budget constraints into a structured project workspace.
 
 2. **AI Event Plan Generator**  
-   Generates comprehensive, tailored event blueprints including high-level scheduling, milestone recommendations, and logistical checklists tuned to the specific event profile.
+   Generates comprehensive, tailored event blueprints including high-level scheduling, milestone recommendations, and logistical checklists tuned to the specific event profile via deterministic rule-based algorithms.
 
 3. **Smart Budget Manager**  
    Categorized cost allocation across venues, catering, audiovisual, talent, and contingencies, with real-time variance tracking between projected estimates and actual expenditures.
@@ -108,7 +108,7 @@ Ensure you have the following installed locally:
    ```
    *(On Windows Command Prompt, use `copy .env.example .env.local`)*
 
-   Fill in placeholder variables as features are connected. For initial Phase 1 UI exploration, running with default empty placeholders is supported.
+   Fill in placeholder variables as features are connected. For core planning workflows (Phases 1–4), Supabase database and authentication credentials are required. Groq API keys are reserved for the upcoming Phase 5 Conversational AI Copilot.
 
 4. **Start the local development server**:
    ```bash
@@ -128,8 +128,8 @@ All environment configuration is specified in `.env.example`:
 | :--- | :--- | :--- |
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL (Phase 2+) | Client & Server |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase anonymous public key (Phase 2+) | Client & Server |
-| `GROQ_API_KEY` | Groq API authentication key for AI services | **Server-side only** |
-| `GROQ_MODEL` | Groq LLM model identifier (default: `openai/gpt-oss-120b`) | Server-side only |
+| `GROQ_API_KEY` | Groq API authentication key for AI services (Phase 5 Copilot) | **Server-side only** |
+| `GROQ_MODEL` | Groq LLM model identifier for Phase 5 Copilot (default: `openai/gpt-oss-120b`) | Server-side only |
 | `NEXT_PUBLIC_APP_URL` | Base canonical application URL (default: `http://localhost:3000`) | Client & Server |
 
 ---

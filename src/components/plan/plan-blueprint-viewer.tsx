@@ -729,7 +729,7 @@ export function PlanBlueprintViewer({
             </div>
 
             <p className="text-[11px] text-slate-500 dark:text-slate-400">
-              Note: Existing workspace tasks and budget records will remain safe and will not be overwritten.
+              Manually created tasks and budget items will be preserved. Tasks and budget items imported from a previously accepted AI-generated plan will be replaced by the selected items in this new plan revision.
             </p>
           </div>
 

@@ -38,8 +38,8 @@ export default function Home() {
       icon: Layers,
       title: "AI Event Plan Generator",
       description:
-        "Synthesizes tailored event blueprints with complete run-of-show schedules, milestone targets, and operational checklists aligned to your event profile.",
-      badge: "AI Powered",
+        "Synthesizes tailored event blueprints with complete run-of-show schedules, milestone targets, and operational checklists aligned to your event profile via deterministic planning algorithms.",
+      badge: "Deterministic Engine",
     },
     {
       id: "budget",
@@ -131,7 +131,7 @@ export default function Home() {
               </span>
             </a>
             <span className="hidden rounded-full border border-violet-200 bg-violet-50/80 px-2.5 py-0.5 text-xs font-medium text-violet-700 sm:inline-block dark:border-violet-900/50 dark:bg-violet-950/50 dark:text-violet-300">
-              Phase 1 Foundation
+              Phases 1–4 Implemented
             </span>
           </div>
 
@@ -273,10 +273,10 @@ export default function Home() {
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-end">
               <div>
-                <div className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-300">
+                <div className="inline-flex items-center gap-1.5 rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-0.5 text-xs font-semibold text-indigo-800 dark:border-indigo-900/60 dark:bg-indigo-950/40 dark:text-indigo-300">
                   <span>Illustrative Sample Data</span>
-                  <span className="text-amber-500">•</span>
-                  <span>Phase 1 Visual Shell</span>
+                  <span className="text-indigo-500">•</span>
+                  <span>Core Planning Live</span>
                 </div>
                 <h2
                   id="preview-heading"
@@ -528,7 +528,7 @@ export default function Home() {
                       <input
                         type="text"
                         disabled
-                        placeholder="Ask Copilot anything... (Phase 1 demo)"
+                        placeholder="Ask Copilot anything... (Phase 5 planned)"
                         className="w-full bg-transparent text-xs text-slate-700 placeholder:text-slate-400 focus:outline-none dark:text-slate-200"
                         aria-label="Copilot query input (disabled in demo)"
                       />
@@ -673,32 +673,28 @@ export default function Home() {
                     id="status-heading"
                     className="mt-3 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl dark:text-white"
                   >
-                    Phase 1 Foundation Complete
+                    Phases 1–4 Implemented — Core Planning Live
                   </h2>
                   <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-                    The core Next.js App Router architecture, Tailwind CSS v4
-                    design system, Base UI component configuration, and secret
-                    isolation standards are in place. Phase 2 introduces
-                    Supabase authentication and data models, followed by Groq AI
-                    inference integrations in Phase 3.
+                    Planora AI has completed core planning capabilities: event workspace setup, deterministic blueprint generation with selective review and acceptance, decimal-safe budget management, and dynamic timeline checklists. Conversational AI Copilot (Phase 5), What-If Budget Simulator, Event Risk Radar (Phase 6), and PDF/CSV Export (Phase 7) remain on the planned roadmap.
                   </p>
                 </div>
 
                 <div className="flex flex-col gap-2.5 sm:flex-row">
                   <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 text-xs dark:border-slate-800 dark:bg-slate-950/50">
                     <span className="font-semibold text-slate-900 dark:text-slate-200">
-                      Phase 1 (Current):
+                      Phases 1–4 (Active):
                     </span>
                     <p className="mt-1 text-slate-500 dark:text-slate-400">
-                      Setup, UI shell &amp; secret guardrails
+                      Intelligent Setup, Deterministic Plans, Budgets &amp; Timelines
                     </p>
                   </div>
                   <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 text-xs dark:border-slate-800 dark:bg-slate-950/50">
                     <span className="font-semibold text-slate-900 dark:text-slate-200">
-                      Phase 2 (Upcoming):
+                      Phase 5 (Upcoming):
                     </span>
                     <p className="mt-1 text-slate-500 dark:text-slate-400">
-                      Supabase DB, Auth &amp; Event CRUD
+                      Conversational AI Copilot via Groq LLM integration
                     </p>
                   </div>
                 </div>
@@ -759,7 +755,7 @@ export default function Home() {
 
           <div className="mt-8 flex flex-col items-center justify-between gap-3 border-t border-slate-100 pt-6 text-[11px] text-slate-500 sm:flex-row dark:border-slate-800/80 dark:text-slate-400">
             <p>© {currentYear} Planora AI. All rights reserved.</p>
-            <p>Phase 1 Foundation • Built with Next.js &amp; Base UI</p>
+            <p>Phases 1–4 Implemented • Built with Next.js &amp; Base UI</p>
           </div>
         </div>
       </footer>

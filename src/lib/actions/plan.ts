@@ -404,7 +404,7 @@ export async function acceptPlanBlueprintAction(
     );
 
     if (rpcError) {
-      console.error("[acceptPlanBlueprintAction] Transaction RPC error:", rpcError.message);
+      console.error("[acceptPlanBlueprintAction] Transaction RPC error:", rpcError.code);
       if (rpcError.code === "23505") {
         return {
           success: false,
@@ -425,7 +425,7 @@ export async function acceptPlanBlueprintAction(
       }
       return {
         success: false,
-        error: rpcError.message || "Failed to save plan revision. Please try again.",
+        error: "Failed to apply plan revision. Please verify your selections and try again.",
       };
     }
 

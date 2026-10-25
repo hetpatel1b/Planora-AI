@@ -903,7 +903,23 @@ const TEMPLATES: Record<string, EventTypeTemplate> = {
 };
 
 /**
+ * Safely extracts a bounded excerpt from user text, trimming whitespace
+ * and appending an ellipsis if truncation is necessary.
+ */
+function truncateExcerpt(text: string, maxLength: number): string {
+  const trimmed = text.trim();
+  if (trimmed.length <= maxLength) {
+    return trimmed;
+  }
+  const sliceTarget = maxLength - 1;
+  const lastSpace = trimmed.lastIndexOf(" ", sliceTarget);
+  const cutIndex = lastSpace > maxLength * 0.7 ? lastSpace : sliceTarget;
+  return trimmed.slice(0, cutIndex).trimEnd() + "…";
+}
+
+/**
  * Builds a dynamic, cohesive summary text based on input parameters.
+ * Guarantees that the composed output strictly respects the 2,000-character schema ceiling.
  */
 function buildEventSummary(
   event: EventPlanInput,
@@ -935,11 +951,19 @@ function buildEventSummary(
   }
 
   if (event.preferences) {
-    summary += ` Design directives incorporate the planner's aesthetic preference: "${event.preferences.trim()}".`;
+    // Bound excerpt so preferences and constraints fit comfortably within the 2,000-char limit
+    const prefExcerpt = truncateExcerpt(event.preferences, 400);
+    summary += ` Design directives incorporate the planner's aesthetic preference: "${prefExcerpt}".`;
   }
 
   if (event.constraints) {
-    summary += ` Special operational consideration has been integrated to address noted constraints: "${event.constraints.trim()}".`;
+    const constExcerpt = truncateExcerpt(event.constraints, 400);
+    summary += ` Special operational consideration has been integrated to address noted constraints: "${constExcerpt}".`;
+  }
+
+  // Hard safety limit: ensure composed string never exceeds aiPlanBlueprintSchema 2,000 character maximum
+  if (summary.length > 2000) {
+    summary = truncateExcerpt(summary, 2000);
   }
 
   return summary;
@@ -966,14 +990,16 @@ function buildContextualRecommendations(
   }
 
   if (event.cultural_requirements && event.cultural_requirements.trim()) {
+    const culturalExcerpt = truncateExcerpt(event.cultural_requirements, 200);
     recommendations.push(
-      `Brief all culinary and stage partners on designated cultural and dietary protocols: "${event.cultural_requirements.trim()}".`
+      `Brief all culinary and stage partners on designated cultural and dietary protocols: "${culturalExcerpt}".`
     );
   }
 
   if (event.constraints && event.constraints.trim()) {
+    const constraintExcerpt = truncateExcerpt(event.constraints, 200);
     recommendations.push(
-      `Ensure contractual vendor agreements strictly accommodate venue constraints: "${event.constraints.trim()}".`
+      `Ensure contractual vendor agreements strictly accommodate venue constraints: "${constraintExcerpt}".`
     );
   }
 

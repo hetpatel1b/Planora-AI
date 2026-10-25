@@ -3,6 +3,12 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getEventById } from "@/lib/actions/events";
+import { getBudgetItemsByEventId } from "@/lib/actions/budget";
+import { getLatestPlanRevisionAction } from "@/lib/actions/plan";
+import { getTasksByEventId } from "@/lib/actions/tasks";
+import { PlanGeneratorCard } from "@/components/plan/plan-generator-card";
+import { BudgetManager } from "@/components/budget/budget-manager";
+import { TimelineChecklistManager } from "@/components/timeline/timeline-checklist-manager";
 import {
   formatEventDate,
   formatCurrency,
@@ -21,7 +27,6 @@ import {
   Edit3,
   Tag,
   Sliders,
-  CheckCircle2,
   Clock,
   Sparkles,
 } from "lucide-react";
@@ -54,7 +59,12 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
     redirect(`/sign-in?redirectTo=/dashboard/events/${id}`);
   }
 
-  const result = await getEventById(id);
+  const [result, budgetResult, planRevisionResult, taskResult] = await Promise.all([
+    getEventById(id),
+    getBudgetItemsByEventId(id),
+    getLatestPlanRevisionAction(id),
+    getTasksByEventId(id),
+  ]);
 
   if (!result.success) {
     return (
@@ -272,26 +282,36 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
           </div>
         </div>
 
-        {/* Phase Milestone Callout */}
-        <div className="rounded-2xl border border-indigo-200/80 bg-gradient-to-br from-indigo-50/40 via-white to-violet-50/30 p-6 shadow-xs sm:p-8 dark:border-indigo-900/50 dark:bg-slate-900">
-          <div className="flex items-start gap-4">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-xs">
-              <CheckCircle2 className="size-5" />
-            </div>
-            <div>
-              <div className="inline-flex items-center gap-1.5 rounded-full bg-indigo-100/80 px-2.5 py-0.5 text-xs font-semibold text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300">
-                <span>Phase 3 • F01 Foundation Complete</span>
-              </div>
-              <h2 className="mt-2 text-base font-bold text-slate-950 dark:text-white">
-                Intelligent Event Setup Established
-              </h2>
-              <p className="mt-1 text-xs leading-relaxed text-slate-600 dark:text-slate-400">
-                This event workspace is secured by PostgreSQL Row Level Security and composite foreign keys.
-                In upcoming phases, AI Blueprint Generation, Smart Budget line items, Timeline checklists, and Risk Radar will link directly to this event.
-              </p>
-            </div>
-          </div>
-        </div>
+        {/* AI & Rule-Based Plan Generator (Phase 4 Step 3 • F02) */}
+        <PlanGeneratorCard
+          eventId={event.id}
+          eventName={event.name}
+          initialRevision={planRevisionResult.success ? planRevisionResult.data : null}
+        />
+
+        {/* Dynamic Timeline & Checklist (Phase 4 Step 4 • F04) */}
+        <TimelineChecklistManager
+          eventId={event.id}
+          eventDate={event.event_date}
+          initialTasks={taskResult.success ? taskResult.data : []}
+          initialError={
+            taskResult.success
+              ? null
+              : taskResult.error || "Failed to load checklist tasks"
+          }
+        />
+
+        {/* Smart Budget Manager (Phase 4 Step 2 • F03) */}
+        <BudgetManager
+          eventId={event.id}
+          targetBudget={Number(event.budget) || 0}
+          initialItems={budgetResult.success ? budgetResult.data : []}
+          initialError={
+            budgetResult.success
+              ? null
+              : budgetResult.error || "Failed to load budget records"
+          }
+        />
       </main>
     </div>
   );

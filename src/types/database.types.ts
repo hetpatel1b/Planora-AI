@@ -132,6 +132,7 @@ export interface Database {
           id: string;
           event_id: string;
           user_id: string;
+          plan_revision_id: string | null;
           category: string;
           item_name: string;
           estimated_amount: number;
@@ -144,6 +145,7 @@ export interface Database {
           id?: string;
           event_id: string;
           user_id: string;
+          plan_revision_id?: string | null;
           category: string;
           item_name: string;
           estimated_amount?: number;
@@ -156,6 +158,7 @@ export interface Database {
           id?: string;
           event_id?: string;
           user_id?: string;
+          plan_revision_id?: string | null;
           category?: string;
           item_name?: string;
           estimated_amount?: number;
@@ -172,6 +175,13 @@ export interface Database {
             referencedRelation: "events";
             referencedColumns: ["id", "user_id"];
           },
+          {
+            foreignKeyName: "budget_items_plan_revision_id_fkey";
+            columns: ["plan_revision_id"];
+            isOneToOne: false;
+            referencedRelation: "plan_revisions";
+            referencedColumns: ["id"];
+          },
         ];
       };
       tasks: {
@@ -179,6 +189,7 @@ export interface Database {
           id: string;
           event_id: string;
           user_id: string;
+          plan_revision_id: string | null;
           title: string;
           description: string | null;
           due_date: string | null;
@@ -192,6 +203,7 @@ export interface Database {
           id?: string;
           event_id: string;
           user_id: string;
+          plan_revision_id?: string | null;
           title: string;
           description?: string | null;
           due_date?: string | null;
@@ -205,6 +217,7 @@ export interface Database {
           id?: string;
           event_id?: string;
           user_id?: string;
+          plan_revision_id?: string | null;
           title?: string;
           description?: string | null;
           due_date?: string | null;
@@ -221,6 +234,13 @@ export interface Database {
             isOneToOne: false;
             referencedRelation: "events";
             referencedColumns: ["id", "user_id"];
+          },
+          {
+            foreignKeyName: "tasks_plan_revision_id_fkey";
+            columns: ["plan_revision_id"];
+            isOneToOne: false;
+            referencedRelation: "plan_revisions";
+            referencedColumns: ["id"];
           },
         ];
       };
@@ -282,6 +302,7 @@ export interface Database {
           revision_number: number;
           structured_plan: Json;
           summary: string | null;
+          is_active: boolean;
           created_at: string;
         };
         Insert: {
@@ -291,6 +312,7 @@ export interface Database {
           revision_number: number;
           structured_plan?: Json;
           summary?: string | null;
+          is_active?: boolean;
           created_at?: string;
         };
         Update: {
@@ -300,6 +322,7 @@ export interface Database {
           revision_number?: number;
           structured_plan?: Json;
           summary?: string | null;
+          is_active?: boolean;
           created_at?: string;
         };
         Relationships: [
@@ -317,7 +340,17 @@ export interface Database {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      accept_plan_blueprint: {
+        Args: {
+          p_event_id: string;
+          p_user_id: string;
+          p_structured_plan: Json;
+          p_summary: string | null;
+          p_tasks?: Json;
+          p_budget_items?: Json;
+        };
+        Returns: Json;
+      };
     };
     Enums: {
       event_status: EventStatus;

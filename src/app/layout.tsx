@@ -18,7 +18,11 @@ export const metadata: Metadata = {
     "Streamline event blueprints, budget tracking, dynamic timelines, and risk mitigation with an intelligent AI copilot.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
     <html
       lang="en"

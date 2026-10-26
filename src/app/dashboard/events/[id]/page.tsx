@@ -10,6 +10,7 @@ import { PlanGeneratorCard } from "@/components/plan/plan-generator-card";
 import { BudgetManager } from "@/components/budget/budget-manager";
 import { TimelineChecklistManager } from "@/components/timeline/timeline-checklist-manager";
 import { CopilotChatCard } from "@/components/copilot/copilot-chat-card";
+import { EventRiskRadar } from "@/components/risk/event-risk-radar";
 import {
   formatEventDate,
   getStatusBadgeVariant,
@@ -281,6 +282,14 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
             </p>
           </div>
         </div>
+
+        {/* Event Risk Radar (Phase 6 • F08) */}
+        <EventRiskRadar
+          event={event}
+          budgetItems={budgetResult.success ? budgetResult.data : []}
+          tasks={taskResult.success ? taskResult.data : []}
+          activePlanRevision={planRevisionResult.success ? planRevisionResult.data : null}
+        />
 
         {/* Conversational AI Copilot (Phase 5 • F05) */}
         <CopilotChatCard

@@ -28,7 +28,9 @@ import {
   CheckCircle2,
   Receipt,
   RotateCcw,
+  Sliders,
 } from "lucide-react";
+import { WhatIfSimulator } from "@/components/budget/what-if-simulator";
 
 interface BudgetManagerProps {
   eventId: string;
@@ -51,6 +53,7 @@ export function BudgetManager({
   const [isAddOpen, setIsAddOpen] = React.useState(false);
   const [editingItem, setEditingItem] = React.useState<BudgetItemRow | null>(null);
   const [deletingItem, setDeletingItem] = React.useState<BudgetItemRow | null>(null);
+  const [isSimulatorOpen, setIsSimulatorOpen] = React.useState(false);
 
   // Sync state if initialItems prop updates
   const [prevInitialItems, setPrevInitialItems] = React.useState(initialItems);
@@ -129,14 +132,41 @@ export function BudgetManager({
           </p>
         </div>
 
-        <Button
-          onClick={() => setIsAddOpen(true)}
-          className="gap-1.5 bg-indigo-600 text-white hover:bg-indigo-700 shadow-xs text-xs font-semibold self-start sm:self-auto"
-        >
-          <Plus className="size-3.5" />
-          <span>Add Expense Item</span>
-        </Button>
+        <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+          <Button
+            type="button"
+            variant={isSimulatorOpen ? "default" : "outline"}
+            size="sm"
+            onClick={() => setIsSimulatorOpen(!isSimulatorOpen)}
+            className={`gap-1.5 text-xs font-semibold h-9 ${
+              isSimulatorOpen
+                ? "bg-slate-900 text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900"
+                : "border-indigo-200 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-300 dark:hover:bg-indigo-950/60"
+            }`}
+          >
+            <Sliders className="size-3.5" />
+            <span>{isSimulatorOpen ? "Close Simulator" : "What-If Simulator"}</span>
+          </Button>
+
+          <Button
+            onClick={() => setIsAddOpen(true)}
+            className="gap-1.5 bg-indigo-600 text-white hover:bg-indigo-700 shadow-xs text-xs font-semibold h-9"
+          >
+            <Plus className="size-3.5" />
+            <span>Add Expense Item</span>
+          </Button>
+        </div>
       </div>
+
+      {/* What-If Simulator Workbench (F06) */}
+      {isSimulatorOpen && (
+        <WhatIfSimulator
+          eventId={eventId}
+          baselineTargetBudget={targetBudget}
+          baselineItems={items}
+          onClose={() => setIsSimulatorOpen(false)}
+        />
+      )}
 
       {/* Fetch Error Warning */}
       {initialError && (

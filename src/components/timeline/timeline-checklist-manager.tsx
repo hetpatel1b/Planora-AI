@@ -22,7 +22,10 @@ import {
   Trash2,
   ListTodo,
   CalendarDays,
+  FileSpreadsheet,
+  Loader2,
 } from "lucide-react";
+import { triggerCsvDownload } from "@/lib/download-csv";
 
 export interface TimelineChecklistManagerProps {
   eventId: string;
@@ -99,6 +102,27 @@ export function TimelineChecklistManager({
 
   // Quick toggle pending tracking
   const [pendingToggles, setPendingToggles] = React.useState<Set<string>>(new Set());
+
+  // Contextual CSV export states
+  const [isExporting, setIsExporting] = React.useState(false);
+  const [exportError, setExportError] = React.useState<string | null>(null);
+
+  const handleExportCsv = async () => {
+    if (isExporting) return;
+    setIsExporting(true);
+    setExportError(null);
+
+    const fallback = `planora-${eventId}-tasks.csv`;
+    const result = await triggerCsvDownload(
+      `/api/events/${eventId}/export/tasks`,
+      fallback
+    );
+
+    setIsExporting(false);
+    if (!result.success) {
+      setExportError(result.error || "Failed to download tasks CSV.");
+    }
+  };
 
   // Prop synchronization on server revalidation
   const [prevInitialTasks, setPrevInitialTasks] = React.useState(initialTasks);
@@ -402,6 +426,24 @@ export function TimelineChecklistManager({
           <div className="flex items-center gap-2">
             <Button
               type="button"
+              variant="outline"
+              size="sm"
+              id="contextual-export-tasks-csv-button"
+              disabled={isExporting}
+              onClick={handleExportCsv}
+              className="gap-1.5 text-xs font-medium border-slate-200 text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-900"
+              title="Download checklist tasks as CSV"
+            >
+              {isExporting ? (
+                <Loader2 className="size-3.5 animate-spin text-indigo-600 dark:text-indigo-400" />
+              ) : (
+                <FileSpreadsheet className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+              )}
+              <span>Export CSV</span>
+            </Button>
+
+            <Button
+              type="button"
               size="sm"
               onClick={() => setIsAddOpen(true)}
               className="gap-1.5 bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-500 shadow-xs"
@@ -411,6 +453,26 @@ export function TimelineChecklistManager({
             </Button>
           </div>
         </div>
+
+        {/* Error Alert if Export Error */}
+        {exportError && (
+          <div
+            role="alert"
+            className="mt-4 flex items-center justify-between rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-300"
+          >
+            <div className="flex items-center gap-2">
+              <AlertCircle className="size-4 shrink-0" />
+              <span>{exportError}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setExportError(null)}
+              className="text-xs font-bold hover:underline"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
 
         {/* Error Alert if Initial Error */}
         {initialError && (

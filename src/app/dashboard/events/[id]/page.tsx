@@ -20,6 +20,7 @@ import { formatCurrency } from "@/lib/currency-utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DeleteEventDialogWrapper } from "@/components/events/delete-event-dialog-wrapper";
+import { ExportMenu } from "@/components/export/export-menu";
 import {
   ArrowLeft,
   Calendar,
@@ -115,6 +116,7 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
           </div>
 
           <div className="flex items-center gap-2">
+            <ExportMenu eventId={event.id} eventName={event.name} />
             <Link href={`/dashboard/events/${event.id}/edit`}>
               <Button size="sm" variant="outline" className="gap-1.5 text-xs">
                 <Edit3 className="size-3.5" />

@@ -29,7 +29,10 @@ import {
   Receipt,
   RotateCcw,
   Sliders,
+  FileSpreadsheet,
+  Loader2,
 } from "lucide-react";
+import { triggerCsvDownload } from "@/lib/download-csv";
 import { WhatIfSimulator } from "@/components/budget/what-if-simulator";
 
 interface BudgetManagerProps {
@@ -54,6 +57,25 @@ export function BudgetManager({
   const [editingItem, setEditingItem] = React.useState<BudgetItemRow | null>(null);
   const [deletingItem, setDeletingItem] = React.useState<BudgetItemRow | null>(null);
   const [isSimulatorOpen, setIsSimulatorOpen] = React.useState(false);
+  const [isExporting, setIsExporting] = React.useState(false);
+  const [exportError, setExportError] = React.useState<string | null>(null);
+
+  const handleExportCsv = async () => {
+    if (isExporting) return;
+    setIsExporting(true);
+    setExportError(null);
+
+    const fallback = `planora-${eventId}-budget.csv`;
+    const result = await triggerCsvDownload(
+      `/api/events/${eventId}/export/budget`,
+      fallback
+    );
+
+    setIsExporting(false);
+    if (!result.success) {
+      setExportError(result.error || "Failed to download budget CSV.");
+    }
+  };
 
   // Sync state if initialItems prop updates
   const [prevInitialItems, setPrevInitialItems] = React.useState(initialItems);
@@ -135,6 +157,24 @@ export function BudgetManager({
         <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
           <Button
             type="button"
+            variant="outline"
+            size="sm"
+            id="contextual-export-budget-csv-button"
+            disabled={isExporting}
+            onClick={handleExportCsv}
+            className="gap-1.5 text-xs font-semibold h-9 border-slate-200 text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-900"
+            title="Download budget ledger as CSV"
+          >
+            {isExporting ? (
+              <Loader2 className="size-3.5 animate-spin text-indigo-600 dark:text-indigo-400" />
+            ) : (
+              <FileSpreadsheet className="size-3.5 text-indigo-600 dark:text-indigo-400" />
+            )}
+            <span>Export CSV</span>
+          </Button>
+
+          <Button
+            type="button"
             variant={isSimulatorOpen ? "default" : "outline"}
             size="sm"
             onClick={() => setIsSimulatorOpen(!isSimulatorOpen)}
@@ -157,6 +197,26 @@ export function BudgetManager({
           </Button>
         </div>
       </div>
+
+      {/* Error Alert if Export Error */}
+      {exportError && (
+        <div
+          role="alert"
+          className="flex items-center justify-between rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-300"
+        >
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="size-4 shrink-0" />
+            <span>{exportError}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setExportError(null)}
+            className="text-xs font-bold hover:underline"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* What-If Simulator Workbench (F06) */}
       {isSimulatorOpen && (

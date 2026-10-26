@@ -9,6 +9,7 @@ import { getTasksByEventId } from "@/lib/actions/tasks";
 import { PlanGeneratorCard } from "@/components/plan/plan-generator-card";
 import { BudgetManager } from "@/components/budget/budget-manager";
 import { TimelineChecklistManager } from "@/components/timeline/timeline-checklist-manager";
+import { CopilotChatCard } from "@/components/copilot/copilot-chat-card";
 import {
   formatEventDate,
   getStatusBadgeVariant,
@@ -280,6 +281,13 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
             </p>
           </div>
         </div>
+
+        {/* Conversational AI Copilot (Phase 5 • F05) */}
+        <CopilotChatCard
+          eventId={event.id}
+          eventDate={event.event_date}
+          eventName={event.name}
+        />
 
         {/* AI & Rule-Based Plan Generator (Phase 4 Step 3 • F02) */}
         <PlanGeneratorCard

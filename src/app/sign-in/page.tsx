@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { getSafeRedirectUrl } from "@/lib/auth-utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PlanoraLogo } from "@/components/ui/planora-logo";
 import {
   ArrowLeft,
   Eye,
@@ -141,10 +142,11 @@ function SignInContent() {
         <div className="mt-4 flex items-center justify-center gap-2">
           <Link
             href="/"
-            className="flex items-center gap-1.5 text-2xl font-extrabold tracking-tight text-slate-950 dark:text-white"
+            className="group flex items-center gap-2.5 text-2xl font-extrabold tracking-tight text-slate-950 dark:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 rounded-lg py-1 px-2"
           >
+            <PlanoraLogo size={36} iconClassName="size-9 drop-shadow-2xs" />
             <span>Planora</span>
-            <span className="rounded-md bg-gradient-to-r from-violet-600 to-indigo-600 px-1.5 py-0.5 text-xs font-black tracking-wider text-white">
+            <span className="rounded-md bg-gradient-to-r from-violet-600 to-indigo-600 px-1.5 py-0.5 text-xs font-black tracking-wider text-white shadow-2xs">
               AI
             </span>
           </Link>

@@ -60,11 +60,11 @@ export function LandingHeaderAuth({ initialUser }: LandingHeaderAuthProps) {
             variant: "ghost",
             size: "sm",
             className:
-              "text-slate-700 dark:text-slate-300 flex items-center gap-1.5 font-medium hover:text-indigo-600 dark:hover:text-indigo-400",
+              "text-slate-700 dark:text-slate-300 flex items-center gap-1.5 font-medium hover:text-violet-600 dark:hover:text-violet-400 focus-visible:ring-2 focus-visible:ring-violet-500 rounded-lg",
           })}
           aria-label="Open your dashboard"
         >
-          <LayoutDashboard className="size-4 text-indigo-600 dark:text-indigo-400" aria-hidden="true" />
+          <LayoutDashboard className="size-4 text-violet-600 dark:text-violet-400" aria-hidden="true" />
           <span>Dashboard</span>
         </Link>
         <Link
@@ -73,7 +73,7 @@ export function LandingHeaderAuth({ initialUser }: LandingHeaderAuthProps) {
             variant: "default",
             size: "sm",
             className:
-              "bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm transition-colors",
+              "bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-medium shadow-xs hover:shadow-sm transition-all focus-visible:ring-2 focus-visible:ring-violet-500 rounded-lg",
           })}
         >
           Start planning
@@ -89,7 +89,8 @@ export function LandingHeaderAuth({ initialUser }: LandingHeaderAuthProps) {
         className={buttonVariants({
           variant: "ghost",
           size: "sm",
-          className: "text-slate-700 dark:text-slate-300",
+          className:
+            "text-slate-700 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 font-medium focus-visible:ring-2 focus-visible:ring-violet-500 rounded-lg",
         })}
       >
         Sign in
@@ -100,7 +101,7 @@ export function LandingHeaderAuth({ initialUser }: LandingHeaderAuthProps) {
           variant: "default",
           size: "sm",
           className:
-            "bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm transition-colors",
+            "bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-medium shadow-xs hover:shadow-sm transition-all focus-visible:ring-2 focus-visible:ring-violet-500 rounded-lg",
         })}
       >
         Start planning

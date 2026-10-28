@@ -7,6 +7,7 @@ import { formatCurrency } from "@/lib/currency-utils";
 import { Button } from "@/components/ui/button";
 import { EventCard } from "@/components/events/event-card";
 import { EmptyEvents } from "@/components/events/empty-events";
+import { PlanoraLogo } from "@/components/ui/planora-logo";
 import {
   ShieldCheck,
   LogOut,
@@ -63,10 +64,11 @@ export default async function DashboardPage() {
           <div className="flex items-center gap-3">
             <Link
               href="/"
-              className="flex items-center gap-2 text-xl font-bold tracking-tight text-slate-900 dark:text-white"
+              className="group flex items-center gap-2.5 text-xl font-bold tracking-tight text-slate-900 dark:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 rounded-lg py-1 px-1 -ml-1"
             >
+              <PlanoraLogo size={34} iconClassName="size-[34px] drop-shadow-2xs" />
               <span>Planora</span>
-              <span className="rounded-md bg-gradient-to-r from-violet-600 to-indigo-600 px-1.5 py-0.5 text-xs font-black tracking-wider text-white">
+              <span className="rounded-md bg-gradient-to-r from-violet-600 to-indigo-600 px-1.5 py-0.5 text-xs font-black tracking-wider text-white shadow-2xs">
                 AI
               </span>
             </Link>

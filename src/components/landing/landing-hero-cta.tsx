@@ -54,7 +54,7 @@ export function LandingHeroCta({ initialUser }: LandingHeroCtaProps) {
             variant: "default",
             size: "lg",
             className:
-              "w-full sm:w-auto bg-indigo-600 text-white hover:bg-indigo-700 shadow-md font-medium px-6 py-2.5 flex items-center justify-center gap-2",
+              "w-full sm:w-auto bg-gradient-to-r from-violet-600 via-indigo-600 to-violet-600 text-white hover:from-violet-700 hover:to-indigo-700 shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 font-semibold px-6 py-2.5 flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-violet-500 rounded-xl transition-all duration-150",
           })}
         >
           <LayoutDashboard className="size-4" aria-hidden="true" />
@@ -68,7 +68,7 @@ export function LandingHeroCta({ initialUser }: LandingHeroCtaProps) {
             variant: "default",
             size: "lg",
             className:
-              "w-full sm:w-auto bg-indigo-600 text-white hover:bg-indigo-700 shadow-md font-medium px-6 py-2.5 flex items-center justify-center gap-2",
+              "w-full sm:w-auto bg-gradient-to-r from-violet-600 via-indigo-600 to-violet-600 text-white hover:from-violet-700 hover:to-indigo-700 shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 font-semibold px-6 py-2.5 flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-violet-500 rounded-xl transition-all duration-150",
           })}
         >
           <span>Start planning</span>
@@ -81,7 +81,7 @@ export function LandingHeroCta({ initialUser }: LandingHeroCtaProps) {
           variant: "outline",
           size: "lg",
           className:
-            "w-full sm:w-auto border-slate-300 bg-white text-slate-800 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 px-6 py-2.5",
+            "w-full sm:w-auto border-slate-300 bg-white/90 text-slate-800 hover:bg-slate-50 hover:border-slate-400 hover:text-slate-950 dark:border-slate-700 dark:bg-slate-900/90 dark:text-slate-200 dark:hover:bg-slate-800 px-6 py-2.5 font-medium rounded-xl shadow-xs hover:shadow-sm focus-visible:ring-2 focus-visible:ring-violet-500 transition-all duration-150",
         })}
       >
         Explore features

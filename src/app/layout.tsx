@@ -16,6 +16,15 @@ export const metadata: Metadata = {
   title: "Planora AI — Intelligent Event Planning Platform",
   description:
     "Streamline event blueprints, budget tracking, dynamic timelines, and risk mitigation with an intelligent AI copilot.",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.png", type: "image/png", sizes: "48x48" },
+    ],
+    apple: [
+      { url: "/apple-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
 };
 
 export default function RootLayout({

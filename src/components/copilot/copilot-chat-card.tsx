@@ -24,6 +24,7 @@ import {
   ListTodo,
   IndianRupee,
   MessageSquare,
+  ChevronDown,
   X,
 } from "lucide-react";
 
@@ -49,54 +50,458 @@ const STARTER_PROMPTS = [
   "How can I improve my current schedule?",
 ];
 
+export interface ParsedBlock {
+  type: "heading" | "bullet-list" | "ordered-list" | "table" | "paragraph";
+  level?: number;
+  items?: string[];
+  headers?: string[];
+  rows?: string[][];
+  text?: string;
+}
+
+/**
+ * Parses markdown text into structured, typed blocks for safe rendering.
+ * Supports headings (#, ##, ###), bullet lists (- or *), ordered lists (1. , 2.),
+ * markdown tables, and paragraphs.
+ * Fully immune to XSS and injection vulnerabilities: zero dangerouslySetInnerHTML.
+ */
+export function parseMarkdownBlocks(content: string): ParsedBlock[] {
+  if (!content || !content.trim()) return [];
+
+  // Normalize Windows newlines
+  const normalized = content.replace(/\r\n/g, "\n");
+
+  // Split inline sequential numbered items like "1. Do this. 2. Do that." into separate lines
+  const splitNumbered = normalized.replace(/(?<=[.!?])\s+(\d+[\.\)])\s+/g, "\n$1 ");
+
+  const rawLines = splitNumbered.split("\n");
+  const blocks: ParsedBlock[] = [];
+
+  let currentList: { type: "bullet-list" | "ordered-list"; items: string[] } | null = null;
+  let currentTable: { headers: string[]; rows: string[][] } | null = null;
+  let currentParagraphLines: string[] = [];
+
+  function flushParagraph() {
+    if (currentParagraphLines.length > 0) {
+      const text = currentParagraphLines.join(" ").trim();
+      if (text) blocks.push({ type: "paragraph", text });
+      currentParagraphLines = [];
+    }
+  }
+
+  function flushList() {
+    if (currentList && currentList.items.length > 0) {
+      blocks.push({ type: currentList.type, items: [...currentList.items] });
+      currentList = null;
+    }
+  }
+
+  function flushTable() {
+    if (currentTable && (currentTable.headers.length > 0 || currentTable.rows.length > 0)) {
+      blocks.push({
+        type: "table",
+        headers: currentTable.headers,
+        rows: currentTable.rows,
+      });
+      currentTable = null;
+    }
+  }
+
+  function flushAll() {
+    flushParagraph();
+    flushList();
+    flushTable();
+  }
+
+  for (let i = 0; i < rawLines.length; i++) {
+    const rawLine = rawLines[i];
+    const trimmed = rawLine.trim();
+
+    if (!trimmed) {
+      flushAll();
+      continue;
+    }
+
+    // Check for Table line e.g. | Col 1 | Col 2 |
+    if (trimmed.startsWith("|") && trimmed.endsWith("|") && trimmed.length >= 3) {
+      flushParagraph();
+      flushList();
+      const cells = trimmed
+        .slice(1, -1)
+        .split("|")
+        .map((c) => c.trim());
+      const isSeparator = cells.every((c) => /^:?-+:?$/.test(c));
+
+      if (isSeparator) {
+        continue;
+      }
+
+      if (!currentTable) {
+        currentTable = { headers: cells, rows: [] };
+      } else {
+        currentTable.rows.push(cells);
+      }
+      continue;
+    } else if (currentTable) {
+      flushTable();
+    }
+
+    // Check for Heading (#, ##, ###, ####)
+    const headingMatch = trimmed.match(/^(#{1,4})\s+(.+)$/);
+    if (headingMatch) {
+      flushParagraph();
+      flushList();
+      blocks.push({
+        type: "heading",
+        level: headingMatch[1].length,
+        text: headingMatch[2].trim(),
+      });
+      continue;
+    }
+
+    // Check for Unordered List item (- , * )
+    const bulletMatch = trimmed.match(/^[-*]\s+(.+)$/);
+    if (bulletMatch) {
+      flushParagraph();
+      const itemText = bulletMatch[1].trim();
+      if (currentList && currentList.type === "bullet-list") {
+        currentList.items.push(itemText);
+      } else {
+        flushList();
+        currentList = { type: "bullet-list", items: [itemText] };
+      }
+      continue;
+    }
+
+    // Check for Ordered / Numbered List item (1. , 1) )
+    const orderedMatch = trimmed.match(/^\d+[\.\)]\s+(.+)$/);
+    if (orderedMatch) {
+      flushParagraph();
+      const itemText = orderedMatch[1].trim();
+      if (currentList && currentList.type === "ordered-list") {
+        currentList.items.push(itemText);
+      } else {
+        flushList();
+        currentList = { type: "ordered-list", items: [itemText] };
+      }
+      continue;
+    }
+
+    // List continuation indent
+    if (currentList) {
+      if (rawLine.startsWith("  ") || rawLine.startsWith("\t")) {
+        const lastIdx = currentList.items.length - 1;
+        currentList.items[lastIdx] = `${currentList.items[lastIdx]} ${trimmed}`;
+        continue;
+      } else {
+        flushList();
+      }
+    }
+
+    // Bold section label line (e.g. "**Recommended Actions:**" or "**Budget Status:**")
+    if (/^\*\*[^*]+:\*\*\s*$/.test(trimmed)) {
+      flushParagraph();
+      blocks.push({ type: "paragraph", text: trimmed });
+      continue;
+    }
+
+    currentParagraphLines.push(trimmed);
+  }
+
+  flushAll();
+  return blocks;
+}
+
+/**
+ * Safely renders inline bold segments (**text**), inline code (`code`),
+ * italic (*text*), and safe links ([text](url)) into pure React elements.
+ */
+export function renderFormattedInline(text: string): React.ReactNode {
+  const tokens = text.split(/(`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*|\[[^\]]+\]\([^)]+\))/g);
+
+  return tokens.map((token, i) => {
+    if (token.startsWith("`") && token.endsWith("`") && token.length >= 2) {
+      return (
+        <code
+          key={i}
+          className="rounded bg-slate-200/70 px-1 py-0.5 font-mono text-[11px] font-medium text-indigo-700 dark:bg-slate-800 dark:text-indigo-300"
+        >
+          {token.slice(1, -1)}
+        </code>
+      );
+    }
+    if (token.startsWith("**") && token.endsWith("**") && token.length >= 4) {
+      return (
+        <strong key={i} className="font-semibold text-slate-950 dark:text-white">
+          {token.slice(2, -2)}
+        </strong>
+      );
+    }
+    if (token.startsWith("*") && token.endsWith("*") && token.length >= 2) {
+      return (
+        <em key={i} className="italic text-slate-800 dark:text-slate-200">
+          {token.slice(1, -1)}
+        </em>
+      );
+    }
+    const linkMatch = token.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+    if (linkMatch) {
+      const linkLabel = linkMatch[1];
+      const linkHref = linkMatch[2];
+      const isSafe =
+        linkHref.startsWith("https://") ||
+        linkHref.startsWith("http://") ||
+        linkHref.startsWith("#") ||
+        linkHref.startsWith("/");
+      if (isSafe) {
+        return (
+          <a
+            key={i}
+            href={linkHref}
+            target={linkHref.startsWith("#") ? undefined : "_blank"}
+            rel="noopener noreferrer"
+            className="underline text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 font-medium"
+          >
+            {linkLabel}
+          </a>
+        );
+      }
+    }
+    return token;
+  });
+}
+
+function renderBlocks(blocks: ParsedBlock[]): React.ReactNode {
+  return blocks.map((block, idx) => {
+    switch (block.type) {
+      case "heading": {
+        if (block.level === 1 || block.level === 2) {
+          return (
+            <h3
+              key={idx}
+              className="text-xs font-bold tracking-tight text-slate-950 dark:text-white mt-2.5 mb-1 first:mt-0"
+            >
+              {renderFormattedInline(block.text || "")}
+            </h3>
+          );
+        }
+        return (
+          <h4
+            key={idx}
+            className="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mt-2 mb-0.5 first:mt-0"
+          >
+            {renderFormattedInline(block.text || "")}
+          </h4>
+        );
+      }
+      case "bullet-list": {
+        return (
+          <ul key={idx} className="my-1.5 list-disc space-y-1 pl-4 text-xs">
+            {block.items?.map((item, itemIdx) => (
+              <li key={itemIdx} className="leading-relaxed">
+                {renderFormattedInline(item)}
+              </li>
+            ))}
+          </ul>
+        );
+      }
+      case "ordered-list": {
+        return (
+          <ol key={idx} className="my-1.5 list-decimal space-y-1 pl-4 text-xs">
+            {block.items?.map((item, itemIdx) => (
+              <li key={itemIdx} className="leading-relaxed">
+                {renderFormattedInline(item)}
+              </li>
+            ))}
+          </ol>
+        );
+      }
+      case "table": {
+        return (
+          <div
+            key={idx}
+            className="my-2 max-w-full overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700"
+          >
+            <table className="w-full min-w-[260px] text-left text-xs border-collapse">
+              {block.headers && (
+                <thead className="bg-slate-100/80 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700">
+                  <tr>
+                    {block.headers.map((h, hIdx) => (
+                      <th
+                        key={hIdx}
+                        className="px-2.5 py-1.5 font-bold text-slate-900 dark:text-slate-100"
+                      >
+                        {renderFormattedInline(h)}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+              )}
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                {block.rows?.map((row, rIdx) => (
+                  <tr
+                    key={rIdx}
+                    className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50"
+                  >
+                    {row.map((cell, cIdx) => (
+                      <td
+                        key={cIdx}
+                        className="px-2.5 py-1.5 text-slate-700 dark:text-slate-300"
+                      >
+                        {renderFormattedInline(cell)}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      }
+      case "paragraph":
+      default: {
+        return (
+          <p key={idx} className="leading-relaxed">
+            {renderFormattedInline(block.text || "")}
+          </p>
+        );
+      }
+    }
+  });
+}
+
 /**
  * Safely renders markdown-like text lines as pure React elements without dangerouslySetInnerHTML.
- * Supports paragraphs, bullet items, bold segments (**bold**).
+ * Supports headings, bullet lists, ordered lists, markdown tables, bold segments, and inline code.
  */
-function SafeMarkdownText({ content }: { content: string }) {
-  const paragraphs = content.split(/\n\s*\n/);
+export function SafeMarkdownText({ content }: { content: string }) {
+  const blocks = React.useMemo(() => parseMarkdownBlocks(content), [content]);
 
   return (
     <div className="space-y-2 text-xs leading-relaxed text-slate-800 dark:text-slate-200">
-      {paragraphs.map((para, pIdx) => {
-        const trimmedPara = para.trim();
-        if (!trimmedPara) return null;
-
-        const lines = trimmedPara.split("\n");
-        const isBulletList = lines.every((line) => line.trim().startsWith("- ") || line.trim().startsWith("* "));
-
-        if (isBulletList) {
-          return (
-            <ul key={pIdx} className="list-disc space-y-1 pl-4">
-              {lines.map((line, lIdx) => {
-                const itemText = line.trim().replace(/^[-*]\s+/, "");
-                return <li key={lIdx}>{renderFormattedInline(itemText)}</li>;
-              })}
-            </ul>
-          );
-        }
-
-        return <p key={pIdx}>{renderFormattedInline(trimmedPara)}</p>;
-      })}
+      {renderBlocks(blocks)}
     </div>
   );
 }
 
 /**
- * Safely renders inline bold segments (**text**) into <strong> tags.
+ * Assistant message bubble with restrained "Show full response" / "Show less"
+ * toggle for extensive replies, keeping proposal cards separate and interactive.
  */
-function renderFormattedInline(text: string): React.ReactNode {
-  const parts = text.split(/(\*\*.*?\*\*)/g);
-  return parts.map((part, i) => {
-    if (part.startsWith("**") && part.endsWith("**") && part.length >= 4) {
-      return (
-        <strong key={i} className="font-semibold text-slate-950 dark:text-white">
-          {part.slice(2, -2)}
-        </strong>
-      );
-    }
-    return part;
-  });
+export function AssistantMessageBubble({
+  msg,
+  inDrawer,
+  eventId,
+  eventDate,
+}: {
+  msg: DisplayMessage;
+  inDrawer?: boolean;
+  eventId: string;
+  eventDate?: string | null;
+}) {
+  const [isExpanded, setIsExpanded] = React.useState(false);
+  const blocks = React.useMemo(() => parseMarkdownBlocks(msg.content), [msg.content]);
+
+  // A response is considered extensive if length > 650 chars or contains more than 6 visual blocks
+  const isExtensive = msg.content.length > 650 || blocks.length > 6;
+
+  return (
+    <div className="space-y-3">
+      {/* Markdown Text Container */}
+      <div className="relative">
+        <div
+          id={`msg-content-${msg.id}`}
+          className={
+            isExtensive && !isExpanded
+              ? "max-h-56 overflow-hidden relative transition-all duration-300"
+              : "transition-all duration-300"
+          }
+        >
+          <SafeMarkdownText content={msg.content} />
+
+          {/* Fade Overlay when Collapsed */}
+          {isExtensive && !isExpanded && (
+            <div
+              className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-slate-50 dark:from-slate-800/90 to-transparent"
+              aria-hidden="true"
+            />
+          )}
+        </div>
+
+        {/* Accessible Show More / Show Less Toggle Button */}
+        {isExtensive && (
+          <div className="pt-2 flex justify-start">
+            <button
+              type="button"
+              onClick={() => setIsExpanded((prev) => !prev)}
+              aria-expanded={isExpanded}
+              aria-controls={`msg-content-${msg.id}`}
+              className="group inline-flex items-center gap-1.5 rounded-lg border border-slate-200/90 bg-white px-2.5 py-1 text-xs font-semibold text-indigo-600 shadow-2xs hover:bg-slate-50 hover:text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-slate-700 dark:bg-slate-900 dark:text-indigo-400 dark:hover:bg-slate-800 dark:hover:text-indigo-300 cursor-pointer"
+            >
+              <span>{isExpanded ? "Show less" : "Show full response"}</span>
+              <ChevronDown
+                className={`size-3.5 transition-transform duration-200 ${
+                  isExpanded ? "rotate-180" : ""
+                }`}
+                aria-hidden="true"
+              />
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Actionable Suggestions Blocks (Always visible, NEVER truncated) */}
+      {msg.suggestions && (
+        <div className="mt-4 pt-3 border-t border-slate-200/60 dark:border-slate-700/60 space-y-4">
+          {/* Suggested Tasks */}
+          {msg.suggestions.suggestedTasks && msg.suggestions.suggestedTasks.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900 dark:text-white">
+                <ListTodo className="size-3.5 text-indigo-600 dark:text-indigo-400" />
+                <span>Proposed Checklist Tasks</span>
+              </div>
+              <div className={`grid grid-cols-1 gap-2 ${inDrawer ? "" : "sm:grid-cols-2"}`}>
+                {msg.suggestions.suggestedTasks.map((task, idx) => (
+                  <SuggestedTaskCard
+                    key={`msg-${msg.id}-task-${idx}`}
+                    eventId={eventId}
+                    eventDate={eventDate}
+                    task={task}
+                    index={idx}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Suggested Budget Items */}
+          {msg.suggestions.suggestedBudgetItems && msg.suggestions.suggestedBudgetItems.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900 dark:text-white">
+                <IndianRupee className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>Proposed Budget Allocations</span>
+              </div>
+              <div className={`grid grid-cols-1 gap-2 ${inDrawer ? "" : "sm:grid-cols-2"}`}>
+                {msg.suggestions.suggestedBudgetItems.map((item, idx) => (
+                  <SuggestedBudgetItemCard
+                    key={`msg-${msg.id}-budget-${idx}`}
+                    eventId={eventId}
+                    item={item}
+                    index={idx}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Advisory Recommendations */}
+          {msg.suggestions.recommendations && msg.suggestions.recommendations.length > 0 && (
+            <RecommendationsList recommendations={msg.suggestions.recommendations} />
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function CopilotChatCard({
@@ -332,60 +737,12 @@ export function CopilotChatCard({
                 {msg.role === "user" ? (
                   <p className="text-xs leading-relaxed whitespace-pre-wrap">{msg.content}</p>
                 ) : (
-                  <div className="space-y-3">
-                    <SafeMarkdownText content={msg.content} />
-
-                    {/* Actionable Suggestions Blocks */}
-                    {msg.suggestions && (
-                      <div className="mt-4 pt-3 border-t border-slate-200/60 dark:border-slate-700/60 space-y-4">
-                        {/* Suggested Tasks */}
-                        {msg.suggestions.suggestedTasks && msg.suggestions.suggestedTasks.length > 0 && (
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900 dark:text-white">
-                              <ListTodo className="size-3.5 text-indigo-600 dark:text-indigo-400" />
-                              <span>Proposed Checklist Tasks</span>
-                            </div>
-                            <div className={`grid grid-cols-1 gap-2 ${inDrawer ? "" : "sm:grid-cols-2"}`}>
-                              {msg.suggestions.suggestedTasks.map((task, idx) => (
-                                <SuggestedTaskCard
-                                  key={`msg-${msg.id}-task-${idx}`}
-                                  eventId={eventId}
-                                  eventDate={eventDate}
-                                  task={task}
-                                  index={idx}
-                                />
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Suggested Budget Items */}
-                        {msg.suggestions.suggestedBudgetItems && msg.suggestions.suggestedBudgetItems.length > 0 && (
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900 dark:text-white">
-                              <IndianRupee className="size-3.5 text-emerald-600 dark:text-emerald-400" />
-                              <span>Proposed Budget Allocations</span>
-                            </div>
-                            <div className={`grid grid-cols-1 gap-2 ${inDrawer ? "" : "sm:grid-cols-2"}`}>
-                              {msg.suggestions.suggestedBudgetItems.map((item, idx) => (
-                                <SuggestedBudgetItemCard
-                                  key={`msg-${msg.id}-budget-${idx}`}
-                                  eventId={eventId}
-                                  item={item}
-                                  index={idx}
-                                />
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Advisory Recommendations */}
-                        {msg.suggestions.recommendations && msg.suggestions.recommendations.length > 0 && (
-                          <RecommendationsList recommendations={msg.suggestions.recommendations} />
-                        )}
-                      </div>
-                    )}
-                  </div>
+                  <AssistantMessageBubble
+                    msg={msg}
+                    inDrawer={inDrawer}
+                    eventId={eventId}
+                    eventDate={eventDate}
+                  />
                 )}
               </div>
             </div>

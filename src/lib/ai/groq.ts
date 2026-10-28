@@ -188,7 +188,7 @@ export async function sendGroqChatCompletion(
       model,
       messages: options.messages,
       temperature: options.temperature ?? 0.3,
-      max_tokens: options.maxTokens ?? 3000,
+      max_tokens: options.maxTokens ?? 1500,
     };
 
     const response = await fetch(GROQ_API_ENDPOINT, {

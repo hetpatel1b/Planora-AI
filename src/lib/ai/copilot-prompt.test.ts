@@ -164,6 +164,53 @@ describe("buildCopilotSystemPrompt", () => {
     expect(prompt).not.toContain("supabase");
     expect(prompt).not.toContain("bearer");
   });
+
+  it("enforces response conciseness, length targets, and recommendation limits", () => {
+    const prompt = buildCopilotSystemPrompt(baseContext);
+
+    expect(prompt).toContain("Response Conciseness & Length Targets (Concise by Default)");
+    expect(prompt).toContain("Simple factual questions: 1–3 sentences");
+    expect(prompt).toContain("General planning questions: 3–5 bullet points (approx. 50–120 words)");
+    expect(prompt).toContain("Never generate 7 or more recommendations by default");
+    expect(prompt).toContain("Detailed Mode on Explicit Request Only");
+  });
+
+  it("enforces zero-fluff writing principles and anti-repetition rules", () => {
+    const prompt = buildCopilotSystemPrompt(baseContext);
+
+    expect(prompt).toContain("Put your main conclusion or answer in the very first sentence");
+    expect(prompt).toContain("No Introductory Fluff**: Do NOT start with phrases like");
+    expect(prompt).toContain("Do NOT repeat the event name, date, or total budget unless directly necessary");
+    expect(prompt).toContain("No Fluff Outros**: Do NOT add generic closing paragraphs");
+  });
+
+  it("instructs copilot to decouple proposal cards from narrative text", () => {
+    const prompt = buildCopilotSystemPrompt(baseContext);
+
+    expect(prompt).toContain("Decoupling Proposal Cards from Narrative Text");
+    expect(prompt).toContain("Do NOT repeat every task title, description, or rupee amount inside the narrative reply text");
+    expect(prompt).toContain("The user interface renders dedicated interactive cards for users to review and confirm adding them");
+  });
+
+  it("defines standardized response patterns A through F", () => {
+    const prompt = buildCopilotSystemPrompt(baseContext);
+
+    expect(prompt).toContain("Standardized Response Patterns");
+    expect(prompt).toContain("Pattern A (Direct Answer)");
+    expect(prompt).toContain("Pattern B (Recommendations)");
+    expect(prompt).toContain("Pattern C (Budget Analysis)");
+    expect(prompt).toContain("Pattern D (Schedule Optimization)");
+    expect(prompt).toContain("Pattern E (Risk Alert)");
+    expect(prompt).toContain("Pattern F (Detailed Answer on Request)");
+  });
+
+  it("mandates Indian Rupee (INR ₹) localization with Indian number grouping", () => {
+    const prompt = buildCopilotSystemPrompt(baseContext);
+
+    expect(prompt).toContain("Currency & Localization (INR ₹)");
+    expect(prompt).toContain("Indian Rupees (INR, symbol ₹, locale en-IN)");
+    expect(prompt).toContain("Indian number grouping (e.g. ₹10,000, ₹1,25,000)");
+  });
 });
 
 describe("buildCopilotMessages", () => {

@@ -81,7 +81,7 @@ describe("SuggestedBudgetItemCard", () => {
 
     expect(html).toContain("Mocktail Bar Package");
     expect(html).toContain("Catering &amp; Bar");
-    expect(html).toContain("$1,250.50");
+    expect(html).toContain("₹1,250.50");
     expect(html).toContain("Includes 3 specialty mocktails and glassware");
     expect(html).toContain("Add to Budget");
   });
@@ -100,7 +100,7 @@ describe("SuggestedBudgetItemCard", () => {
 
     expect(html).toContain("Fairy Lights");
     expect(html).toContain("Decor &amp; Styling");
-    expect(html).toContain("$350.00");
+    expect(html).toContain("₹350.00");
     expect(html).toContain("Add to Budget");
   });
 });

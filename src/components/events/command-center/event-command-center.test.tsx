@@ -183,7 +183,7 @@ describe("EventCommandCenter Component", () => {
     expect(html).toContain("Target Date");
     expect(html).toContain("Palace of Fine Arts, San Francisco, CA");
     expect(html).toContain("650 guests");
-    expect(html).toContain("$95,000");
+    expect(html).toContain("₹95,000");
 
     // Progressive disclosure button
     expect(html).toContain("View Planning Brief &amp; Logistics");
@@ -225,8 +225,8 @@ describe("EventCommandCenter Component", () => {
     expect(html).toContain("50%");
     expect(html).toContain("1/2 completed");
 
-    // Budget: $95,000 target, $60,000 estimated, $57,000 actual, $38,000 remaining
-    expect(html).toContain("$38,000");
+    // Budget: ₹95,000 target, ₹60,000 estimated, ₹57,000 actual, ₹38,000 remaining
+    expect(html).toContain("₹38,000");
     expect(html).toContain("Budget Health");
 
     // Risk Radar

@@ -30,7 +30,7 @@ import {
   CheckCircle2,
   Clock,
   Calendar,
-  DollarSign,
+  IndianRupee,
   AlertCircle,
   AlertTriangle,
   Lightbulb,
@@ -520,7 +520,7 @@ export function PlanBlueprintViewer({
         <div className="flex flex-col gap-3 border-b border-slate-100 pb-4 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <DollarSign className="size-4 text-indigo-600 dark:text-indigo-400" />
+              <IndianRupee className="size-4 text-indigo-600 dark:text-indigo-400" />
               <h3 className="text-sm font-bold text-slate-950 dark:text-white">
                 Proposed Budget Allocations
               </h3>

@@ -24,7 +24,7 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
-import { DollarSign, Loader2, X, Plus, Edit2 } from "lucide-react";
+import { IndianRupee, Loader2, X, Plus, Edit2 } from "lucide-react";
 
 interface BudgetItemDialogProps {
   eventId: string;
@@ -280,7 +280,7 @@ function BudgetItemDialogModal({
                 Estimated Cost <span className="text-rose-500">*</span>
               </Label>
               <div className="relative">
-                <DollarSign className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
+                <IndianRupee className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
                 <Input
                   id="item-estimated"
                   type="number"
@@ -310,7 +310,7 @@ function BudgetItemDialogModal({
                 Actual Cost Spent
               </Label>
               <div className="relative">
-                <DollarSign className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
+                <IndianRupee className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
                 <Input
                   id="item-actual"
                   type="number"
@@ -327,7 +327,7 @@ function BudgetItemDialogModal({
                 />
               </div>
               <p id="item-actual-hint" className="text-[10px] text-slate-400">
-                Defaults to $0.00 if left blank.
+                Defaults to ₹0.00 if left blank.
               </p>
               {fieldErrors.actual_amount && (
                 <p id="item-actual-error" className="text-[11px] font-medium text-rose-500">

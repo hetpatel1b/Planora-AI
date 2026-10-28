@@ -70,7 +70,7 @@ describe("WhatIfSimulator Component", () => {
     expect(html).toContain("Projected Spend");
     expect(html).toContain("Baseline:");
     expect(html).toContain("Remaining Cushion");
-    expect(html).toContain("$15,000.00");
+    expect(html).toContain("₹15,000.00");
   });
 
   it("renders baseline line items with interactive adjustment controls", () => {
@@ -84,8 +84,8 @@ describe("WhatIfSimulator Component", () => {
 
     expect(html).toContain("Gourmet Buffet");
     expect(html).toContain("Sound &amp; Stage Lighting");
-    expect(html).toContain("$10,000.00");
-    expect(html).toContain("$5,000.00");
+    expect(html).toContain("₹10,000.00");
+    expect(html).toContain("₹5,000.00");
     expect(html).toContain('aria-label="Adjust estimated amount for Gourmet Buffet"');
   });
 

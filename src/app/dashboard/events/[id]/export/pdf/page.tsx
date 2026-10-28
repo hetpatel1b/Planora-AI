@@ -18,7 +18,7 @@ import {
   Calendar,
   MapPin,
   Users,
-  DollarSign,
+  IndianRupee,
   Tag,
   Clock,
   Sparkles,
@@ -237,7 +237,7 @@ export default async function PrintPdfPage({ params }: PrintPdfPageProps) {
 
             <div className="rounded-xl border border-slate-100 bg-slate-50/80 p-3 print:border-slate-200 print:bg-white">
               <div className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-slate-500">
-                <DollarSign className="size-3 text-indigo-600 print:text-slate-600" />
+                <IndianRupee className="size-3 text-indigo-600 print:text-slate-600" />
                 <span>Target Budget</span>
               </div>
               <p className="mt-1 text-xs font-bold text-slate-950">

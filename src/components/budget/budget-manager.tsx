@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
-  DollarSign,
+  IndianRupee,
   TrendingUp,
   TrendingDown,
   AlertTriangle,
@@ -140,7 +140,7 @@ export function BudgetManager({
         <div>
           <div className="flex items-center gap-2">
             <span className="inline-flex size-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400">
-              <DollarSign className="size-4" />
+              <IndianRupee className="size-4" />
             </span>
             <h2
               id="budget-manager-title"
@@ -248,7 +248,7 @@ export function BudgetManager({
           <div>
             <p className="font-semibold">No Target Budget Established</p>
             <p className="mt-0.5 text-amber-800 dark:text-amber-300">
-              Target budget is currently set to $0.00. You can record line items and actual expenses below, but overall budget utilization and remaining balance will reflect a $0.00 baseline. You can set an overall budget anytime in event settings.
+              Target budget is currently set to ₹0.00. You can record line items and actual expenses below, but overall budget utilization and remaining balance will reflect a ₹0.00 baseline. You can set an overall budget anytime in event settings.
             </p>
           </div>
         </div>
@@ -299,7 +299,7 @@ export function BudgetManager({
                 Target Budget
               </span>
               <span className="rounded-lg bg-indigo-50 p-1.5 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400">
-                <DollarSign className="size-4" />
+                <IndianRupee className="size-4" />
               </span>
             </div>
             <p className="mt-2 text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
@@ -518,7 +518,7 @@ export function BudgetManager({
                         ? `+${formatMoney(cat.variance)} over`
                         : cat.variance < 0
                         ? `-${formatMoney(Math.abs(cat.variance))} under`
-                        : "$0.00 on target"}
+                        : "₹0.00 on target"}
                     </span>
                   </div>
                   {targetBudget > 0 && (

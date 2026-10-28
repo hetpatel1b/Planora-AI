@@ -27,7 +27,7 @@ describe("buildCopilotSystemPrompt", () => {
     expect(prompt).toContain("Date: 2026-12-10");
     expect(prompt).toContain("Location: Metro Convention Center, Hall B");
     expect(prompt).toContain("Estimated Guests: 350");
-    expect(prompt).toContain("Target Budget: $45,000.00");
+    expect(prompt).toContain("Target Budget: ₹45,000.00");
     expect(prompt).toContain("Styling & Preferences: Modern minimalist aesthetic");
     expect(prompt).toContain("Operational Constraints: Strict 10:00 PM venue sound ordinance");
     expect(prompt).toContain("Cultural & Dietary Requirements: Halal, kosher, and vegan");
@@ -45,7 +45,7 @@ describe("buildCopilotSystemPrompt", () => {
     expect(prompt).toContain("Date: Not yet scheduled");
     expect(prompt).toContain("Location: Location not specified");
     expect(prompt).toContain("Estimated Guests: Unspecified");
-    expect(prompt).toContain("Target Budget: $0.00");
+    expect(prompt).toContain("Target Budget: ₹0.00");
     expect(prompt).not.toContain("Styling & Preferences:");
     expect(prompt).not.toContain("Operational Constraints:");
     expect(prompt).toContain("No budget records logged yet.");
@@ -70,12 +70,12 @@ describe("buildCopilotSystemPrompt", () => {
 
     const prompt = buildCopilotSystemPrompt(contextWithBudget);
 
-    expect(prompt).toContain("Target Budget: $45,000.00");
-    expect(prompt).toContain("Total Estimated Expenses: $42,000.00");
-    expect(prompt).toContain("Total Actual Spend: $15,000.00");
-    expect(prompt).toContain("Remaining Variance: $3,000.00");
-    expect(prompt).toContain("Venue & Facilities: $20,000.00 estimated");
-    expect(prompt).toContain("Catering & Bar: $15,000.00 estimated");
+    expect(prompt).toContain("Target Budget: ₹45,000.00");
+    expect(prompt).toContain("Total Estimated Expenses: ₹42,000.00");
+    expect(prompt).toContain("Total Actual Spend: ₹15,000.00");
+    expect(prompt).toContain("Remaining Variance: ₹3,000.00");
+    expect(prompt).toContain("Venue & Facilities: ₹20,000.00 estimated");
+    expect(prompt).toContain("Catering & Bar: ₹15,000.00 estimated");
   });
 
   it("incorporates checklist task summary when provided", () => {

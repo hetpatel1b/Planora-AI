@@ -64,7 +64,7 @@ export function dateInputToIsoString(dateInput?: string | null): string | null {
 }
 
 /**
- * Formats currency values cleanly with standard USD formatting.
+ * Formats currency values cleanly with standard INR (₹) formatting.
  * @deprecated Prefer importing directly from `@/lib/currency-utils`.
  */
 export { formatCurrency } from "@/lib/currency-utils";

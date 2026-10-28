@@ -11,7 +11,7 @@ import {
   Calendar,
   MapPin,
   Users,
-  DollarSign,
+  IndianRupee,
   Tag,
   Clock,
   Sliders,
@@ -136,7 +136,7 @@ export function EventSummaryBar({ event }: EventSummaryBarProps) {
           title={`Target Budget Ceiling: ${budgetFormatted}`}
         >
           <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300">
-            <DollarSign className="size-4" aria-hidden="true" />
+            <IndianRupee className="size-4" aria-hidden="true" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400">

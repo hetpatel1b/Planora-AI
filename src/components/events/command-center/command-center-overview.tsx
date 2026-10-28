@@ -10,7 +10,7 @@ import {
   AlertTriangle,
   AlertOctagon,
   Clock,
-  DollarSign,
+  IndianRupee,
   ListTodo,
   Layers,
   ArrowRight,
@@ -166,7 +166,7 @@ export function CommandCenterOverview({
                   : "bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400"
               } group-hover:scale-105 transition-transform`}
             >
-              <DollarSign className="size-4" aria-hidden="true" />
+              <IndianRupee className="size-4" aria-hidden="true" />
             </div>
           </div>
           <div className="mt-3">
@@ -358,7 +358,7 @@ export function CommandCenterOverview({
             {isOverBudget && (
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-xl border border-rose-200 bg-rose-50/70 p-3 text-xs dark:border-rose-900/60 dark:bg-rose-950/30">
                 <div className="flex items-start gap-2.5 min-w-0">
-                  <DollarSign className="size-4 shrink-0 text-rose-600 dark:text-rose-400 mt-0.5" aria-hidden="true" />
+                  <IndianRupee className="size-4 shrink-0 text-rose-600 dark:text-rose-400 mt-0.5" aria-hidden="true" />
                   <div className="min-w-0">
                     <span className="font-bold text-rose-950 dark:text-rose-200 block truncate">
                       Budget Ceiling Exceeded

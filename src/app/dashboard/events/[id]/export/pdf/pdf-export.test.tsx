@@ -276,7 +276,7 @@ describe("PDF Print View (Executive Dossier)", () => {
       expect(html).toContain("San Francisco Marriott Marquis");
       expect(html).toContain("500");
       expect(html).toContain("guests");
-      expect(html).toContain("$80,000.00");
+      expect(html).toContain("₹80,000.00");
 
       // Parameters
       expect(html).toContain("Modern tech aesthetic with sustainable decor");
@@ -351,7 +351,7 @@ describe("PDF Print View (Executive Dossier)", () => {
       expect(html).toContain("No itemized expense records logged.");
     });
 
-    it("renders unrecorded dash indicator for null actual amounts instead of $0.00", async () => {
+    it("renders unrecorded dash indicator for null actual amounts instead of ₹0.00", async () => {
       const itemWithNullActual: BudgetItemRow = {
         id: "budget-null-actual",
         event_id: eventId,
@@ -375,8 +375,8 @@ describe("PDF Print View (Executive Dossier)", () => {
       const html = renderToString(jsx);
 
       expect(html).toContain("Uncontracted Secondary Hall");
-      expect(html).toContain("$5,000.00");
-      // The table row must render dash indicator "—" rather than treating null as $0.00
+      expect(html).toContain("₹5,000.00");
+      // The table row must render dash indicator "—" rather than treating null as ₹0.00
       expect(html).toContain("—");
     });
   });

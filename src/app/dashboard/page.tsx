@@ -17,7 +17,7 @@ import {
   Clock,
   Plus,
   Users,
-  DollarSign,
+  IndianRupee,
   Briefcase,
   AlertCircle,
   FileSpreadsheet,
@@ -171,7 +171,7 @@ export default async function DashboardPage() {
             {/* Total Combined Budget */}
             <div className="flex items-start gap-3 rounded-xl border border-slate-100 bg-slate-50/60 p-4 dark:border-slate-800/60 dark:bg-slate-950/40">
               <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300">
-                <DollarSign className="size-4" aria-hidden="true" />
+                <IndianRupee className="size-4" aria-hidden="true" />
               </div>
               <div className="min-w-0">
                 <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
@@ -289,7 +289,7 @@ export default async function DashboardPage() {
                 </div>
                 <span>•</span>
                 <div className="inline-flex items-center gap-1.5 font-medium">
-                  <DollarSign className="size-3.5 text-violet-600 dark:text-violet-400" aria-hidden="true" />
+                  <IndianRupee className="size-3.5 text-violet-600 dark:text-violet-400" aria-hidden="true" />
                   <span>Integer-Cent Budget Variance</span>
                 </div>
                 <span>•</span>

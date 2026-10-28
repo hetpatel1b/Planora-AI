@@ -15,7 +15,7 @@ import {
   Calendar,
   MapPin,
   Users,
-  DollarSign,
+  IndianRupee,
   ArrowRight,
   Edit3,
   Trash2,
@@ -115,7 +115,7 @@ export function EventCard({ event, onDeleted }: EventCardProps) {
             </div>
 
             <div className="flex items-center gap-2 min-w-0" title={`Budget cap: ${budgetFormatted}`}>
-              <DollarSign className="size-3.5 text-violet-600 dark:text-violet-400 shrink-0" aria-hidden="true" />
+              <IndianRupee className="size-3.5 text-violet-600 dark:text-violet-400 shrink-0" aria-hidden="true" />
               <span className="font-semibold text-slate-900 dark:text-slate-100 truncate">
                 {budgetFormatted}
               </span>

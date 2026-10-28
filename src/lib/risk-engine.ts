@@ -130,7 +130,7 @@ export function evaluateEventRisks(
           category: "budget_overrun",
           severity: "medium",
           title: `Line-Item Cost Variance: ${item.item_name}`,
-          explanation: `Line item "${item.item_name}" in category "${item.category}" exceeded its estimate by $${(
+          explanation: `Line item "${item.item_name}" in category "${item.category}" exceeded its estimate by ₹${(
             overspendCents / 100
           ).toFixed(2)} (${percentOver}% over estimate).`,
           evidence: {
@@ -162,11 +162,11 @@ export function evaluateEventRisks(
       category: "budget_overrun",
       severity: "critical",
       title: "Actual Budget Overrun",
-      explanation: `Total recorded expenditures ($${(
+      explanation: `Total recorded expenditures (₹${(
         totalActualCents / 100
-      ).toFixed(2)}) exceed the target budget ($${(targetCents / 100).toFixed(
+      ).toFixed(2)}) exceed the target budget (₹${(targetCents / 100).toFixed(
         2
-      )}) by $${(overrunCents / 100).toFixed(2)}.`,
+      )}) by ₹${(overrunCents / 100).toFixed(2)}.`,
       evidence: {
         targetBudget: fromCents(targetCents),
         totalActual: fromCents(totalActualCents),
@@ -187,11 +187,11 @@ export function evaluateEventRisks(
       category: "budget_overrun",
       severity: "high",
       title: "Projected Budget Overallocation",
-      explanation: `Total planned allocations ($${(
+      explanation: `Total planned allocations (₹${(
         totalEstimatedCents / 100
-      ).toFixed(2)}) exceed the target budget ($${(targetCents / 100).toFixed(
+      ).toFixed(2)}) exceed the target budget (₹${(targetCents / 100).toFixed(
         2
-      )}) by $${(overallocationCents / 100).toFixed(2)}.`,
+      )}) by ₹${(overallocationCents / 100).toFixed(2)}.`,
       evidence: {
         targetBudget: fromCents(targetCents),
         totalEstimated: fromCents(totalEstimatedCents),
@@ -519,9 +519,9 @@ export function evaluateEventRisks(
             category: "missing_checklist",
             severity: "medium",
             title: `Missing Vendor Checklist: ${item.category}`,
-            explanation: `Major budget allocation logged for "${item.category}" ($${Number(
+            explanation: `Major budget allocation logged for "${item.category}" (₹${Number(
               item.estimated_amount
-            ).toLocaleString()}), but no vendor checklist tasks exist.`,
+            ).toLocaleString("en-IN")}), but no vendor checklist tasks exist.`,
             evidence: {
               category: item.category,
               estimatedAmount: Number(item.estimated_amount),

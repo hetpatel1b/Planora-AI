@@ -53,7 +53,7 @@ describe("EventForm Component", () => {
       { id: "event-date", label: "Target Event Date" },
       { id: "event-location", label: "Venue or Location" },
       { id: "guest-count", label: "Estimated Guest Count" },
-      { id: "event-budget", label: "Target Budget (USD $)" },
+      { id: "event-budget", label: "Target Budget (INR ₹)" },
       { id: "event-preferences", label: "Preferences &amp; Styling Guidelines" },
       { id: "event-constraints", label: "Planning Constraints &amp; Hard Boundaries" },
       { id: "event-cultural", label: "Cultural, Ceremony &amp; Dietary Requirements" },
@@ -106,7 +106,7 @@ describe("EventForm Component", () => {
   it("renders currency prefix adornment for Target Budget field", () => {
     const html = renderToString(<EventForm mode="create" />);
 
-    expect(html).toContain('aria-hidden="true">$</span>');
+    expect(html).toContain('aria-hidden="true">₹</span>');
     expect(html).toContain('id="event-budget"');
     expect(html).toContain('name="budget"');
     expect(html).toContain('type="number"');

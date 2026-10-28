@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { formatMoney } from "@/lib/currency-utils";
 import {
   ListTodo,
-  DollarSign,
+  IndianRupee,
   Calendar,
   Check,
   Loader2,
@@ -217,7 +217,7 @@ export function SuggestedBudgetItemCard({ eventId, item, index }: SuggestedBudge
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <span className="flex size-5 shrink-0 items-center justify-center rounded-md bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
-              <DollarSign className="size-3" />
+              <IndianRupee className="size-3" />
             </span>
             <h5 className="text-xs font-semibold text-slate-900 dark:text-white">
               {item.item_name}
@@ -269,7 +269,7 @@ export function SuggestedBudgetItemCard({ eventId, item, index }: SuggestedBudge
             </>
           ) : (
             <>
-              <DollarSign className="size-3 text-emerald-600 dark:text-emerald-400" />
+              <IndianRupee className="size-3 text-emerald-600 dark:text-emerald-400" />
               <span>Add to Budget</span>
             </>
           )}

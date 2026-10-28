@@ -2,17 +2,18 @@
  * Planora AI — Currency Formatting Utilities
  *
  * Centralized, consistent currency formatting utilities across Planora AI.
- * Encapsulates Intl.NumberFormat options, unit preservation (dollars, not cents),
+ * Localized India-first: Defaults to Indian Rupees (INR, ₹) and en-IN locale.
+ * Encapsulates Intl.NumberFormat options, unit preservation (rupees, not paisa),
  * precision configuration, and fallbacks.
  */
 
 export interface FormatCurrencyOptions {
   /**
-   * Currency code to format (ISO 4217). Defaults to "USD".
+   * Currency code to format (ISO 4217). Defaults to "INR".
    */
   currency?: string;
   /**
-   * BCP 47 language tag / locale. Defaults to "en-US".
+   * BCP 47 language tag / locale. Defaults to "en-IN".
    */
   locale?: string;
   /**
@@ -25,16 +26,16 @@ export interface FormatCurrencyOptions {
   maximumFractionDigits?: number;
 }
 
-const DEFAULT_USD_FORMATTER = new Intl.NumberFormat("en-US", {
+const DEFAULT_INR_FORMATTER = new Intl.NumberFormat("en-IN", {
   style: "currency",
-  currency: "USD",
+  currency: "INR",
   minimumFractionDigits: 0,
   maximumFractionDigits: 2,
 });
 
-const MONEY_USD_FORMATTER = new Intl.NumberFormat("en-US", {
+const MONEY_INR_FORMATTER = new Intl.NumberFormat("en-IN", {
   style: "currency",
-  currency: "USD",
+  currency: "INR",
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
@@ -48,9 +49,9 @@ function getFormatter(
   minDigits: number,
   maxDigits: number
 ): Intl.NumberFormat {
-  if (locale === "en-US" && currency === "USD") {
-    if (minDigits === 0 && maxDigits === 2) return DEFAULT_USD_FORMATTER;
-    if (minDigits === 2 && maxDigits === 2) return MONEY_USD_FORMATTER;
+  if (locale === "en-IN" && currency === "INR") {
+    if (minDigits === 0 && maxDigits === 2) return DEFAULT_INR_FORMATTER;
+    if (minDigits === 2 && maxDigits === 2) return MONEY_INR_FORMATTER;
   }
 
   const key = `${locale}_${currency}_${minDigits}_${maxDigits}`;
@@ -72,21 +73,21 @@ function getFormatter(
 }
 
 /**
- * Formats a numeric currency value (in dollars) with standard locale formatting.
+ * Formats a numeric currency value (in rupees) with standard Indian locale formatting.
  *
  * Default configuration:
- * - Locale: "en-US"
- * - Currency: "USD"
- * - minimumFractionDigits: 0 (displays whole dollars cleanly, e.g. "$1,500")
- * - maximumFractionDigits: 2 (preserves up to two decimal places, e.g. "$1,500.50")
+ * - Locale: "en-IN"
+ * - Currency: "INR"
+ * - minimumFractionDigits: 0 (displays whole rupees cleanly, e.g. "₹1,500" or "₹1,25,000")
+ * - maximumFractionDigits: 2 (preserves up to two decimal places, e.g. "₹1,500.50")
  */
 export function formatCurrency(
   amount: number,
   options?: FormatCurrencyOptions
 ): string {
   const validAmount = Number.isFinite(amount) ? amount : 0;
-  const locale = options?.locale ?? "en-US";
-  const currency = options?.currency ?? "USD";
+  const locale = options?.locale ?? "en-IN";
+  const currency = options?.currency ?? "INR";
   const minDigits = options?.minimumFractionDigits ?? 0;
   const maxDigits = options?.maximumFractionDigits ?? 2;
 
@@ -94,15 +95,15 @@ export function formatCurrency(
     return getFormatter(locale, currency, minDigits, maxDigits).format(validAmount);
   } catch {
     if (minDigits === 2 && maxDigits === 2) {
-      return `$${validAmount.toFixed(2)}`;
+      return `₹${validAmount.toFixed(2)}`;
     }
-    return `$${validAmount.toLocaleString(locale)}`;
+    return `₹${validAmount.toLocaleString(locale)}`;
   }
 }
 
 /**
- * Formats a numeric currency value (in dollars) with strict two decimal places.
- * Standard for ledger tables, detailed budget line items, and financial diffs (e.g. "$1,250.00").
+ * Formats a numeric currency value (in rupees) with strict two decimal places.
+ * Standard for ledger tables, detailed budget line items, and financial diffs (e.g. "₹1,250.00" or "₹1,25,000.00").
  */
 export function formatMoney(amount: number): string {
   return formatCurrency(amount, {

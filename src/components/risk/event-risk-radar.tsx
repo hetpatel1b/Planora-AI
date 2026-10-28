@@ -20,7 +20,7 @@ import {
   AlertTriangle,
   AlertCircle,
   Info,
-  DollarSign,
+  IndianRupee,
   Clock,
   CalendarDays,
   ListChecks,
@@ -147,7 +147,7 @@ export function EventRiskRadar({
   const getCategoryIcon = (category: RiskCategory) => {
     switch (category) {
       case "budget_overrun":
-        return <DollarSign className="size-4 text-emerald-600 dark:text-emerald-400" />;
+        return <IndianRupee className="size-4 text-emerald-600 dark:text-emerald-400" />;
       case "overdue_tasks":
         return <Clock className="size-4 text-rose-600 dark:text-rose-400" />;
       case "at_risk_tasks":

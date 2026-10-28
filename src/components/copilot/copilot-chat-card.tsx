@@ -22,7 +22,7 @@ import {
   AlertCircle,
   RotateCcw,
   ListTodo,
-  DollarSign,
+  IndianRupee,
   MessageSquare,
   X,
 } from "lucide-react";
@@ -363,7 +363,7 @@ export function CopilotChatCard({
                         {msg.suggestions.suggestedBudgetItems && msg.suggestions.suggestedBudgetItems.length > 0 && (
                           <div className="space-y-2">
                             <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900 dark:text-white">
-                              <DollarSign className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+                              <IndianRupee className="size-3.5 text-emerald-600 dark:text-emerald-400" />
                               <span>Proposed Budget Allocations</span>
                             </div>
                             <div className={`grid grid-cols-1 gap-2 ${inDrawer ? "" : "sm:grid-cols-2"}`}>

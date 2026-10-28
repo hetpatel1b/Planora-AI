@@ -113,9 +113,9 @@ describe("DashboardPage Server Component", () => {
     expect(html).toContain("Total Events");
     expect(html).toContain("2");
 
-    // Allocated Budget: $150,000 + $85,000 = $235,000
+    // Allocated Budget: ₹150,000 + ₹85,000 = ₹2,35,000
     expect(html).toContain("Allocated Budget");
-    expect(html).toContain("$235,000");
+    expect(html).toContain("₹2,35,000");
 
     // Planned Attendees: 500 + 350 = 850
     expect(html).toContain("Planned Attendees");

@@ -292,8 +292,8 @@ describe("askCopilotAction", () => {
     const sentMessages = groqSpy.mock.calls[0][0].messages;
     expect(sentMessages[0].role).toBe("system");
     expect(sentMessages[0].content).toContain("Global Tech Summit 2026");
-    expect(sentMessages[0].content).toContain("Target Budget: $50,000.00");
-    expect(sentMessages[0].content).toContain("Total Estimated Expenses: $15,000.00");
+    expect(sentMessages[0].content).toContain("Target Budget: ₹50,000.00");
+    expect(sentMessages[0].content).toContain("Total Estimated Expenses: ₹15,000.00");
     expect(sentMessages[1]).toEqual({
       role: "user",
       content: "What should I focus on for catering?",

@@ -581,7 +581,7 @@ export function WhatIfSimulator({
         </div>
         <div className="flex items-center gap-2">
           <div className="relative w-40">
-            <span className="absolute left-3 top-2 text-xs text-slate-400">$</span>
+            <span className="absolute left-3 top-2 text-xs text-slate-400">₹</span>
             <Input
               id="target-budget-override"
               type="number"
@@ -666,7 +666,7 @@ export function WhatIfSimulator({
                 </select>
               </div>
               <div>
-                <label className="text-[11px] text-slate-500 block mb-1">Estimated Cost ($)</label>
+                <label className="text-[11px] text-slate-500 block mb-1">Estimated Cost (₹)</label>
                 <Input
                   required
                   type="number"
@@ -755,7 +755,7 @@ export function WhatIfSimulator({
                     <td className="py-2.5 px-4">
                       {!isDeleted ? (
                         <div className="relative w-32">
-                          <span className="absolute left-2.5 top-1.5 text-xs text-slate-400">$</span>
+                          <span className="absolute left-2.5 top-1.5 text-xs text-slate-400">₹</span>
                           <Input
                             type="number"
                             step="0.01"
@@ -769,7 +769,7 @@ export function WhatIfSimulator({
                           />
                         </div>
                       ) : (
-                        <span className="font-mono text-slate-400">$0.00</span>
+                        <span className="font-mono text-slate-400">₹0.00</span>
                       )}
                     </td>
                     <td
@@ -812,7 +812,7 @@ export function WhatIfSimulator({
                     </Badge>
                   </td>
                   <td className="py-2.5 px-4 text-slate-500">{newItem.category}</td>
-                  <td className="py-2.5 px-4 font-mono text-slate-400">$0.00</td>
+                  <td className="py-2.5 px-4 font-mono text-slate-400">₹0.00</td>
                   <td className="py-2.5 px-4 font-mono font-semibold text-emerald-700 dark:text-emerald-300">
                     {formatMoney(newItem.estimated_amount)}
                   </td>

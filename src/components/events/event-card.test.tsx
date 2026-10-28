@@ -51,7 +51,7 @@ describe("EventCard Component", () => {
 
     expect(html).toContain("Moscone Center, San Francisco, CA");
     expect(html).toContain("1,250 attendees");
-    expect(html).toContain("$75,000");
+    expect(html).toContain("₹75,000");
     expect(html).toContain("title=\"Location: Moscone Center, San Francisco, CA\"");
     expect(html).toContain("title=\"Guest count: 1,250 attendees\"");
   });
@@ -103,7 +103,7 @@ describe("EventCard Component", () => {
     expect(html).toContain("Date TBD");
     expect(html).toContain("Location TBD");
     expect(html).toContain("0 attendees");
-    expect(html).toContain("$0");
+    expect(html).toContain("₹0");
   });
 
   it("renders primary workspace link with destination /dashboard/events/[id]", () => {

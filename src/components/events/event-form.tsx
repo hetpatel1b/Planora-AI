@@ -610,13 +610,13 @@ export function EventForm({
 
           {/* Estimated Budget */}
           <div className="space-y-1.5">
-            <Label htmlFor="event-budget">Target Budget (USD $)</Label>
+            <Label htmlFor="event-budget">Target Budget (INR ₹)</Label>
             <div className="relative flex items-center">
               <span
                 className="pointer-events-none absolute left-3 text-sm font-semibold text-slate-500 dark:text-slate-400"
                 aria-hidden="true"
               >
-                $
+                ₹
               </span>
               <Input
                 id="event-budget"

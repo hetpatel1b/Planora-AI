@@ -5,7 +5,7 @@ import {
   LayoutDashboard,
   Layers,
   ListTodo,
-  DollarSign,
+  IndianRupee,
   ShieldAlert,
 } from "lucide-react";
 
@@ -50,7 +50,7 @@ export function WorkspaceNav({
     {
       id: "budget",
       label: "Budget Manager",
-      icon: DollarSign,
+      icon: IndianRupee,
       badge: null,
     },
     {

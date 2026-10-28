@@ -24,6 +24,7 @@ import {
   ListTodo,
   DollarSign,
   MessageSquare,
+  X,
 } from "lucide-react";
 
 export interface CopilotChatCardProps {
@@ -31,6 +32,8 @@ export interface CopilotChatCardProps {
   eventDate?: string | null;
   eventName?: string;
   className?: string;
+  inDrawer?: boolean;
+  onClose?: () => void;
 }
 
 interface DisplayMessage {
@@ -101,6 +104,8 @@ export function CopilotChatCard({
   eventDate,
   eventName,
   className = "",
+  inDrawer = false,
+  onClose,
 }: CopilotChatCardProps) {
   const [messages, setMessages] = React.useState<DisplayMessage[]>([]);
   const [inputValue, setInputValue] = React.useState("");
@@ -202,7 +207,11 @@ export function CopilotChatCard({
 
   return (
     <div
-      className={`rounded-2xl border border-slate-200/90 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900 ${className}`}
+      className={
+        inDrawer
+          ? `flex flex-col h-full max-h-[100dvh] bg-white dark:bg-slate-900 overflow-hidden ${className}`
+          : `rounded-2xl border border-slate-200/90 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900 ${className}`
+      }
     >
       {/* Live Region for Screen Reader Feedback */}
       <div role="status" aria-live="polite" className="sr-only">
@@ -210,37 +219,49 @@ export function CopilotChatCard({
       </div>
 
       {/* Card Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 p-5 dark:border-slate-800">
-        <div className="flex items-center gap-3">
-          <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-700 text-white shadow-xs">
-            <Sparkles className="size-4.5" />
+      <div className="flex items-center justify-between gap-3 border-b border-slate-100 p-3.5 sm:p-5 dark:border-slate-800 shrink-0">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 text-white shadow-xs">
+            <Sparkles className="size-4.5" aria-hidden="true" />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-sm font-bold text-slate-950 dark:text-white">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="text-sm font-bold text-slate-950 dark:text-white truncate">
                 Conversational AI Copilot
               </h3>
-              <Badge variant="outline" className="text-[10px] text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900">
+              <Badge variant="outline" className="hidden xs:inline-flex text-[10px] text-violet-700 dark:text-violet-300 border-violet-200 dark:border-violet-900">
                 Phase 5 Copilot
               </Badge>
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
+            <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
               Interactive strategic advisor grounded in {eventName ? `"${eventName}"` : "your event"} data.
             </p>
           </div>
         </div>
 
-        {messages.length > 0 && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="xs"
-            onClick={() => setMessages([])}
-            className="text-slate-500 text-xs"
-          >
-            Clear conversation
-          </Button>
-        )}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {messages.length > 0 && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="xs"
+              onClick={() => setMessages([])}
+              className="text-slate-500 text-xs h-8 px-2"
+            >
+              Clear
+            </Button>
+          )}
+          {inDrawer && onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close AI Copilot"
+              className="flex size-9 min-h-[36px] min-w-[36px] items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 transition-colors"
+            >
+              <X className="size-4.5" aria-hidden="true" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Chat Messages Log */}
@@ -248,7 +269,11 @@ export function CopilotChatCard({
         ref={chatContainerRef}
         tabIndex={0}
         aria-label="Copilot Conversation Log"
-        className="max-h-[500px] min-h-[220px] overflow-y-auto p-5 space-y-4 focus-visible:outline-hidden"
+        className={
+          inDrawer
+            ? "flex-1 min-h-0 overflow-y-auto p-3.5 sm:p-5 space-y-4 focus-visible:outline-hidden overscroll-contain"
+            : "max-h-[500px] min-h-[220px] overflow-y-auto p-4 sm:p-5 space-y-4 focus-visible:outline-hidden"
+        }
       >
         {messages.length === 0 ? (
           <div className="py-6 text-center">
@@ -263,14 +288,14 @@ export function CopilotChatCard({
             </p>
 
             {/* Quick Starter Chips */}
-            <div className="mt-5 flex flex-wrap justify-center gap-2">
+            <div className="mt-4 flex flex-col sm:flex-row sm:flex-wrap sm:justify-center gap-2 max-w-md mx-auto">
               {STARTER_PROMPTS.map((promptText, i) => (
                 <button
                   key={i}
                   type="button"
                   disabled={isPending}
                   onClick={() => handleSubmit(promptText)}
-                  className="rounded-full border border-slate-200 bg-slate-50/80 px-3 py-1.5 text-xs text-slate-700 transition hover:border-indigo-300 hover:bg-indigo-50/50 hover:text-indigo-700 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-hidden dark:border-slate-800 dark:bg-slate-800/80 dark:text-slate-300 dark:hover:border-indigo-800 dark:hover:bg-indigo-950/40 dark:hover:text-indigo-300 cursor-pointer"
+                  className="w-full sm:w-auto text-left sm:text-center rounded-xl border border-slate-200/90 bg-slate-50/90 px-3 py-2 text-xs font-medium text-slate-700 transition hover:border-indigo-300 hover:bg-indigo-50/60 hover:text-indigo-700 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-hidden dark:border-slate-800 dark:bg-slate-800/80 dark:text-slate-300 dark:hover:border-indigo-800 dark:hover:bg-indigo-950/40 dark:hover:text-indigo-300 cursor-pointer break-words [overflow-wrap:anywhere]"
                 >
                   {promptText}
                 </button>
@@ -298,7 +323,7 @@ export function CopilotChatCard({
 
               {/* Message Bubble */}
               <div
-                className={`max-w-[85%] rounded-2xl p-4 shadow-2xs ${
+                className={`max-w-[92%] sm:max-w-[85%] rounded-2xl p-3 sm:p-4 shadow-2xs break-words [overflow-wrap:anywhere] min-w-0 ${
                   msg.role === "user"
                     ? "bg-indigo-600 text-white"
                     : "border border-slate-200/80 bg-slate-50/70 dark:border-slate-800 dark:bg-slate-800/50"
@@ -320,7 +345,7 @@ export function CopilotChatCard({
                               <ListTodo className="size-3.5 text-indigo-600 dark:text-indigo-400" />
                               <span>Proposed Checklist Tasks</span>
                             </div>
-                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                            <div className={`grid grid-cols-1 gap-2 ${inDrawer ? "" : "sm:grid-cols-2"}`}>
                               {msg.suggestions.suggestedTasks.map((task, idx) => (
                                 <SuggestedTaskCard
                                   key={`msg-${msg.id}-task-${idx}`}
@@ -341,7 +366,7 @@ export function CopilotChatCard({
                               <DollarSign className="size-3.5 text-emerald-600 dark:text-emerald-400" />
                               <span>Proposed Budget Allocations</span>
                             </div>
-                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                            <div className={`grid grid-cols-1 gap-2 ${inDrawer ? "" : "sm:grid-cols-2"}`}>
                               {msg.suggestions.suggestedBudgetItems.map((item, idx) => (
                                 <SuggestedBudgetItemCard
                                   key={`msg-${msg.id}-budget-${idx}`}
@@ -410,7 +435,7 @@ export function CopilotChatCard({
           e.preventDefault();
           handleSubmit();
         }}
-        className="border-t border-slate-100 p-3 dark:border-slate-800"
+        className="shrink-0 border-t border-slate-100 p-3 sm:p-4 dark:border-slate-800 bg-white dark:bg-slate-900 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]"
       >
         <div className="flex items-end gap-2 rounded-xl border border-slate-200 bg-white p-2 focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-950">
           <textarea
@@ -422,14 +447,14 @@ export function CopilotChatCard({
             disabled={isPending}
             placeholder="Ask Copilot about budget, schedule, or checklists... (Enter to send, Shift+Enter for newline)"
             aria-label="Ask the Copilot a planning question"
-            className="flex-1 resize-none bg-transparent px-2 py-1 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-hidden dark:text-slate-100 dark:placeholder:text-slate-500 min-h-[36px] max-h-[120px]"
+            className="flex-1 resize-none bg-transparent px-2 py-1 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-hidden dark:text-slate-100 dark:placeholder:text-slate-500 min-h-[38px] max-h-[120px]"
           />
 
           <Button
             type="submit"
             size="sm"
             disabled={isPending || !inputValue.trim()}
-            className="gap-1.5 h-8 px-3 rounded-lg"
+            className="shrink-0 gap-1.5 h-9 px-3 min-w-[44px] rounded-lg"
           >
             {isPending ? (
               <Loader2 className="size-3.5 animate-spin" />
@@ -442,9 +467,9 @@ export function CopilotChatCard({
           </Button>
         </div>
 
-        <div className="mt-1.5 flex items-center justify-between px-1 text-[10px] text-slate-400 dark:text-slate-500">
-          <span>AI advice is advisory. Add suggestions via confirmation buttons above.</span>
-          <span>{`${inputValue.length}/2,000`}</span>
+        <div className="mt-1.5 flex items-center justify-between px-1 text-[10px] text-slate-400 dark:text-slate-500 gap-2">
+          <span className="truncate">AI advice is advisory. Add suggestions via confirmation buttons above.</span>
+          <span className="shrink-0">{`${inputValue.length}/2,000`}</span>
         </div>
       </form>
     </div>

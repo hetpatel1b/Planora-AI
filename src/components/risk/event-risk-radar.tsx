@@ -363,11 +363,11 @@ export function EventRiskRadar({
                     <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block mb-1 font-sans">
                       Supporting Evidence
                     </span>
-                    <div className="flex flex-wrap gap-x-4 gap-y-1">
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 min-w-0">
                       {Object.entries(risk.evidence).map(([key, val]) => (
-                        <div key={key} className="flex items-center gap-1">
-                          <span className="text-slate-500">{key}:</span>
-                          <span className="font-semibold text-slate-900 dark:text-slate-200">
+                        <div key={key} className="flex items-center gap-1 min-w-0 break-words [overflow-wrap:anywhere]">
+                          <span className="text-slate-500 shrink-0">{key}:</span>
+                          <span className="font-semibold text-slate-900 dark:text-slate-200 break-all">
                             {typeof val === "boolean" ? String(val) : String(val ?? "n/a")}
                           </span>
                         </div>

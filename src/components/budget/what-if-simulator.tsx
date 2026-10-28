@@ -377,7 +377,7 @@ export function WhatIfSimulator({
       </div>
 
       {/* Scenario Tabs (Scenario A, Scenario B) */}
-      <div className="flex items-center gap-2 border-b border-indigo-100/60 pb-3 dark:border-indigo-900/40">
+      <div className="flex items-center gap-2 border-b border-indigo-100/60 pb-3 dark:border-indigo-900/40 overflow-x-auto no-scrollbar">
         {scenarios.map((s, idx) => (
           <button
             key={s.id}
@@ -386,7 +386,7 @@ export function WhatIfSimulator({
               setActiveScenarioIdx(idx);
               setIsComparisonView(false);
             }}
-            className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
+            className={`shrink-0 rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
               activeScenarioIdx === idx && !isComparisonView
                 ? "bg-indigo-600 text-white shadow-xs"
                 : "bg-white text-slate-700 hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"

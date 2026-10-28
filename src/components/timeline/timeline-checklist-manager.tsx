@@ -483,7 +483,7 @@ export function TimelineChecklistManager({
         )}
 
         {/* KPI Metrics Grid */}
-        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-5">
+        <div className="mt-6 grid grid-cols-1 xs:grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-5">
           {/* Total Tasks */}
           <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-3.5 dark:border-slate-800/60 dark:bg-slate-950/40">
             <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
@@ -547,7 +547,7 @@ export function TimelineChecklistManager({
           </div>
 
           {/* Vendor Checklist */}
-          <div className="col-span-2 sm:col-span-1 rounded-xl border border-slate-100 bg-slate-50/60 p-3.5 dark:border-slate-800/60 dark:bg-slate-950/40">
+          <div className="col-span-1 xs:col-span-2 sm:col-span-1 rounded-xl border border-slate-100 bg-slate-50/60 p-3.5 dark:border-slate-800/60 dark:bg-slate-950/40">
             <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
               Vendor Items
             </p>

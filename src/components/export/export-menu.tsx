@@ -128,7 +128,7 @@ export function ExportMenu({ eventId, eventName, className }: ExportMenuProps) {
           role="menu"
           aria-orientation="vertical"
           aria-labelledby="export-menu-trigger"
-          className="absolute right-0 z-50 mt-1.5 w-64 origin-top-right rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg ring-1 ring-black/5 focus:outline-none dark:border-slate-800 dark:bg-slate-950 dark:ring-white/10"
+          className="absolute right-0 z-50 mt-1.5 w-60 sm:w-64 max-w-[calc(100vw-2rem)] origin-top-right rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg ring-1 ring-black/5 focus:outline-none dark:border-slate-800 dark:bg-slate-950 dark:ring-white/10"
         >
           {errorMessage && (
             <div

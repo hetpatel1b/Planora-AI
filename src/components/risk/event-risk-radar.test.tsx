@@ -1,6 +1,12 @@
+/**
+ * @vitest-environment happy-dom
+ */
+
 import { describe, it, expect } from "vitest";
 import React from "react";
 import { renderToString } from "react-dom/server";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { EventRiskRadar } from "./event-risk-radar";
 import { evaluateEventRisks } from "@/lib/risk-engine";
 import type { EventRow } from "@/lib/validations/event";
@@ -239,5 +245,69 @@ describe("EventRiskRadar Component", () => {
 
     expect(html).toContain("Precomputed Injected Risk Title");
     expect(html).toContain("This assessment was injected directly via props without re-evaluation.");
+  });
+
+  describe("Interactive Category Filtering", () => {
+    it("interactively filters risk cards when selecting category tabs", async () => {
+      const user = userEvent.setup();
+      const budgetItems: BudgetItemRow[] = [
+        {
+          id: "item-overrun",
+          event_id: baseEvent.id,
+          user_id: "user-1",
+          plan_revision_id: null,
+          category: "Decor & Styling",
+          item_name: "Floral arrangements",
+          estimated_amount: 1000.0,
+          actual_amount: 60000.0, // > total event budget ($50k) -> budget_overrun
+          notes: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+      ];
+
+      const tasks: TaskRow[] = [
+        {
+          id: "task-overdue-1",
+          event_id: baseEvent.id,
+          user_id: "user-1",
+          plan_revision_id: null,
+          title: "Sign catering contract",
+          description: null,
+          status: "pending",
+          priority: "urgent",
+          due_date: "2026-01-01", // overdue_tasks
+          is_vendor_checklist: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+      ];
+
+      render(
+        <EventRiskRadar
+          event={baseEvent}
+          budgetItems={budgetItems}
+          tasks={tasks}
+        />
+      );
+
+      // Initially both risks are visible
+      expect(screen.getByText(/Actual Budget Overrun/)).toBeDefined();
+      expect(screen.getByText(/Overdue Task: Sign catering contract/)).toBeDefined();
+
+      // Click "Overdue Tasks" category tab
+      const overdueTab = screen.getByRole("tab", { name: /overdue tasks/i });
+      await user.click(overdueTab);
+
+      expect(screen.getByText(/Overdue Task: Sign catering contract/)).toBeDefined();
+      expect(screen.queryByText(/Actual Budget Overrun/)).toBeNull();
+
+      // Click "All Categories" tab
+      const allTab = screen.getByRole("tab", { name: /all categories/i });
+      await user.click(allTab);
+
+      expect(screen.getByText(/Actual Budget Overrun/)).toBeDefined();
+      expect(screen.getByText(/Overdue Task: Sign catering contract/)).toBeDefined();
+    });
   });
 });

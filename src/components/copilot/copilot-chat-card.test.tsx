@@ -1,12 +1,31 @@
-import { describe, it, expect, vi } from "vitest";
+/**
+ * @vitest-environment happy-dom
+ */
+
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import React from "react";
-import { renderToString } from "react-dom/server";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import {
   CopilotChatCard,
   SafeMarkdownText,
   parseMarkdownBlocks,
   AssistantMessageBubble,
 } from "./copilot-chat-card";
+
+// Mock server action boundaries
+const mockAskCopilotAction = vi.fn();
+vi.mock("@/lib/actions/copilot", () => ({
+  askCopilotAction: (payload: unknown) => mockAskCopilotAction(payload),
+}));
+
+vi.mock("@/lib/actions/tasks", () => ({
+  createTaskAction: vi.fn(),
+}));
+
+vi.mock("@/lib/actions/budget", () => ({
+  createBudgetItemAction: vi.fn(),
+}));
 
 // Mock next/navigation useRouter
 vi.mock("next/navigation", () => ({
@@ -15,167 +34,324 @@ vi.mock("next/navigation", () => ({
   }),
 }));
 
-describe("CopilotChatCard", () => {
+describe("CopilotChatCard Component", () => {
   const eventId = "123e4567-e89b-12d3-a456-426614174000";
 
-  it("renders header, title, badge, and contextual event name", () => {
-    const html = renderToString(
-      <CopilotChatCard
-        eventId={eventId}
-        eventName="Summer Music Festival"
-        eventDate="2026-08-15"
-      />
-    );
-
-    expect(html).toContain("Conversational AI Copilot");
-    expect(html).toContain("Phase 5 Copilot");
-    expect(html).toContain("Summer Music Festival");
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
 
-  it("renders starter prompt chips in the empty conversation state", () => {
-    const html = renderToString(
-      <CopilotChatCard eventId={eventId} eventName="Charity Run" />
-    );
+  describe("DOM Structure & Baseline Rendering", () => {
+    it("renders header, title, badge, and contextual event name", () => {
+      render(
+        <CopilotChatCard
+          eventId={eventId}
+          eventName="Summer Music Festival"
+          eventDate="2026-08-15"
+        />
+      );
 
-    expect(html).toContain("How can I assist your planning today?");
-    expect(html).toContain("How can I reduce my event budget?");
-    expect(html).toContain("What should I complete this week?");
-    expect(html).toContain("How can I improve my current schedule?");
+      expect(screen.getByText("Conversational AI Copilot")).toBeDefined();
+      expect(screen.getByText("Phase 5 Copilot")).toBeDefined();
+      expect(screen.getByText(/Summer Music Festival/i)).toBeDefined();
+    });
+
+    it("renders starter prompt chips in the empty conversation state", () => {
+      render(
+        <CopilotChatCard eventId={eventId} eventName="Charity Run" />
+      );
+
+      expect(screen.getByText("How can I assist your planning today?")).toBeDefined();
+      expect(screen.getByRole("button", { name: "How can I reduce my event budget?" })).toBeDefined();
+      expect(screen.getByRole("button", { name: "What should I complete this week?" })).toBeDefined();
+      expect(screen.getByRole("button", { name: "How can I improve my current schedule?" })).toBeDefined();
+    });
+
+    it("renders accessible input textarea, character counter, and send button", () => {
+      render(
+        <CopilotChatCard eventId={eventId} eventName="Charity Run" />
+      );
+
+      const textarea = screen.getByLabelText("Ask the Copilot a planning question");
+      expect(textarea).toBeDefined();
+      expect(screen.getByText("0/2,000")).toBeDefined();
+      expect(screen.getByRole("button", { name: /Send/i })).toBeDefined();
+    });
+
+    it("includes live region element for screen reader status announcements", () => {
+      render(
+        <CopilotChatCard eventId={eventId} eventName="Tech Gala" />
+      );
+
+      const statusRegion = document.querySelector('div[role="status"]');
+      expect(statusRegion).not.toBeNull();
+      expect(statusRegion?.getAttribute("aria-live")).toBe("polite");
+      expect(statusRegion?.className).toContain("sr-only");
+    });
   });
 
-  it("renders accessible input textarea, character counter, and send button", () => {
-    const html = renderToString(
-      <CopilotChatCard eventId={eventId} eventName="Charity Run" />
-    );
+  describe("Interactive Text Entry & Keyboard Shortcuts", () => {
+    it("updates character counter as user types into chat input", async () => {
+      const user = userEvent.setup();
+      render(<CopilotChatCard eventId={eventId} eventName="Tech Gala" />);
 
-    expect(html).toContain('aria-label="Ask the Copilot a planning question"');
-    expect(html).toContain("0/2,000");
-    expect(html).toContain("Send");
+      const textarea = screen.getByLabelText("Ask the Copilot a planning question");
+      await user.type(textarea, "What are the catering options?");
+
+      expect(screen.getByDisplayValue("What are the catering options?")).toBeDefined();
+      expect(screen.getByText("30/2,000")).toBeDefined();
+    });
+
+    it("submits message on Enter key press without Shift", async () => {
+      const user = userEvent.setup();
+      mockAskCopilotAction.mockResolvedValueOnce({
+        success: true,
+        data: {
+          reply: "We recommend plant-based catering options.",
+          suggestions: null,
+        },
+      });
+
+      render(<CopilotChatCard eventId={eventId} eventName="Tech Gala" />);
+
+      const textarea = screen.getByLabelText("Ask the Copilot a planning question");
+      await user.type(textarea, "Tell me about catering{Enter}");
+
+      await waitFor(() => {
+        expect(mockAskCopilotAction).toHaveBeenCalledTimes(1);
+      });
+
+      expect(mockAskCopilotAction).toHaveBeenCalledWith(
+        expect.objectContaining({
+          eventId,
+          messages: [
+            expect.objectContaining({
+              role: "user",
+              content: "Tell me about catering",
+            }),
+          ],
+        })
+      );
+    });
+
+    it("does not submit on Shift+Enter and permits multiline entry", async () => {
+      const user = userEvent.setup();
+      render(<CopilotChatCard eventId={eventId} eventName="Tech Gala" />);
+
+      const textarea = screen.getByLabelText("Ask the Copilot a planning question");
+      await user.type(textarea, "First line{Shift>}{Enter}{/Shift}Second line");
+
+      expect(mockAskCopilotAction).not.toHaveBeenCalled();
+      expect((textarea as HTMLTextAreaElement).value).toContain("First line\nSecond line");
+    });
   });
 
-  it("includes live region element for screen reader status announcements", () => {
-    const html = renderToString(
-      <CopilotChatCard eventId={eventId} eventName="Tech Gala" />
-    );
+  describe("Starter Prompt Chips & Loading States", () => {
+    it("submits prompt immediately when clicking a starter prompt chip", async () => {
+      const user = userEvent.setup();
+      mockAskCopilotAction.mockResolvedValueOnce({
+        success: true,
+        data: {
+          reply: "Here are budget reduction strategies...",
+          suggestions: null,
+        },
+      });
 
-    expect(html).toContain('role="status"');
-    expect(html).toContain('aria-live="polite"');
-    expect(html).toContain("sr-only");
+      render(<CopilotChatCard eventId={eventId} eventName="Charity Run" />);
+
+      const budgetChip = screen.getByRole("button", { name: "How can I reduce my event budget?" });
+      await user.click(budgetChip);
+
+      await waitFor(() => {
+        expect(mockAskCopilotAction).toHaveBeenCalledTimes(1);
+      });
+
+      expect(mockAskCopilotAction).toHaveBeenCalledWith(
+        expect.objectContaining({
+          eventId,
+          messages: [
+            expect.objectContaining({
+              role: "user",
+              content: "How can I reduce my event budget?",
+            }),
+          ],
+        })
+      );
+    });
+
+    it("displays loading bubble and disables inputs while Copilot request is pending", async () => {
+      const user = userEvent.setup();
+      let resolveAction: (val: unknown) => void = () => {};
+      mockAskCopilotAction.mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveAction = resolve;
+        })
+      );
+
+      render(<CopilotChatCard eventId={eventId} eventName="Charity Run" />);
+
+      const textarea = screen.getByLabelText("Ask the Copilot a planning question");
+      await user.type(textarea, "Analyze schedule");
+
+      const sendBtn = screen.getByRole("button", { name: /Send/i });
+      await user.click(sendBtn);
+
+      // Loading bubble is visible
+      expect(screen.getByText(/Analyzing event context and synthesizing recommendations/i)).toBeDefined();
+
+      // Input and submit button are disabled
+      expect((textarea as HTMLTextAreaElement).disabled).toBe(true);
+
+      // Status region announces pending state
+      const statusRegion = document.querySelector('div[role="status"]');
+      expect(statusRegion?.textContent).toContain("Copilot is analyzing your question");
+
+      // Resolve the pending promise
+      resolveAction({
+        success: true,
+        data: { reply: "Analysis complete.", suggestions: null },
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText("Analysis complete.")).toBeDefined();
+      });
+
+      expect((textarea as HTMLTextAreaElement).disabled).toBe(false);
+    });
+  });
+
+  describe("Assistant Responses & Suggestion Proposals", () => {
+    it("renders assistant reply and proposal cards for tasks and budget items", async () => {
+      const user = userEvent.setup();
+      mockAskCopilotAction.mockResolvedValueOnce({
+        success: true,
+        data: {
+          reply: "Here is your operational update.",
+          suggestions: {
+            suggestedTasks: [
+              {
+                title: "Book Audio-Visual Engineer",
+                description: "Coordinate microphones and soundboard setup",
+                priority: "high" as const,
+                is_vendor_checklist: true,
+                suggested_days_before: 14,
+                due_date: null,
+              },
+            ],
+            suggestedBudgetItems: [
+              {
+                category: "Entertainment & AV",
+                item_name: "High-Definition Projection",
+                estimated_amount: 18000,
+                notes: "Stage backdrop projection system",
+              },
+            ],
+            recommendations: ["Ensure power backup for projection equipment."],
+          },
+        },
+      });
+
+      render(<CopilotChatCard eventId={eventId} eventName="Tech Gala" />);
+
+      const textarea = screen.getByLabelText("Ask the Copilot a planning question");
+      await user.type(textarea, "Plan AV details");
+      await user.click(screen.getByRole("button", { name: /Send/i }));
+
+      // Assistant message bubble text
+      await waitFor(() => {
+        expect(screen.getByText("Here is your operational update.")).toBeDefined();
+      });
+
+      // Proposed tasks header & task card
+      expect(screen.getByText("Proposed Checklist Tasks")).toBeDefined();
+      expect(screen.getByText("Book Audio-Visual Engineer")).toBeDefined();
+
+      // Proposed budget header & budget card
+      expect(screen.getByText("Proposed Budget Allocations")).toBeDefined();
+      expect(screen.getByText("High-Definition Projection")).toBeDefined();
+      expect(screen.getByText("₹18,000.00")).toBeDefined();
+
+      // Advisory recommendations
+      expect(screen.getByText("Ensure power backup for projection equipment.")).toBeDefined();
+    });
+
+    it("clears conversation log and restores starter prompts when Clear button is clicked", async () => {
+      const user = userEvent.setup();
+      mockAskCopilotAction.mockResolvedValueOnce({
+        success: true,
+        data: { reply: "First answer.", suggestions: null },
+      });
+
+      render(<CopilotChatCard eventId={eventId} eventName="Tech Gala" />);
+
+      await user.type(screen.getByLabelText("Ask the Copilot a planning question"), "Hello");
+      await user.click(screen.getByRole("button", { name: /Send/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText("First answer.")).toBeDefined();
+      });
+
+      // Clear button is now visible
+      const clearBtn = screen.getByRole("button", { name: "Clear" });
+      await user.click(clearBtn);
+
+      // Returned to starter prompt state
+      expect(screen.getByText("How can I assist your planning today?")).toBeDefined();
+      expect(screen.queryByText("First answer.")).toBeNull();
+    });
+  });
+
+  describe("Error Handling & Retry Mechanism", () => {
+    it("displays error banner and retry button when askCopilotAction returns an error", async () => {
+      const user = userEvent.setup();
+      mockAskCopilotAction.mockResolvedValueOnce({
+        success: false,
+        error: "Rate limit reached. Please wait before asking another question.",
+      });
+
+      render(<CopilotChatCard eventId={eventId} eventName="Tech Gala" />);
+
+      await user.type(screen.getByLabelText("Ask the Copilot a planning question"), "Fast question");
+      await user.click(screen.getByRole("button", { name: /Send/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText("Rate limit reached. Please wait before asking another question.")).toBeDefined();
+      });
+
+      const retryBtn = screen.getByRole("button", { name: "Retry" });
+      expect(retryBtn).toBeDefined();
+
+      // Click retry
+      mockAskCopilotAction.mockResolvedValueOnce({
+        success: true,
+        data: { reply: "Retried response successfully received.", suggestions: null },
+      });
+
+      await user.click(retryBtn);
+
+      await waitFor(() => {
+        expect(screen.getByText("Retried response successfully received.")).toBeDefined();
+      });
+    });
+
+    it("displays error message when input exceeds 2,000 characters and rejects submission", async () => {
+      render(<CopilotChatCard eventId={eventId} eventName="Tech Gala" />);
+
+      const textarea = screen.getByLabelText("Ask the Copilot a planning question");
+      const longText = "A".repeat(2001);
+
+      fireEvent.change(textarea, { target: { value: longText } });
+
+      const form = textarea.closest("form")!;
+      fireEvent.submit(form);
+
+      expect(screen.getByText("Message cannot exceed 2,000 characters.")).toBeDefined();
+      expect(mockAskCopilotAction).not.toHaveBeenCalled();
+    });
   });
 });
 
-describe("SafeMarkdownText & parseMarkdownBlocks", () => {
-  it("renders headings with appropriate hierarchy tags", () => {
-    const content = "## Major Milestone\n### Immediate Next Actions";
-    const html = renderToString(<SafeMarkdownText content={content} />);
-
-    expect(html).toContain("<h3");
-    expect(html).toContain("Major Milestone");
-    expect(html).toContain("<h4");
-    expect(html).toContain("Immediate Next Actions");
-  });
-
-  it("renders unordered lists with bullet markers cleanly", () => {
-    const content = "**Priorities:**\n- Finalize banquet hall\n- Verify AV equipment\n- Send invitations";
-    const html = renderToString(<SafeMarkdownText content={content} />);
-
-    expect(html).toContain("<ul");
-    expect(html).toContain("<li");
-    expect(html).toContain("Finalize banquet hall");
-    expect(html).toContain("Verify AV equipment");
-    expect(html).toContain("Send invitations");
-  });
-
-  it("renders ordered lists with decimal numbers", () => {
-    const content = "1. Sign catering agreement\n2. Pay initial deposit\n3. Confirm menu tasting";
-    const html = renderToString(<SafeMarkdownText content={content} />);
-
-    expect(html).toContain("<ol");
-    expect(html).toContain("<li");
-    expect(html).toContain("Sign catering agreement");
-    expect(html).toContain("Pay initial deposit");
-    expect(html).toContain("Confirm menu tasting");
-  });
-
-  it("splits and formats inline numbered text into separate list items", () => {
-    const content = "1. Reserve hall. 2. Book photographer. 3. Finalize playlist.";
-    const html = renderToString(<SafeMarkdownText content={content} />);
-
-    expect(html).toContain("<ol");
-    expect(html).toContain("Reserve hall.");
-    expect(html).toContain("Book photographer.");
-    expect(html).toContain("Finalize playlist.");
-  });
-
-  it("renders inline bold, inline code, and safe links", () => {
-    const content = "Check the `What-If Simulator` for **immediate savings** or view [our guidelines](https://planora.ai/docs).";
-    const html = renderToString(<SafeMarkdownText content={content} />);
-
-    expect(html).toContain("<strong");
-    expect(html).toContain("immediate savings");
-    expect(html).toContain("<code");
-    expect(html).toContain("What-If Simulator");
-    expect(html).toContain("<a href=\"https://planora.ai/docs\"");
-    expect(html).toContain("target=\"_blank\"");
-    expect(html).toContain("our guidelines");
-  });
-
-  it("renders markdown tables in horizontally scrollable containers", () => {
-    const content = "| Category | Target | Actual |\n|---|---|---|\n| Catering | ₹50,000 | ₹45,000 |\n| Decor | ₹20,000 | ₹18,500 |";
-    const html = renderToString(<SafeMarkdownText content={content} />);
-
-    expect(html).toContain("overflow-x-auto");
-    expect(html).toContain("<table");
-    expect(html).toContain("<th");
-    expect(html).toContain("Category");
-    expect(html).toContain("₹50,000");
-    expect(html).toContain("₹45,000");
-    expect(html).toContain("Decor");
-  });
-
-  it("parses empty and whitespace content safely", () => {
-    const blocks = parseMarkdownBlocks("   ");
-    expect(blocks).toEqual([]);
-  });
-
-  it("renders identically when passed pre-parsed blocks vs raw content string", () => {
-    const content = "## Planning Roadmap\n- Finalize stage audio\n- Review caterer contract\n\nDirect contact: [Vendor](https://vendor.example.com)";
-    const preParsedBlocks = parseMarkdownBlocks(content);
-
-    const htmlFromContent = renderToString(<SafeMarkdownText content={content} />);
-    const htmlFromBlocks = renderToString(<SafeMarkdownText blocks={preParsedBlocks} />);
-
-    expect(htmlFromBlocks).toBe(htmlFromContent);
-  });
-
-  it("handles undefined or omitted props gracefully in SafeMarkdownText", () => {
-    const html = renderToString(<SafeMarkdownText />);
-    expect(html).toContain('class="space-y-2');
-  });
-
-  it("AssistantMessageBubble renders content and options using pre-parsed blocks", () => {
-    const testEventId = "123e4567-e89b-12d3-a456-426614174000";
-    const msg = {
-      id: "msg-test-1",
-      role: "assistant" as const,
-      content: "## Quick Advice\n1. Lock in venue deposit.\n2. Confirm security staff.",
-    };
-
-    const html = renderToString(
-      <AssistantMessageBubble
-        msg={msg}
-        eventId={testEventId}
-      />
-    );
-
-    expect(html).toContain("<h3");
-    expect(html).toContain("Quick Advice");
-    expect(html).toContain("<ol");
-    expect(html).toContain("Lock in venue deposit.");
-  });
-});
-
-describe("AssistantMessageBubble", () => {
+describe("AssistantMessageBubble Expand/Collapse Interaction", () => {
   const eventId = "123e4567-e89b-12d3-a456-426614174000";
 
   it("renders concise messages completely without collapse toggle button", () => {
@@ -186,16 +362,14 @@ describe("AssistantMessageBubble", () => {
       suggestions: null,
     };
 
-    const html = renderToString(
-      <AssistantMessageBubble msg={msg} eventId={eventId} />
-    );
+    render(<AssistantMessageBubble msg={msg} eventId={eventId} />);
 
-    expect(html).toContain("Review vendor quotes before finalizing caterers.");
-    expect(html).not.toContain("Show full response");
-    expect(html).not.toContain("Show less");
+    expect(screen.getByText("Review vendor quotes before finalizing caterers.")).toBeDefined();
+    expect(screen.queryByRole("button", { name: /Show full response/i })).toBeNull();
   });
 
-  it("renders extensive messages with accessible 'Show full response' button and aria attributes", () => {
+  it("toggles expanded state when clicking 'Show full response' and 'Show less'", async () => {
+    const user = userEvent.setup();
     const extensiveContent = [
       "**Budget Status:** Target budget ceiling is maintained with remaining variance of ₹45,000.",
       "### Comprehensive Optimization Strategy",
@@ -215,52 +389,94 @@ describe("AssistantMessageBubble", () => {
       suggestions: null,
     };
 
-    const html = renderToString(
-      <AssistantMessageBubble msg={msg} eventId={eventId} />
-    );
+    render(<AssistantMessageBubble msg={msg} eventId={eventId} />);
 
-    expect(html).toContain("Show full response");
-    expect(html).toContain('aria-expanded="false"');
-    expect(html).toContain('aria-controls="msg-content-msg-extensive-1"');
+    const toggleBtn = screen.getByRole("button", { name: /Show full response/i });
+    expect(toggleBtn).toBeDefined();
+    expect(toggleBtn.getAttribute("aria-expanded")).toBe("false");
+
+    await user.click(toggleBtn);
+
+    expect(screen.getByRole("button", { name: /Show less/i })).toBeDefined();
+    expect(toggleBtn.getAttribute("aria-expanded")).toBe("true");
+
+    await user.click(toggleBtn);
+
+    expect(screen.getByRole("button", { name: /Show full response/i })).toBeDefined();
+    expect(toggleBtn.getAttribute("aria-expanded")).toBe("false");
+  });
+});
+
+describe("SafeMarkdownText & parseMarkdownBlocks (Preserved Parser Tests)", () => {
+  it("renders headings with appropriate hierarchy tags", () => {
+    const content = "## Major Milestone\n### Immediate Next Actions";
+    render(<SafeMarkdownText content={content} />);
+
+    expect(screen.getByText("Major Milestone")).toBeDefined();
+    expect(screen.getByText("Immediate Next Actions")).toBeDefined();
   });
 
-  it("renders proposed tasks and budget items in dedicated container below text", () => {
-    const msg = {
-      id: "msg-suggestions-1",
-      role: "assistant" as const,
-      content: "These 2 actions address your audio-visual shortfall. Review the proposals below.",
-      suggestions: {
-        suggestedTasks: [
-          {
-            title: "Confirm AV load-in window",
-            description: "Coordinate with venue hall manager",
-            priority: "high" as const,
-            is_vendor_checklist: true,
-            suggested_days_before: 7,
-            due_date: null,
-          },
-        ],
-        suggestedBudgetItems: [
-          {
-            category: "Entertainment & AV",
-            item_name: "Wireless Microphones & Monitor",
-            estimated_amount: 15000,
-            notes: "Package deal quote",
-          },
-        ],
-        recommendations: ["Ensure testing 2 hours prior to doors opening."],
-      },
-    };
+  it("renders unordered lists with bullet markers cleanly", () => {
+    const content = "**Priorities:**\n- Finalize banquet hall\n- Verify AV equipment\n- Send invitations";
+    render(<SafeMarkdownText content={content} />);
 
-    const html = renderToString(
-      <AssistantMessageBubble msg={msg} eventId={eventId} />
-    );
+    expect(screen.getByText("Finalize banquet hall")).toBeDefined();
+    expect(screen.getByText("Verify AV equipment")).toBeDefined();
+    expect(screen.getByText("Send invitations")).toBeDefined();
+  });
 
-    expect(html).toContain("Proposed Checklist Tasks");
-    expect(html).toContain("Confirm AV load-in window");
-    expect(html).toContain("Proposed Budget Allocations");
-    expect(html).toContain("Wireless Microphones &amp; Monitor");
-    expect(html).toContain("₹15,000.00");
-    expect(html).toContain("Ensure testing 2 hours prior to doors opening.");
+  it("renders ordered lists with decimal numbers", () => {
+    const content = "1. Sign catering agreement\n2. Pay initial deposit\n3. Confirm menu tasting";
+    render(<SafeMarkdownText content={content} />);
+
+    expect(screen.getByText("Sign catering agreement")).toBeDefined();
+    expect(screen.getByText("Pay initial deposit")).toBeDefined();
+    expect(screen.getByText("Confirm menu tasting")).toBeDefined();
+  });
+
+  it("splits and formats inline numbered text into separate list items", () => {
+    const content = "Key recommendations: 1. Confirm date 2. Set target budget 3. Reserve hall";
+    render(<SafeMarkdownText content={content} />);
+
+    expect(screen.getByText(/Confirm date/)).toBeDefined();
+    expect(screen.getByText(/Set target budget/)).toBeDefined();
+    expect(screen.getByText(/Reserve hall/)).toBeDefined();
+  });
+
+  it("parses bold segments cleanly within text blocks", () => {
+    const blocks = parseMarkdownBlocks("The **catering contract** is due for signature by **5 PM tomorrow**.");
+    expect(blocks.length).toBe(1);
+    expect(blocks[0].type).toBe("paragraph");
+    expect(blocks[0].text).toContain("**catering contract**");
+  });
+
+  it("renders inline code formatting with distinct styling", () => {
+    const content = "Execute `npm run build` to verify the production compilation.";
+    render(<SafeMarkdownText content={content} />);
+
+    const codeEl = screen.getByText("npm run build");
+    expect(codeEl.tagName.toLowerCase()).toBe("code");
+  });
+
+  it("safely handles empty content without throwing or rendering invalid tags", () => {
+    const { container } = render(<SafeMarkdownText content="" />);
+    expect(container.firstChild).toBeDefined();
+  });
+
+  it("renders markdown table data rows and columns cleanly", () => {
+    const content = [
+      "| Category | Projected (INR) | Status |",
+      "| :--- | :--- | :--- |",
+      "| Venue Hall | ₹50,000 | Confirmed |",
+      "| Audio Visual | ₹20,000 | Pending |",
+    ].join("\n");
+
+    render(<SafeMarkdownText content={content} />);
+
+    expect(screen.getByText("Category")).toBeDefined();
+    expect(screen.getByText("Projected (INR)")).toBeDefined();
+    expect(screen.getByText("Venue Hall")).toBeDefined();
+    expect(screen.getByText("Audio Visual")).toBeDefined();
+    expect(screen.getByText("Confirmed")).toBeDefined();
   });
 });

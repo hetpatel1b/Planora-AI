@@ -13,7 +13,11 @@ describe("plan-templates", () => {
       expect(normalizeEventType("Quarterly Team Meeting")).toBe("corporate");
       expect(normalizeEventType("Charity Gala")).toBe("gala");
       expect(normalizeEventType("Fundraising Dinner")).toBe("gala");
-      expect(normalizeEventType("50th Birthday Party")).toBe("social");
+      expect(normalizeEventType("50th Birthday Party")).toBe("birthday");
+      expect(normalizeEventType("Kid's Birthday Celebration")).toBe("birthday");
+      expect(normalizeEventType("Community Cultural Fair")).toBe("community");
+      expect(normalizeEventType("Neighborhood Block Party")).toBe("community");
+      expect(normalizeEventType("Civic Gathering")).toBe("community");
       expect(normalizeEventType("Anniversary Dinner")).toBe("social");
       expect(normalizeEventType("Developer Meetup")).toBe("meetup");
       expect(normalizeEventType("Workshop & Training")).toBe("meetup");
@@ -31,6 +35,8 @@ describe("plan-templates", () => {
   describe("TEMPLATES integrity", () => {
     const requiredKeys = [
       "wedding",
+      "birthday",
+      "community",
       "conference",
       "corporate",
       "gala",

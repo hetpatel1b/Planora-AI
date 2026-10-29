@@ -22,9 +22,11 @@ export type EventStatus = (typeof EVENT_STATUSES)[number];
  * while allowing custom event type strings up to 50 characters.
  */
 export const EVENT_TYPE_PRESETS = [
+  { value: "wedding", label: "Wedding & Reception" },
+  { value: "birthday", label: "Birthday Party & Milestone" },
+  { value: "community", label: "Community Event & Gathering" },
   { value: "conference", label: "Conference & Summit" },
   { value: "corporate", label: "Corporate Offsite / Meeting" },
-  { value: "wedding", label: "Wedding & Reception" },
   { value: "meetup", label: "Community Meetup" },
   { value: "gala", label: "Gala & Fundraiser" },
   { value: "workshop", label: "Workshop & Training" },

@@ -40,10 +40,12 @@ export interface EventTypeTemplate {
 export function normalizeEventType(type: string): string {
   const t = type.trim().toLowerCase();
   if (t.includes("wed")) return "wedding";
+  if (t.includes("birth")) return "birthday";
+  if (t.includes("commun") || t.includes("civic") || t.includes("block")) return "community";
   if (t.includes("conf") || t.includes("summit")) return "conference";
   if (t.includes("corp") || t.includes("offsite") || t.includes("meeting")) return "corporate";
   if (t.includes("gala") || t.includes("fundrais") || t.includes("charit")) return "gala";
-  if (t.includes("birth") || t.includes("party") || t.includes("social") || t.includes("annivers")) return "social";
+  if (t.includes("party") || t.includes("social") || t.includes("annivers")) return "social";
   if (t.includes("meetup") || t.includes("workshop") || t.includes("train")) return "meetup";
   if (t.includes("exhibit") || t.includes("expo") || t.includes("trade")) return "exhibition";
   return "generic";
@@ -176,6 +178,277 @@ export const TEMPLATES: Record<string, EventTypeTemplate> = {
       "Secure wedding event liability insurance covering both ceremony and reception venues at least 60 days ahead.",
       "Assign an appointed point-of-contact so the wedding couple is never disturbed with operational vendor queries on event day.",
       "Buffer all timeline segments by 15 minutes to absorb inevitable photo and guest transit delays.",
+    ],
+  },
+
+  birthday: {
+    category: "Birthday Celebration & Milestone",
+    themes: [
+      "Milestone Luminary — Sophisticated metallic accents, bespoke marquee numbers, and champagne lounge",
+      "Vibrant Festival Carnival — Colorful balloon arches, interactive game booths, live treats cart, and dynamic entertainment",
+      "Chic Garden Birthday — Floral photo installations, al fresco dining, custom dessert bar, and acoustic melodies",
+      "Thematic Fantasy Adventure — Immersive character decor, costume elements, personalized props, and signature cake reveal",
+    ],
+    milestones: [
+      {
+        title: "Concept, Guest List & Venue",
+        timeframe: "6 Weeks Prior",
+        description: "Confirm party theme, finalize guest headcount, and reserve private party hall or outdoor venue.",
+        daysBefore: 42,
+      },
+      {
+        title: "Custom Bakery & Entertainment Booking",
+        timeframe: "3 Weeks Prior",
+        description: "Commission custom designer birthday cake and book DJ, magician, or live party entertainer.",
+        daysBefore: 21,
+      },
+      {
+        title: "Invitations & Vendor Check-in",
+        timeframe: "2 Weeks Prior",
+        description: "Dispatch digital invitations with RSVP deadlines, contract balloon decorator, and book photographer.",
+        daysBefore: 14,
+      },
+      {
+        title: "Menu Tasting & Party Favors",
+        timeframe: "1 Week Prior",
+        description: "Confirm catering menu, allergy requirements, beverage assortments, and assemble return gift bags.",
+        daysBefore: 7,
+      },
+      {
+        title: "Decor Setup & Cake Delivery Cues",
+        timeframe: "1 Day Prior",
+        description: "Align balloon installation schedule, test sound equipment, and coordinate cake transport logistics.",
+        daysBefore: 1,
+      },
+      {
+        title: "Birthday Party & Cake Cutting Execution",
+        timeframe: "Event Day",
+        description: "Coordinate guest arrival, initiate entertainment games, lead cake cutting ceremony, and distribute favors.",
+        daysBefore: 0,
+      },
+    ],
+    tasks: [
+      {
+        title: "Book birthday party venue or private dining room",
+        description: "Confirm outside food/cake policy, decor hanging rules, and music volume restrictions.",
+        priority: "urgent",
+        category: "Venue & Facilities",
+        is_vendor_checklist: true,
+        daysBefore: 42,
+      },
+      {
+        title: "Order custom birthday cake and specialty dessert table",
+        description: "Specify flavor tiers, theme design sketch, dietary options (eggless/gluten-free), and delivery timing.",
+        priority: "urgent",
+        category: "Catering & Bar",
+        is_vendor_checklist: true,
+        daysBefore: 21,
+      },
+      {
+        title: "Contract party entertainer, DJ, or games host",
+        description: "Brief emcee on guest of honor's favorite music, timeline for games, and cake cutting fanfare.",
+        priority: "high",
+        category: "Entertainment & AV",
+        is_vendor_checklist: true,
+        daysBefore: 21,
+      },
+      {
+        title: "Hire birthday photographer or photo booth service",
+        description: "Confirm coverage hours, shot list with family/friends, and customized photo strip graphics.",
+        priority: "medium",
+        category: "Photography & Video",
+        is_vendor_checklist: true,
+        daysBefore: 20,
+      },
+      {
+        title: "Book balloon stylist and thematic backdrop decorator",
+        description: "Finalize color palette, customized name marquee or neon sign, and stage photobooth focal area.",
+        priority: "high",
+        category: "Decor & Styling",
+        is_vendor_checklist: true,
+        daysBefore: 14,
+      },
+      {
+        title: "Send invitations and track guest attendance RSVPs",
+        description: "Collect dietary preferences and finalize headcount for catering orders.",
+        priority: "high",
+        category: "Marketing & Collateral",
+        is_vendor_checklist: false,
+        daysBefore: 14,
+      },
+      {
+        title: "Purchase and package personalized return gifts / party favors",
+        description: "Assemble curated gift bags with thank-you tags for all attending guests.",
+        priority: "medium",
+        category: "Favors & Gifts",
+        is_vendor_checklist: true,
+        daysBefore: 7,
+      },
+      {
+        title: "Finalize catering buffet menu and beverage station",
+        description: "Confirm appetisers, kid-friendly snack options, mocktails, and cake serving utensils.",
+        priority: "high",
+        category: "Catering & Bar",
+        is_vendor_checklist: true,
+        daysBefore: 5,
+      },
+      {
+        title: "Prepare candles, lighter, cake knife, and music cue for cake cutting",
+        description: "Ensure sparklers or candles are safely handled and sound cue is pre-tested.",
+        priority: "medium",
+        category: "Logistics & Rentals",
+        is_vendor_checklist: false,
+        daysBefore: 1,
+      },
+    ],
+    budgetDistribution: [
+      { category: "Catering & Bar", item_name: "Party Buffet, Beverage Service & Custom Cake", ratio: 38 },
+      { category: "Venue & Facilities", item_name: "Private Party Room / Lounge Rental", ratio: 22 },
+      { category: "Decor & Styling", item_name: "Balloon Arches, Backdrop & Themed Styling", ratio: 15 },
+      { category: "Entertainment & AV", item_name: "DJ, Emcee Games Host & Sound System", ratio: 12 },
+      { category: "Photography & Video", item_name: "Event Coverage & Candid Guest Photo Prints", ratio: 8 },
+      { category: "Favors & Gifts", item_name: "Curated Return Gifts & Favor Bags", ratio: 5 },
+    ],
+    recommendations: [
+      "Schedule the main cake cutting ceremony midway through the party when guest attendance reaches its peak.",
+      "Position the photo backdrop near the entrance with dedicated soft lighting so arriving guests take photos immediately.",
+      "Clearly label vegetarian, vegan, and nut-free food options in a dedicated buffet section.",
+      "Designate an attended gift table near the entry to record cards and presents safely.",
+    ],
+  },
+
+  community: {
+    category: "Community Event & Public Gathering",
+    themes: [
+      "Neighborhood Heritage & Culture Fair — Artisan craft showcases, folk performances, and communal dining tables",
+      "Civic Green & Wellness Fest — Eco-friendly bamboo staging, healthy food stalls, and community tree planting",
+      "Unity Block Carnival — Open-air music stages, community game kiosks, street food stalls, and local talent showcases",
+    ],
+    milestones: [
+      {
+        title: "Venue Sanctions & Municipal Permits",
+        timeframe: "8 Weeks Prior",
+        description: "Secure municipal park or public grounds permit, fire/police NOCs, and sound amplification sanction.",
+        daysBefore: 56,
+      },
+      {
+        title: "Staging, Infrastructure & Vendor Lineup",
+        timeframe: "4 Weeks Prior",
+        description: "Contract stage rentals, marquees/canopies, PA system, and invite neighborhood food & craft stallholders.",
+        daysBefore: 28,
+      },
+      {
+        title: "Volunteer Coordination & Public Outreach",
+        timeframe: "2 Weeks Prior",
+        description: "Mobilize community volunteers, distribute neighborhood flyers, and set emergency response protocols.",
+        daysBefore: 14,
+      },
+      {
+        title: "Site Infrastructure & Sanitation Check",
+        timeframe: "3 Days Prior",
+        description: "Confirm portable sanitation units, waste disposal bins, crowd barriers, and first aid booth supplies.",
+        daysBefore: 3,
+      },
+      {
+        title: "Sound Checks & Vendor Load-in Walkthrough",
+        timeframe: "1 Day Prior",
+        description: "Verify electrical power distribution, sound decibel limits, stage lighting, and stall demarcations.",
+        daysBefore: 1,
+      },
+      {
+        title: "Community Gathering Day Execution",
+        timeframe: "Event Day",
+        description: "Oversee public entry flow, manage stage schedule, coordinate volunteer teams, and manage ground safety.",
+        daysBefore: 0,
+      },
+    ],
+    tasks: [
+      {
+        title: "Obtain municipal venue permit and sound amplification clearance",
+        description: "Submit event plan to civic authorities, verify noise curfews, and clear public liability guidelines.",
+        priority: "urgent",
+        category: "Venue & Facilities",
+        is_vendor_checklist: true,
+        daysBefore: 56,
+      },
+      {
+        title: "Contract stage, marquee canopy, and crowd barrier rentals",
+        description: "Ensure weather-resistant tents, raised platform for performances, and safe guest pedestrian flow.",
+        priority: "urgent",
+        category: "Logistics & Rentals",
+        is_vendor_checklist: true,
+        daysBefore: 28,
+      },
+      {
+        title: "Book commercial PA sound system, stage microphones, and audio engineer",
+        description: "Verify sufficient wattage for outdoor sound projection and test wireless mics for community announcements.",
+        priority: "high",
+        category: "Entertainment & AV",
+        is_vendor_checklist: true,
+        daysBefore: 28,
+      },
+      {
+        title: "Coordinate community food stalls and potable drinking water points",
+        description: "Verify food safety standards, waste receptacles for each stall, and free drinking water dispenser tanks.",
+        priority: "high",
+        category: "Catering & Bar",
+        is_vendor_checklist: true,
+        daysBefore: 21,
+      },
+      {
+        title: "Arrange portable toilets, handwash stations, and waste management bins",
+        description: "Schedule dedicated sanitation staff and segregated dry/wet recycling collection throughout the event.",
+        priority: "high",
+        category: "Logistics & Rentals",
+        is_vendor_checklist: true,
+        daysBefore: 20,
+      },
+      {
+        title: "Recruit, brief, and assign volunteer teams for crowd ushering and info desks",
+        description: "Establish shift schedules, volunteer t-shirts/badges, and emergency radio communications.",
+        priority: "high",
+        category: "Staffing & Security",
+        is_vendor_checklist: false,
+        daysBefore: 14,
+      },
+      {
+        title: "Arrange certified first-aid station and on-site paramedic support",
+        description: "Stock medical supplies for heat exhaustion, minor injuries, and confirm ambulance access driveway.",
+        priority: "urgent",
+        category: "Staffing & Security",
+        is_vendor_checklist: true,
+        daysBefore: 14,
+      },
+      {
+        title: "Print directional banners, schedule boards, and community announcements",
+        description: "Install bold wayfinding signs to restrooms, first aid, stage, and parking areas.",
+        priority: "medium",
+        category: "Marketing & Collateral",
+        is_vendor_checklist: false,
+        daysBefore: 7,
+      },
+      {
+        title: "Conduct site safety and electrical generator inspection before public gates open",
+        description: "Check cable ramps across walkways, fire extinguisher placements, and emergency exits.",
+        priority: "urgent",
+        category: "Logistics & Rentals",
+        is_vendor_checklist: false,
+        daysBefore: 1,
+      },
+    ],
+    budgetDistribution: [
+      { category: "Logistics & Rentals", item_name: "Marquee Canopies, Staging, Seating & Barriers", ratio: 30 },
+      { category: "Entertainment & AV", item_name: "Outdoor PA System, Microphones & Sound Technician", ratio: 22 },
+      { category: "Venue & Facilities", item_name: "Public Park / Municipal Sanction & Power Generator", ratio: 18 },
+      { category: "Staffing & Security", item_name: "Security Guarding, First Aid & Sanitation Crew", ratio: 12 },
+      { category: "Catering & Bar", item_name: "Volunteer Meals & Community Water Stations", ratio: 10 },
+      { category: "Marketing & Collateral", item_name: "Wayfinding Banners, Fliers & Public Signage", ratio: 8 },
+    ],
+    recommendations: [
+      "Strictly verify municipal sound curfews and decibel limits early to avoid police intervention during outdoor events.",
+      "Position a clearly visible First Aid and Lost-and-Found booth immediately adjacent to the primary entrance.",
+      "Deploy multiple segregated waste and recycling collection points with volunteer reminders to keep public grounds clean.",
+      "Equip all volunteer leads with 2-way walkie-talkies or an active low-latency messaging broadcast group for real-time coordination.",
     ],
   },
 

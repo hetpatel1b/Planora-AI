@@ -5,9 +5,11 @@ import { aiPlanBlueprintSchema } from "@/lib/validations/plan";
 describe("plan-generator", () => {
   const FIXED_REF_DATE = new Date("2026-06-01T12:00:00.000Z");
 
-  // All 7 supported classifications in the TEMPLATES map, plus generic fallback
+  // Supported classifications in the TEMPLATES map, plus generic fallback
   const supportedTypes = [
     { type: "wedding", expectedCategory: "Wedding & Reception" },
+    { type: "birthday", expectedCategory: "Birthday Celebration & Milestone" },
+    { type: "community", expectedCategory: "Community Event & Public Gathering" },
     { type: "conference", expectedCategory: "Conference & Summit" },
     { type: "corporate", expectedCategory: "Corporate Offsite & Summit" },
     { type: "gala", expectedCategory: "Gala & Fundraiser" },

@@ -31,6 +31,7 @@ interface TaskDialogProps {
   onClose: () => void;
   onSuccess: (task: TaskRow) => void;
   task?: TaskRow | null;
+  initialIsVendor?: boolean;
 }
 
 export function TaskDialog({
@@ -39,17 +40,19 @@ export function TaskDialog({
   onClose,
   onSuccess,
   task,
+  initialIsVendor = false,
 }: TaskDialogProps) {
   if (!isOpen) return null;
 
   return (
     <TaskDialogModal
-      key={task ? `edit-${task.id}` : "create-task"}
+      key={task ? `edit-${task.id}` : `create-task-${initialIsVendor ? "vendor" : "general"}`}
       eventId={eventId}
       isOpen={isOpen}
       onClose={onClose}
       onSuccess={onSuccess}
       task={task}
+      initialIsVendor={initialIsVendor}
     />
   );
 }
@@ -60,6 +63,7 @@ function TaskDialogModal({
   onClose,
   onSuccess,
   task,
+  initialIsVendor = false,
 }: TaskDialogProps) {
   const isEditing = Boolean(task);
 
@@ -75,7 +79,7 @@ function TaskDialogModal({
     task?.status || "pending"
   );
   const [isVendorChecklist, setIsVendorChecklist] = React.useState(
-    task?.is_vendor_checklist || false
+    task ? task.is_vendor_checklist : initialIsVendor
   );
 
   const [isSubmitting, setIsSubmitting] = React.useState(false);

@@ -189,14 +189,16 @@ function buildEventSummary(
 }
 
 /**
- * Generates custom contextual recommendations based on specific event constraints and guest scale.
+ * Generates custom contextual recommendations based on specific event constraints, scale, location, budget, and timeline.
  */
 function buildContextualRecommendations(
   event: EventPlanInput,
-  template: EventTypeTemplate
+  template: EventTypeTemplate,
+  refDate: Date
 ): string[] {
   const recommendations = [...template.recommendations];
 
+  // 1. Guest Scale Dynamics
   const guestCount = event.guest_count && event.guest_count > 0 ? event.guest_count : 0;
   if (guestCount >= 200) {
     recommendations.push(
@@ -208,6 +210,69 @@ function buildContextualRecommendations(
     );
   }
 
+  // 2. Personal Styling & Theme Directives
+  if (event.preferences && event.preferences.trim()) {
+    const prefExcerpt = truncateExcerpt(event.preferences, 150);
+    recommendations.push(
+      `Incorporate organizer's custom styling directive: "${prefExcerpt}". Align floral, lighting, and decor vendors around this design palette.`
+    );
+  }
+
+  // 3. Location & Venue Operational Guidance
+  if (event.location && event.location.trim()) {
+    const locLower = event.location.toLowerCase();
+    const locExcerpt = truncateExcerpt(event.location, 60);
+    if (
+      locLower.includes("outdoor") ||
+      locLower.includes("lawn") ||
+      locLower.includes("garden") ||
+      locLower.includes("beach") ||
+      locLower.includes("park") ||
+      locLower.includes("terrace") ||
+      locLower.includes("farm")
+    ) {
+      recommendations.push(
+        `For the outdoor venue at ${locExcerpt}, secure rain canopy/tenting options and confirm portable power generators for audio/lighting.`
+      );
+    } else if (
+      locLower.includes("hall") ||
+      locLower.includes("banquet") ||
+      locLower.includes("hotel") ||
+      locLower.includes("ballroom") ||
+      locLower.includes("center")
+    ) {
+      recommendations.push(
+        `Verify venue loading dock access hours, stage ceiling clearance, and outside catering guidelines at ${locExcerpt}.`
+      );
+    }
+  }
+
+  // 4. Budget-Tier Strategic Guidance
+  const rawBudget = typeof event.budget === "number" ? event.budget : Number(event.budget) || 0;
+  if (rawBudget >= 1_000_000) {
+    recommendations.push(
+      "With a premium budget ceiling, contract a dedicated day-of event coordinator and multi-camera live video coverage."
+    );
+  } else if (rawBudget > 0 && rawBudget < 150_000) {
+    recommendations.push(
+      "To optimize budget efficiency, prioritize high-impact focal points (stage and entry backdrop) and negotiate bundled vendor services."
+    );
+  }
+
+  // 5. Timeline Urgency Guidance
+  if (event.event_date) {
+    const eventTime = new Date(event.event_date).getTime();
+    if (!isNaN(eventTime)) {
+      const daysUntil = Math.floor((eventTime - refDate.getTime()) / (1000 * 60 * 60 * 24));
+      if (daysUntil >= 0 && daysUntil <= 30) {
+        recommendations.push(
+          `With only ${daysUntil} days until the event date, place urgent vendor contract deposits within 48 hours to secure availability.`
+        );
+      }
+    }
+  }
+
+  // 6. Cultural and Dietary Protocols
   if (event.cultural_requirements && event.cultural_requirements.trim()) {
     const culturalExcerpt = truncateExcerpt(event.cultural_requirements, 200);
     recommendations.push(
@@ -215,6 +280,7 @@ function buildContextualRecommendations(
     );
   }
 
+  // 7. Venue Constraints
   if (event.constraints && event.constraints.trim()) {
     const constraintExcerpt = truncateExcerpt(event.constraints, 200);
     recommendations.push(
@@ -239,9 +305,14 @@ export function generateEventPlan(
   const templateKey = normalizeEventType(event.event_type || "");
   const template = TEMPLATES[templateKey] || TEMPLATES.generic;
 
-  // 1. High-level Summary & Themes
+  // 1. High-level Summary & Themes (integrating user preferences into theme concepts)
   const summary = buildEventSummary(event, template);
-  const themes = template.themes.slice(0, 5);
+  const userTheme = event.preferences?.trim()
+    ? truncateExcerpt(`Custom Aesthetic — ${event.preferences.trim()}`, 200)
+    : null;
+  const themes = userTheme
+    ? [userTheme, ...template.themes.filter((t) => t !== userTheme)].slice(0, 5)
+    : template.themes.slice(0, 5);
 
   // 2. Schedule Milestones
   const scheduleMilestones: PlanMilestone[] = template.milestones.map((m) => ({
@@ -267,7 +338,7 @@ export function generateEventPlan(
   const proposedBudgetItems = allocateBudgetItems(budgetCeiling, template.budgetDistribution);
 
   // 5. Contextual Recommendations
-  const keyRecommendations = buildContextualRecommendations(event, template);
+  const keyRecommendations = buildContextualRecommendations(event, template, refDate);
 
   // 6. Metadata Provenance
   const metadata = {

@@ -95,6 +95,10 @@ export async function askCopilotAction(
       const pendingTasks = allTasks.filter(
         (t) => t.status === "pending" || t.status === "in_progress"
       ).length;
+      const vendorTasksCount = allTasks.filter((t) => t.is_vendor_checklist).length;
+      const completedVendorTasksCount = allTasks.filter(
+        (t) => t.is_vendor_checklist && t.status === "completed"
+      ).length;
 
       const urgentOrHighTasks = allTasks
         .filter(
@@ -111,6 +115,8 @@ export async function askCopilotAction(
         totalTasks,
         completedTasks,
         pendingTasks,
+        vendorTasksCount,
+        completedVendorTasksCount,
         urgentOrHighTasks,
       };
     }

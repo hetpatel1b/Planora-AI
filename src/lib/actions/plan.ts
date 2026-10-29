@@ -4,6 +4,11 @@ import { revalidatePath } from "next/cache";
 import { createClient, getAuthenticatedUser } from "@/lib/supabase/server";
 import { getEventById } from "@/lib/actions/events";
 import { generateEventPlan, type EventPlanInput } from "@/lib/plan-generator";
+import { sendGroqChatCompletion } from "@/lib/ai/groq";
+import {
+  buildPlanGenerationMessages,
+  parsePlanBlueprintResponse,
+} from "@/lib/ai/plan-prompt";
 import {
   aiPlanBlueprintSchema,
   acceptPlanBlueprintInputSchema,
@@ -93,7 +98,47 @@ export async function generateEventPlanAction(
       cultural_requirements: event.cultural_requirements,
     };
 
-    // Deterministic generation
+    // 1. If Groq AI is configured, attempt GenAI blueprint generation
+    const hasGroqConfig = Boolean(process.env.GROQ_API_KEY?.trim());
+    if (hasGroqConfig) {
+      try {
+        const groqMessages = buildPlanGenerationMessages(planInput);
+        const completion = await sendGroqChatCompletion({
+          messages: groqMessages,
+          temperature: 0.4,
+          maxTokens: 2500,
+        });
+
+        if (completion.success) {
+          const parsed = parsePlanBlueprintResponse(completion.data.rawText, planInput, {
+            model: completion.data.model,
+          });
+
+          if (parsed.success) {
+            return {
+              success: true,
+              data: parsed.blueprint,
+            };
+          }
+          console.warn(
+            "[generateEventPlanAction] Groq AI response failed schema parsing, falling back to deterministic engine:",
+            parsed.error
+          );
+        } else {
+          console.warn(
+            "[generateEventPlanAction] Groq AI completion returned error, falling back to deterministic engine:",
+            completion.error
+          );
+        }
+      } catch (aiErr) {
+        console.warn(
+          "[generateEventPlanAction] Groq AI unexpected error, falling back to deterministic engine:",
+          aiErr instanceof Error ? aiErr.message : "Unknown"
+        );
+      }
+    }
+
+    // 2. Resilient Deterministic generation fallback
     const rawBlueprint = generateEventPlan(planInput);
 
     // Strict validation

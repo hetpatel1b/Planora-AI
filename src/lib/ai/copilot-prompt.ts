@@ -37,6 +37,8 @@ export interface CopilotEventContext {
     totalTasks: number;
     completedTasks: number;
     pendingTasks: number;
+    vendorTasksCount?: number;
+    completedVendorTasksCount?: number;
     urgentOrHighTasks?: Array<{ title: string; priority: string; dueDate?: string | null }>;
   } | null;
   activePlanSummary?: {
@@ -104,7 +106,14 @@ export function buildCopilotSystemPrompt(context: CopilotEventContext): string {
   // Format task checklist summary if present
   let taskBlock = "No checklist tasks logged yet.";
   if (context.taskSummary) {
-    const { totalTasks, completedTasks, pendingTasks, urgentOrHighTasks } = context.taskSummary;
+    const {
+      totalTasks,
+      completedTasks,
+      pendingTasks,
+      vendorTasksCount,
+      completedVendorTasksCount,
+      urgentOrHighTasks,
+    } = context.taskSummary;
     const urgentLines = (urgentOrHighTasks || [])
       .slice(0, 5)
       .map((t) => `  - [${t.priority.toUpperCase()}] ${t.title}${t.dueDate ? ` (Due: ${t.dueDate.slice(0, 10)})` : ""}`)
@@ -112,6 +121,9 @@ export function buildCopilotSystemPrompt(context: CopilotEventContext): string {
 
     taskBlock = [
       `- Total Tasks: ${totalTasks} (${completedTasks} completed, ${pendingTasks} pending)`,
+      typeof vendorTasksCount === "number" && vendorTasksCount > 0
+        ? `- Vendor Checklist: ${completedVendorTasksCount ?? 0} of ${vendorTasksCount} vendor deliverables confirmed`
+        : "",
       urgentLines ? `- Urgent / High Priority Tasks:\n${urgentLines}` : "",
     ]
       .filter(Boolean)

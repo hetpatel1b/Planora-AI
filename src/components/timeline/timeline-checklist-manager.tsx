@@ -132,10 +132,13 @@ export function TimelineChecklistManager({
     let pending = 0;
     let overdue = 0;
     let vendorCount = 0;
+    let completedVendorCount = 0;
 
     for (const t of tasks) {
-      if (t.status === "completed") completed++;
-      else if (t.status === "in_progress") inProgress++;
+      if (t.status === "completed") {
+        completed++;
+        if (t.is_vendor_checklist) completedVendorCount++;
+      } else if (t.status === "in_progress") inProgress++;
       else if (t.status === "pending") pending++;
 
       if (t.is_vendor_checklist) vendorCount++;
@@ -143,6 +146,8 @@ export function TimelineChecklistManager({
     }
 
     const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+    const vendorCompletionRate =
+      vendorCount > 0 ? Math.round((completedVendorCount / vendorCount) * 100) : 0;
 
     return {
       total,
@@ -151,7 +156,9 @@ export function TimelineChecklistManager({
       pending,
       overdue,
       vendorCount,
+      completedVendorCount,
       completionRate,
+      vendorCompletionRate,
     };
   }, [tasks]);
 
@@ -544,9 +551,16 @@ export function TimelineChecklistManager({
             <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
               Vendor Items
             </p>
-            <p className="mt-1 text-lg font-extrabold text-purple-600 dark:text-purple-400">
-              {metrics.vendorCount}
-            </p>
+            <div className="mt-1 flex items-baseline gap-1.5">
+              <span className="text-lg font-extrabold text-purple-600 dark:text-purple-400">
+                {metrics.vendorCount}
+              </span>
+              {metrics.vendorCount > 0 && (
+                <span className="text-xs text-slate-400">
+                  ({metrics.completedVendorCount} done)
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
@@ -701,14 +715,20 @@ export function TimelineChecklistManager({
             <ListTodo className="size-6" />
           </div>
           <h3 className="mt-4 text-sm font-bold text-slate-950 dark:text-white">
-            {tasks.length === 0 ? "No checklist tasks yet" : "No matching tasks found"}
+            {tasks.length === 0
+              ? "No checklist tasks yet"
+              : statusFilter === "vendor"
+              ? "No vendor checklist items found"
+              : "No matching tasks found"}
           </h3>
           <p className="mx-auto mt-1 max-w-sm text-xs text-slate-500 dark:text-slate-400">
             {tasks.length === 0
               ? "Generate an AI event blueprint above or click 'Add Task' to create your first milestone deliverable."
+              : statusFilter === "vendor"
+              ? "Vendor checklist items help track catering, venue contracts, decor, photography, and entertainment suppliers. Click 'Add Task' to log a vendor requirement."
               : "Try adjusting your search query, status tab, or priority filter to view more tasks."}
           </p>
-          {tasks.length === 0 && (
+          {(tasks.length === 0 || statusFilter === "vendor") && (
             <div className="mt-5">
               <Button
                 type="button"
@@ -717,7 +737,7 @@ export function TimelineChecklistManager({
                 className="gap-1.5 bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-500"
               >
                 <Plus className="size-3.5" />
-                <span>Add First Task</span>
+                <span>{statusFilter === "vendor" ? "Add Vendor Task" : "Add First Task"}</span>
               </Button>
             </div>
           )}
@@ -813,6 +833,7 @@ export function TimelineChecklistManager({
         isOpen={isAddOpen}
         onClose={() => setIsAddOpen(false)}
         onSuccess={handleTaskSaved}
+        initialIsVendor={statusFilter === "vendor"}
       />
 
       <TaskDialog

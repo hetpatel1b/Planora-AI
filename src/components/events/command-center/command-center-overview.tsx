@@ -44,6 +44,9 @@ export function CommandCenterOverview({
   // Task calculations
   const totalTasks = tasks.length;
   const completedTasks = tasks.filter((t) => t.status === "completed").length;
+  const vendorTasks = tasks.filter((t) => t.is_vendor_checklist);
+  const totalVendorCount = vendorTasks.length;
+  const completedVendorCount = vendorTasks.filter((t) => t.status === "completed").length;
   // Overdue task risks evaluated deterministically by the risk engine
   const overdueTaskRisks = assessment.risks.filter(
     (r: DetectedRisk) => r.category === "overdue_tasks"
@@ -137,6 +140,10 @@ export function CommandCenterOverview({
               {overdueCount > 0 ? (
                 <span className="font-semibold text-rose-600 dark:text-rose-400">
                   {overdueCount} overdue
+                </span>
+              ) : totalVendorCount > 0 ? (
+                <span className="text-violet-600 dark:text-violet-400 font-medium">
+                  {completedVendorCount}/{totalVendorCount} vendors confirmed
                 </span>
               ) : (
                 <span className="text-emerald-600 dark:text-emerald-400 font-medium">

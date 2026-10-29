@@ -161,12 +161,23 @@ function renderBlocks(blocks: ParsedBlock[]): React.ReactNode {
   });
 }
 
+export interface SafeMarkdownTextProps {
+  content?: string;
+  blocks?: ParsedBlock[];
+}
+
 /**
  * Safely renders markdown-like text lines as pure React elements without dangerouslySetInnerHTML.
  * Supports headings, bullet lists, ordered lists, markdown tables, bold segments, and inline code.
+ * Accepts optional pre-parsed `blocks` to eliminate duplicate parsing in parent message components.
  */
-export function SafeMarkdownText({ content }: { content: string }) {
-  const blocks = React.useMemo(() => parseMarkdownBlocks(content), [content]);
+export function SafeMarkdownText({ content, blocks: propBlocks }: SafeMarkdownTextProps) {
+  const blocks = React.useMemo(() => {
+    if (propBlocks) {
+      return propBlocks;
+    }
+    return content ? parseMarkdownBlocks(content) : [];
+  }, [propBlocks, content]);
 
   return (
     <div className="space-y-2 text-xs leading-relaxed text-slate-800 dark:text-slate-200">
@@ -208,7 +219,7 @@ export function AssistantMessageBubble({
               : "transition-all duration-300"
           }
         >
-          <SafeMarkdownText content={msg.content} />
+          <SafeMarkdownText blocks={blocks} content={msg.content} />
 
           {/* Fade Overlay when Collapsed */}
           {isExtensive && !isExpanded && (

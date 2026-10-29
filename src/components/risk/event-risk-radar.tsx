@@ -6,6 +6,7 @@ import {
   type DetectedRisk,
   type RiskCategory,
   type RiskSeverity,
+  type RiskAssessmentResult,
 } from "@/lib/risk-engine";
 import type { EventRow } from "@/lib/validations/event";
 import type { BudgetItemRow } from "@/lib/validations/budget";
@@ -32,6 +33,8 @@ export interface EventRiskRadarProps {
   budgetItems: BudgetItemRow[];
   tasks: TaskRow[];
   activePlanRevision?: PlanRevisionRow | null;
+  /** Optional precomputed risk assessment result to avoid redundant evaluation */
+  assessment?: RiskAssessmentResult;
 }
 
 type FilterCategory = "ALL" | RiskCategory;
@@ -41,18 +44,22 @@ export function EventRiskRadar({
   budgetItems,
   tasks,
   activePlanRevision,
+  assessment: propAssessment,
 }: EventRiskRadarProps) {
   const [selectedCategory, setSelectedCategory] = React.useState<FilterCategory>("ALL");
 
-  // Recalculate risks purely and deterministically from authoritative loaded data
+  // Use precomputed assessment if provided; otherwise evaluate purely and deterministically from loaded data
   const assessment = React.useMemo(() => {
+    if (propAssessment) {
+      return propAssessment;
+    }
     return evaluateEventRisks({
       event,
       budgetItems,
       tasks,
       activePlanRevision,
     });
-  }, [event, budgetItems, tasks, activePlanRevision]);
+  }, [propAssessment, event, budgetItems, tasks, activePlanRevision]);
 
   const { overallRiskLevel, risks, counts } = assessment;
 

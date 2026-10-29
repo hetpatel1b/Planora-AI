@@ -41,8 +41,19 @@ vi.mock("@/components/budget/budget-manager", () => ({
 }));
 
 vi.mock("@/components/risk/event-risk-radar", () => ({
-  EventRiskRadar: ({ event }: { event: { id: string } }) => (
-    <div data-testid="mock-risk-radar" data-event-id={event.id}>
+  EventRiskRadar: ({
+    event,
+    assessment,
+  }: {
+    event: { id: string };
+    assessment?: { counts?: { total: number } };
+  }) => (
+    <div
+      data-testid="mock-risk-radar"
+      data-event-id={event.id}
+      data-has-assessment={assessment ? "true" : "false"}
+      data-total-risks={assessment?.counts?.total ?? "none"}
+    >
       Mock Event Risk Radar
     </div>
   ),
@@ -288,5 +299,37 @@ describe("EventCommandCenter Component", () => {
     expect(html).toContain("Ask Copilot");
     expect(html).toContain('aria-haspopup="dialog"');
     expect(html).toContain('aria-expanded="false"');
+  });
+
+  it("passes precomputed risk assessment to EventRiskRadar to eliminate redundant calculations", () => {
+    const html = renderToString(
+      <EventCommandCenter
+        event={mockEvent}
+        budgetItems={mockBudgetItems}
+        planRevision={mockPlanRevision}
+        tasks={mockTasks}
+      />
+    );
+
+    expect(html).toContain('data-testid="mock-risk-radar"');
+    expect(html).toContain('data-has-assessment="true"');
+  });
+
+  it("configures all scroll sections with scroll-mt-28 offset classes for reliable navigation", () => {
+    const html = renderToString(
+      <EventCommandCenter
+        event={mockEvent}
+        budgetItems={mockBudgetItems}
+        planRevision={mockPlanRevision}
+        tasks={mockTasks}
+      />
+    );
+
+    // Verify all 5 spy sections have scroll-mt-28
+    const sectionIds = ["overview", "plan", "timeline", "budget", "risks"];
+    for (const id of sectionIds) {
+      expect(html).toContain(`id="${id}"`);
+      expect(html).toContain("scroll-mt-28");
+    }
   });
 });

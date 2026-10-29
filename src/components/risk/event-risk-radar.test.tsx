@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import React from "react";
 import { renderToString } from "react-dom/server";
 import { EventRiskRadar } from "./event-risk-radar";
+import { evaluateEventRisks } from "@/lib/risk-engine";
 import type { EventRow } from "@/lib/validations/event";
 import type { BudgetItemRow } from "@/lib/validations/budget";
 import type { TaskRow } from "@/lib/validations/task";
@@ -157,5 +158,86 @@ describe("EventRiskRadar Component", () => {
 
     expect(html).toContain("Line-Item Cost Variance: Floral arrangements");
     expect(html).toContain("View Budget");
+  });
+
+  it("renders identically when provided precomputed assessment prop vs internal evaluation", () => {
+    const budgetItems: BudgetItemRow[] = [
+      {
+        id: "item-overrun",
+        event_id: baseEvent.id,
+        user_id: "user-1",
+        plan_revision_id: null,
+        category: "Decor & Styling",
+        item_name: "Floral arrangements",
+        estimated_amount: 1000.0,
+        actual_amount: 1500.0,
+        notes: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+    ];
+
+    const precomputedAssessment = evaluateEventRisks({
+      event: baseEvent,
+      budgetItems,
+      tasks: [],
+    });
+
+    const htmlInternal = renderToString(
+      <EventRiskRadar
+        event={baseEvent}
+        budgetItems={budgetItems}
+        tasks={[]}
+      />
+    );
+
+    const htmlWithProp = renderToString(
+      <EventRiskRadar
+        event={baseEvent}
+        budgetItems={budgetItems}
+        tasks={[]}
+        assessment={precomputedAssessment}
+      />
+    );
+
+    expect(htmlWithProp).toBe(htmlInternal);
+  });
+
+  it("uses the precomputed assessment directly without re-evaluating", () => {
+    const customAssessment = {
+      overallRiskLevel: "critical" as const,
+      risks: [
+        {
+          id: "risk-custom-injected",
+          category: "budget_overrun" as const,
+          severity: "critical" as const,
+          title: "Precomputed Injected Risk Title",
+          explanation: "This assessment was injected directly via props without re-evaluation.",
+          evidence: {},
+          suggestedMitigation: "Direct mitigation.",
+          detectedAt: new Date().toISOString(),
+        },
+      ],
+      counts: {
+        critical: 1,
+        high: 0,
+        medium: 0,
+        low: 0,
+        total: 1,
+      },
+      assessedAt: new Date().toISOString(),
+    };
+
+    const html = renderToString(
+      <EventRiskRadar
+        event={baseEvent}
+        budgetItems={[]}
+        tasks={[]}
+        assessment={customAssessment}
+      />
+    );
+
+    expect(html).toContain("Precomputed Injected Risk Title");
+    expect(html).toContain("This assessment was injected directly via props without re-evaluation.");
   });
 });

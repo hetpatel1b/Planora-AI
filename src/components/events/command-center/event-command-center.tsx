@@ -56,10 +56,12 @@ export function EventCommandCenter({
     [event, budgetItems, tasks, planRevision]
   );
 
-  // Scroll spy to update active navigation item
+  // Scroll spy to update active navigation item with requestAnimationFrame throttling
   React.useEffect(() => {
     const sectionIds = ["overview", "plan", "timeline", "budget", "risks"];
-    const handleScroll = () => {
+    let rafId: number | null = null;
+
+    const updateActiveSection = () => {
       const scrollPosition = window.scrollY + 200;
 
       for (let i = sectionIds.length - 1; i >= 0; i--) {
@@ -67,15 +69,28 @@ export function EventCommandCenter({
         if (section) {
           const top = section.offsetTop;
           if (scrollPosition >= top) {
-            setActiveSection(sectionIds[i]);
+            const matchedId = sectionIds[i];
+            setActiveSection((current) => (current !== matchedId ? matchedId : current));
             break;
           }
         }
       }
+      rafId = null;
+    };
+
+    const handleScroll = () => {
+      if (rafId === null) {
+        rafId = window.requestAnimationFrame(updateActiveSection);
+      }
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (rafId !== null) {
+        window.cancelAnimationFrame(rafId);
+      }
+    };
   }, []);
 
   const handleOpenCopilot = React.useCallback(() => {
@@ -217,6 +232,7 @@ export function EventCommandCenter({
             budgetItems={budgetItems}
             tasks={tasks}
             activePlanRevision={planRevision}
+            assessment={assessment}
           />
         </section>
       </main>

@@ -137,6 +137,42 @@ describe("SafeMarkdownText & parseMarkdownBlocks", () => {
     const blocks = parseMarkdownBlocks("   ");
     expect(blocks).toEqual([]);
   });
+
+  it("renders identically when passed pre-parsed blocks vs raw content string", () => {
+    const content = "## Planning Roadmap\n- Finalize stage audio\n- Review caterer contract\n\nDirect contact: [Vendor](https://vendor.example.com)";
+    const preParsedBlocks = parseMarkdownBlocks(content);
+
+    const htmlFromContent = renderToString(<SafeMarkdownText content={content} />);
+    const htmlFromBlocks = renderToString(<SafeMarkdownText blocks={preParsedBlocks} />);
+
+    expect(htmlFromBlocks).toBe(htmlFromContent);
+  });
+
+  it("handles undefined or omitted props gracefully in SafeMarkdownText", () => {
+    const html = renderToString(<SafeMarkdownText />);
+    expect(html).toContain('class="space-y-2');
+  });
+
+  it("AssistantMessageBubble renders content and options using pre-parsed blocks", () => {
+    const testEventId = "123e4567-e89b-12d3-a456-426614174000";
+    const msg = {
+      id: "msg-test-1",
+      role: "assistant" as const,
+      content: "## Quick Advice\n1. Lock in venue deposit.\n2. Confirm security staff.",
+    };
+
+    const html = renderToString(
+      <AssistantMessageBubble
+        msg={msg}
+        eventId={testEventId}
+      />
+    );
+
+    expect(html).toContain("<h3");
+    expect(html).toContain("Quick Advice");
+    expect(html).toContain("<ol");
+    expect(html).toContain("Lock in venue deposit.");
+  });
 });
 
 describe("AssistantMessageBubble", () => {

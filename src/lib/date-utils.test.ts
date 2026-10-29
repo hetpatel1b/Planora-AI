@@ -5,6 +5,7 @@ import {
   dateInputToIsoString,
   getStatusBadgeVariant,
   formatStatusLabel,
+  isTaskOverdue,
 } from "./date-utils";
 
 describe("date-utils", () => {
@@ -76,6 +77,41 @@ describe("date-utils", () => {
       expect(formatStatusLabel("completed")).toBe("Completed");
       expect(formatStatusLabel("cancelled")).toBe("Cancelled");
       expect(formatStatusLabel("other_status")).toBe("other_status");
+    });
+  });
+
+  describe("isTaskOverdue", () => {
+    const NOW = new Date("2026-06-15T12:00:00.000Z").getTime();
+    const PAST = "2026-06-10T00:00:00.000Z";
+    const FUTURE = "2026-06-20T00:00:00.000Z";
+
+    it("returns true for a pending or in_progress task whose due date has passed", () => {
+      expect(isTaskOverdue(PAST, "pending", NOW)).toBe(true);
+      expect(isTaskOverdue(PAST, "in_progress", NOW)).toBe(true);
+      expect(isTaskOverdue(PAST, undefined, NOW)).toBe(true);
+    });
+
+    it("returns false for a completed or cancelled task even if past due", () => {
+      expect(isTaskOverdue(PAST, "completed", NOW)).toBe(false);
+      expect(isTaskOverdue(PAST, "cancelled", NOW)).toBe(false);
+      expect(isTaskOverdue(PAST, "COMPLETED", NOW)).toBe(false);
+      expect(isTaskOverdue(PAST, "Cancelled", NOW)).toBe(false);
+    });
+
+    it("returns false for tasks scheduled in the future", () => {
+      expect(isTaskOverdue(FUTURE, "pending", NOW)).toBe(false);
+      expect(isTaskOverdue(FUTURE, "in_progress", NOW)).toBe(false);
+    });
+
+    it("returns false for unscheduled, null, undefined, or empty due dates", () => {
+      expect(isTaskOverdue(null, "pending", NOW)).toBe(false);
+      expect(isTaskOverdue(undefined, "pending", NOW)).toBe(false);
+      expect(isTaskOverdue("", "pending", NOW)).toBe(false);
+      expect(isTaskOverdue("   ", "pending", NOW)).toBe(false);
+    });
+
+    it("returns false for invalid date strings", () => {
+      expect(isTaskOverdue("not-a-valid-date", "pending", NOW)).toBe(false);
     });
   });
 });

@@ -9,7 +9,11 @@ import { getLatestPlanRevisionAction } from "@/lib/actions/plan";
 import { calculateBudgetSummary, calculateCategoryBreakdown, getItemVariance } from "@/lib/budget-math";
 import { evaluateEventRisks } from "@/lib/risk-engine";
 import { formatCurrency, formatMoney } from "@/lib/currency-utils";
-import { formatEventDate, formatStatusLabel } from "@/lib/date-utils";
+import {
+  formatEventDate,
+  formatStatusLabel,
+  isTaskOverdue,
+} from "@/lib/date-utils";
 import { PrintButton } from "@/components/export/print-button";
 import { Button } from "@/components/ui/button";
 import { PriorityBadge } from "@/components/shared/priority-badge";
@@ -28,19 +32,10 @@ import {
   FileText,
   Info,
 } from "lucide-react";
-import type { AIPlanBlueprint } from "@/lib/validations/plan";
-
-function isTaskOverdue(
-  dueDateStr: string | null | undefined,
-  status: string,
-  referenceMs: number
-): boolean {
-  if (!dueDateStr || status === "completed" || status === "cancelled") {
-    return false;
-  }
-  const due = new Date(dueDateStr).getTime();
-  return !isNaN(due) && due < referenceMs;
-}
+import {
+  aiPlanBlueprintSchema,
+  persistedPlanBlueprintSchema,
+} from "@/lib/validations/plan";
 
 interface PrintPdfPageProps {
   params: Promise<{ id: string }>;
@@ -121,14 +116,27 @@ export default async function PrintPdfPage({ params }: PrintPdfPageProps) {
   });
 
   // Extract structured plan blueprint if active
-  let structuredBlueprint: AIPlanBlueprint | null = null;
-  if (
-    activePlanRevision?.structured_plan &&
-    typeof activePlanRevision.structured_plan === "object"
-  ) {
-    const raw = activePlanRevision.structured_plan as unknown as AIPlanBlueprint;
-    if (Array.isArray(raw.scheduleMilestones)) {
-      structuredBlueprint = raw;
+  let structuredBlueprint: {
+    summary: string;
+    themes: string[];
+    scheduleMilestones: Array<{
+      title: string;
+      timeframe: string;
+      description: string;
+      suggested_date?: string | null;
+    }>;
+    keyRecommendations: string[];
+  } | null = null;
+
+  if (activePlanRevision?.structured_plan) {
+    const planParse = aiPlanBlueprintSchema.safeParse(activePlanRevision.structured_plan);
+    if (planParse.success) {
+      structuredBlueprint = planParse.data;
+    } else {
+      const persistedParse = persistedPlanBlueprintSchema.safeParse(activePlanRevision.structured_plan);
+      if (persistedParse.success) {
+        structuredBlueprint = persistedParse.data;
+      }
     }
   }
 

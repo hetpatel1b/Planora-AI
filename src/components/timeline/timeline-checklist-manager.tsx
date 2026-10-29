@@ -3,7 +3,12 @@
 import * as React from "react";
 import type { TaskRow, TaskStatus } from "@/lib/validations/task";
 import { toggleTaskStatusAction } from "@/lib/actions/tasks";
-import { formatEventDate, getStatusBadgeVariant, formatStatusLabel } from "@/lib/date-utils";
+import {
+  formatEventDate,
+  getStatusBadgeVariant,
+  formatStatusLabel,
+  isTaskOverdue,
+} from "@/lib/date-utils";
 import { TaskDialog } from "@/components/timeline/task-dialog";
 import { DeleteTaskDialog } from "@/components/timeline/delete-task-dialog";
 import { Button } from "@/components/ui/button";
@@ -38,21 +43,6 @@ type ViewMode = "timeline" | "checklist";
 type FilterStatus = "ALL" | "pending" | "in_progress" | "completed" | "vendor";
 
 
-/**
- * Evaluates whether a task is overdue relative to current local time.
- * Supports passing an optional reference timestamp (nowMs) to avoid repeated allocations in loops.
- */
-function isTaskOverdue(
-  dueDateStr: string | null,
-  status: TaskStatus,
-  nowMs: number = Date.now()
-): boolean {
-  if (!dueDateStr || status === "completed" || status === "cancelled") {
-    return false;
-  }
-  const due = new Date(dueDateStr).getTime();
-  return due < nowMs;
-}
 
 /**
  * Categorizes a task into a timeline bucket.
@@ -124,7 +114,10 @@ export function TimelineChecklistManager({
     }
   };
 
-  // Prop synchronization on server revalidation
+  // Adjust state during render when server revalidation delivers new authoritative tasks.
+  // Aligns with official React documentation for "adjusting state when a prop changes":
+  // React immediately restarts the render with fresh state before DOM paint, avoiding
+  // the cascading renders and post-paint flicker flagged by eslint-plugin-react-hooks.
   const [prevInitialTasks, setPrevInitialTasks] = React.useState(initialTasks);
   if (initialTasks !== prevInitialTasks) {
     setPrevInitialTasks(initialTasks);

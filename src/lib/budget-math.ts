@@ -7,7 +7,7 @@
  */
 
 /**
- * Converts a dollar amount into integer cents safely.
+ * Converts a currency amount into integer cents (or paisa) safely.
  */
 export function toCents(amount: number | string | null | undefined): number {
   if (amount === null || amount === undefined || amount === "") return 0;
@@ -17,7 +17,7 @@ export function toCents(amount: number | string | null | undefined): number {
 }
 
 /**
- * Converts integer cents back into a standard two-decimal dollar figure.
+ * Converts integer cents back into a standard two-decimal currency figure.
  */
 export function fromCents(cents: number): number {
   return cents / 100;

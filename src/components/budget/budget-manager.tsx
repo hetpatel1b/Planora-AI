@@ -77,7 +77,10 @@ export function BudgetManager({
     }
   };
 
-  // Sync state if initialItems prop updates
+  // Adjust state during render when server revalidation delivers new authoritative items.
+  // Aligns with official React documentation for "adjusting state when a prop changes":
+  // React immediately restarts the render with fresh state before DOM paint, avoiding
+  // the cascading renders and post-paint flicker flagged by eslint-plugin-react-hooks.
   const [prevInitialItems, setPrevInitialItems] = React.useState(initialItems);
   if (initialItems !== prevInitialItems) {
     setPrevInitialItems(initialItems);

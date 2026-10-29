@@ -160,6 +160,23 @@ export const aiPlanBlueprintSchema = z
   .strict();
 
 /**
+ * Lenient validation schema for reading persisted or historical plan blueprints.
+ * Prevents UI, PDF, and risk calculation crashes if older revisions contain
+ * optional or empty arrays.
+ */
+export const persistedPlanBlueprintSchema = z
+  .object({
+    summary: z.string().trim().min(1).max(5000),
+    themes: z.array(z.string().trim()).default([]),
+    scheduleMilestones: z.array(planMilestoneSchema).default([]),
+    suggestedTasks: z.array(z.record(z.string(), z.unknown())).default([]),
+    proposedBudgetItems: z.array(z.record(z.string(), z.unknown())).default([]),
+    keyRecommendations: z.array(z.string().trim()).default([]),
+    metadata: z.record(z.string(), z.unknown()).optional(),
+  })
+  .passthrough();
+
+/**
  * Plan Revision Persistence Validation Schema.
  * Matches public.plan_revisions table:
  *   event_id UUID NOT NULL

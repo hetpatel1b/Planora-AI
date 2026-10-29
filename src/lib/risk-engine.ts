@@ -2,7 +2,11 @@ import { toCents, fromCents } from "@/lib/budget-math";
 import type { EventRow } from "@/lib/validations/event";
 import type { BudgetItemRow } from "@/lib/validations/budget";
 import type { TaskRow } from "@/lib/validations/task";
-import type { PlanRevisionRow, AIPlanBlueprint } from "@/lib/validations/plan";
+import {
+  aiPlanBlueprintSchema,
+  type PlanRevisionRow,
+  type AIPlanBlueprint,
+} from "@/lib/validations/plan";
 
 export type RiskCategory =
   | "budget_overrun"
@@ -286,7 +290,7 @@ export function evaluateEventRisks(
           severity: "high",
           title: `Schedule Sequence Conflict: ${task.title}`,
           explanation: `Task "${task.title}" is scheduled for completion after the event date (${
-            event.event_date!.split("T")[0]
+            event.event_date?.split("T")[0] ?? "event date"
           }).`,
           evidence: {
             taskId: task.id,
@@ -405,13 +409,10 @@ export function evaluateEventRisks(
   // ==========================================================================
   // Extract blueprint if present
   let structuredBlueprint: AIPlanBlueprint | null = null;
-  if (
-    activePlanRevision?.structured_plan &&
-    typeof activePlanRevision.structured_plan === "object"
-  ) {
-    const raw = activePlanRevision.structured_plan as unknown as AIPlanBlueprint;
-    if (Array.isArray(raw.suggestedTasks)) {
-      structuredBlueprint = raw;
+  if (activePlanRevision?.structured_plan) {
+    const planParse = aiPlanBlueprintSchema.safeParse(activePlanRevision.structured_plan);
+    if (planParse.success) {
+      structuredBlueprint = planParse.data;
     }
   }
 
@@ -476,7 +477,7 @@ export function evaluateEventRisks(
         severity: "high",
         title: "Empty Checklist for Upcoming Event",
         explanation: `Event is scheduled for ${
-          event.event_date!.split("T")[0]
+          event.event_date?.split("T")[0] ?? "the scheduled date"
         } (${daysUntilEvent} days away), but no checklist tasks have been created.`,
         evidence: {
           daysUntilEvent,

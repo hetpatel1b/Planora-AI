@@ -7,7 +7,7 @@ import { PlanoraLogo } from "@/components/ui/planora-logo";
 import {
   Sparkles,
   Layers,
-  DollarSign,
+  IndianRupee,
   Clock,
   Bot,
   Sliders,
@@ -56,7 +56,7 @@ export default async function Home() {
     },
     {
       id: "budget",
-      icon: DollarSign,
+      icon: IndianRupee,
       title: "Smart Budget Manager",
       description:
         "Granular cost breakdown across venues, catering, audiovisual, and contingency reserves with automated variance alerts to prevent budget overruns.",

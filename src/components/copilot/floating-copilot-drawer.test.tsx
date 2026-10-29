@@ -87,5 +87,22 @@ describe("FloatingCopilotDrawer Component", () => {
     expect(html).toContain("break-words");
     expect(html).toContain("[overflow-wrap:anywhere]");
   });
+
+  it("renders open modal drawer when controlled isOpen=true is passed", () => {
+    const html = renderToString(
+      <FloatingCopilotDrawer
+        eventId={eventId}
+        eventName={eventName}
+        isOpen={true}
+      />
+    );
+
+    // Dialog modal panel should be rendered
+    expect(html).toContain('id="copilot-drawer-panel"');
+    expect(html).toContain('role="dialog"');
+    expect(html).toContain('aria-modal="true"');
+    expect(html).toContain(`aria-label="Planora AI Copilot — ${eventName}"`);
+    expect(html).toContain('aria-expanded="true"');
+  });
 });
 

@@ -113,13 +113,7 @@ export async function applyBudgetScenarioAction(
     // 5. Atomic Transaction Dispatch:
     // Calls public.apply_budget_scenario database RPC to serialize updates and guarantee
     // all-or-nothing atomicity. Does NOT simulate atomicity via non-atomic sequential requests.
-    // Explicitly cast RPC call to unknown as apply_budget_scenario is dynamically checked
-    const rpcCaller = supabase.rpc as unknown as (
-      fn: string,
-      args: Record<string, unknown>
-    ) => Promise<{ data: unknown; error: { code?: string; message?: string } | null }>;
-
-    const { data: rpcData, error: rpcError } = await rpcCaller(
+    const { data: rpcData, error: rpcError } = await supabase.rpc(
       "apply_budget_scenario",
       {
         p_event_id: payload.eventId,

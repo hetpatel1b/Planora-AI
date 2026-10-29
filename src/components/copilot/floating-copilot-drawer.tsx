@@ -8,14 +8,33 @@ export interface FloatingCopilotDrawerProps {
   eventId: string;
   eventName: string;
   eventDate?: string | null;
+  /** Optional controlled open state */
+  isOpen?: boolean;
+  /** Optional callback fired when open state changes */
+  onOpenChange?: (open: boolean) => void;
 }
 
 export function FloatingCopilotDrawer({
   eventId,
   eventName,
   eventDate,
+  isOpen: controlledIsOpen,
+  onOpenChange,
 }: FloatingCopilotDrawerProps) {
-  const [isOpen, setIsOpen] = React.useState(false);
+  const [internalIsOpen, setInternalIsOpen] = React.useState(false);
+  const isControlled = typeof controlledIsOpen === "boolean";
+  const isOpen = isControlled ? controlledIsOpen : internalIsOpen;
+
+  const setIsOpen = React.useCallback(
+    (open: boolean) => {
+      if (!isControlled) {
+        setInternalIsOpen(open);
+      }
+      onOpenChange?.(open);
+    },
+    [isControlled, onOpenChange]
+  );
+
   const launcherRef = React.useRef<HTMLButtonElement>(null);
   const drawerRef = React.useRef<HTMLDivElement>(null);
 
@@ -42,7 +61,7 @@ export function FloatingCopilotDrawer({
         document.body.style.overflow = originalOverflow;
       };
     }
-  }, [isOpen]);
+  }, [isOpen, setIsOpen]);
 
   // Focus restoration to launcher when drawer closes
   const prevIsOpen = React.useRef(isOpen);

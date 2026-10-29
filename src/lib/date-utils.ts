@@ -1,7 +1,13 @@
+import {
+  getStatusBadgeVariant,
+  formatStatusLabel,
+} from "@/components/shared/status-badge";
+
 /**
  * Planora AI — Date Utilities
  * 
- * Provides safe timezone-stable formatting for event dates and statuses.
+ * Provides safe timezone-stable formatting for event dates, task due dates,
+ * and date input conversions.
  */
 
 /**
@@ -64,48 +70,32 @@ export function dateInputToIsoString(dateInput?: string | null): string | null {
 }
 
 /**
- * Formats currency values cleanly with standard INR (₹) formatting.
- * @deprecated Prefer importing directly from `@/lib/currency-utils`.
+ * Evaluates whether a checklist task is overdue relative to a reference timestamp.
+ *
+ * Invariants:
+ * - Returns false if dueDateStr is missing, null, undefined, or empty.
+ * - Returns false if status is "completed" or "cancelled".
+ * - Returns false if dueDateStr is an invalid/unparseable date string.
+ * - Returns true if the due date timestamp is strictly less than the reference timestamp.
  */
-export { formatCurrency } from "@/lib/currency-utils";
+export function isTaskOverdue(
+  dueDateStr?: string | null,
+  status?: string | null,
+  nowMs: number = Date.now()
+): boolean {
+  if (!dueDateStr || typeof dueDateStr !== "string" || !dueDateStr.trim()) {
+    return false;
+  }
+  const normalizedStatus = status?.trim().toLowerCase();
+  if (normalizedStatus === "completed" || normalizedStatus === "cancelled") {
+    return false;
+  }
+  const due = new Date(dueDateStr).getTime();
+  return !isNaN(due) && due < nowMs;
+}
 
 /**
- * Returns human-readable label for status values.
+ * Status badge formatting utilities.
+ * @see "@/components/shared/status-badge" for canonical implementation and component.
  */
-export function getStatusBadgeVariant(
-  status: string
-): "default" | "secondary" | "success" | "warning" | "destructive" | "outline" {
-  switch (status) {
-    case "confirmed":
-    case "completed":
-      return "success";
-    case "in_progress":
-      return "warning";
-    case "cancelled":
-      return "destructive";
-    case "planning":
-      return "default";
-    case "draft":
-    default:
-      return "secondary";
-  }
-}
-
-export function formatStatusLabel(status: string): string {
-  switch (status) {
-    case "draft":
-      return "Draft";
-    case "planning":
-      return "In Planning";
-    case "confirmed":
-      return "Confirmed";
-    case "in_progress":
-      return "In Progress";
-    case "completed":
-      return "Completed";
-    case "cancelled":
-      return "Cancelled";
-    default:
-      return status;
-  }
-}
+export { getStatusBadgeVariant, formatStatusLabel };

@@ -351,6 +351,16 @@ export interface Database {
         };
         Returns: Json;
       };
+      apply_budget_scenario: {
+        Args: {
+          p_event_id: string;
+          p_user_id: string;
+          p_target_budget?: number | null;
+          p_overrides?: Json;
+          p_new_items?: Json;
+        };
+        Returns: Json;
+      };
     };
     Enums: {
       event_status: EventStatus;

@@ -13,7 +13,7 @@ import {
   Send,
   FileDown,
   Sliders,
-  DollarSign,
+  IndianRupee,
   TrendingDown,
   Info,
 } from "lucide-react";
@@ -40,13 +40,13 @@ export function WorkspacePreview() {
       label: "Analyze catering buffer",
       query: "Should we adjust our catering headcount for the summit?",
       response:
-        "Registration velocity indicates 450 confirmed with 25 pending. Adding a +6% buffer ($534 estimated) provides safe margin without exceeding your $85k budget cap.",
+        "Registration velocity indicates 450 confirmed with 25 pending. Adding a +6% buffer (₹534 estimated) provides safe margin without exceeding your ₹85k budget cap.",
     },
     {
       label: "Summarize budget variance",
       query: "Give me an executive variance summary of Apex Horizon 2026.",
       response:
-        "Total commitments are $58,400 against the $85,000 cap ($26,600 buffer, 68.7% utilized). Venue is locked at 41%, AV at 17%, and catering at 10%.",
+        "Total commitments are ₹58,400 against the ₹85,000 cap (₹26,600 buffer, 68.7% utilized). Venue is locked at 41%, AV at 17%, and catering at 10%.",
     },
   ];
 
@@ -220,7 +220,7 @@ export function WorkspacePreview() {
             <div>
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                  <DollarSign className="size-3.5 text-violet-600 dark:text-violet-400" aria-hidden="true" />
+                  <IndianRupee className="size-3.5 text-violet-600 dark:text-violet-400" aria-hidden="true" />
                   <span>Smart Budget Manager</span>
                 </span>
                 <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 border border-emerald-200/60 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-900/40">
@@ -232,7 +232,7 @@ export function WorkspacePreview() {
               <div className="mt-4 flex items-baseline justify-between">
                 <div>
                   <span className="text-3xl font-black tracking-tight text-slate-950 dark:text-white">
-                    $58,400
+                    ₹58,400
                   </span>
                   <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
                     {" "}committed
@@ -243,7 +243,7 @@ export function WorkspacePreview() {
                     Budget Cap:
                   </span>
                   <span className="text-sm font-bold text-slate-900 dark:text-slate-200">
-                    $85,000
+                    ₹85,000
                   </span>
                 </div>
               </div>
@@ -263,7 +263,7 @@ export function WorkspacePreview() {
                 </div>
                 <div className="mt-1.5 flex justify-between text-[11px] font-medium text-slate-500 dark:text-slate-400">
                   <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
-                    $26,600 buffer remaining
+                    ₹26,600 buffer remaining
                   </span>
                   <span>68.7% utilized</span>
                 </div>
@@ -277,7 +277,7 @@ export function WorkspacePreview() {
                     <span>Venue & Facilities</span>
                   </span>
                   <span className="font-semibold text-slate-900 dark:text-slate-100">
-                    $35,000 <span className="font-normal text-slate-500">(41%)</span>
+                    ₹35,000 <span className="font-normal text-slate-500">(41%)</span>
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
@@ -286,7 +286,7 @@ export function WorkspacePreview() {
                     <span>Audiovisual & Production</span>
                   </span>
                   <span className="font-semibold text-slate-900 dark:text-slate-100">
-                    $14,500 <span className="font-normal text-slate-500">(17%)</span>
+                    ₹14,500 <span className="font-normal text-slate-500">(17%)</span>
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
@@ -295,7 +295,7 @@ export function WorkspacePreview() {
                     <span>Catering & Hospitality</span>
                   </span>
                   <span className="font-semibold text-slate-900 dark:text-slate-100">
-                    $8,900 <span className="font-normal text-slate-500">(10%)</span>
+                    ₹8,900 <span className="font-normal text-slate-500">(10%)</span>
                   </span>
                 </div>
               </div>

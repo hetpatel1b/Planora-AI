@@ -40,42 +40,45 @@ Planora AI is designed around eight core feature pillars:
    Adaptive milestone countdown and prioritized operational checklists that adjust automatically to shifting deadlines and task dependencies.
 
 5. **Conversational AI Copilot**  
-   Context-aware interactive assistant to brainstorm ideas, refine vendor criteria, draft agenda drafts, and answer operational planning questions.
+   Context-aware interactive assistant grounded in real workspace data to brainstorm ideas, refine vendor criteria, draft agenda drafts, and answer operational planning questions.
 
 6. **What-If Budget Simulator**  
-   Scenario modeling engine to simulate financial impact prior to commitments—such as adjusting attendee headcounts, upgrading venues, or reallocating line items.
+   Scenario modeling engine to simulate financial impact prior to commitments—such as adjusting attendee headcounts, upgrading venues, or reallocating line items—with side-by-side scenario comparison.
 
 7. **Event Risk Radar**  
-   Proactive risk detection analyzing lead times, vendor dependencies, and budget cushion to flag potential bottlenecks and provide mitigation recommendations early.
+   Proactive, deterministic risk detection analyzing lead times, vendor dependencies, and budget cushions to flag potential bottlenecks and provide mitigation recommendations early.
 
-8. **PDF/CSV Export**  
-   One-click generation of professional run-of-show sheets, vendor briefs, and budget summaries formatted for clients, collaborators, and venue coordinators.
+8. **PDF and CSV Export**
+   One-click generation of professional run-of-show sheets, vendor briefs, and budget summaries formatted for clients, collaborators, and venue coordinators with RFC 4180 compliance and spreadsheet formula injection protection.
 
 ---
 
 ## Technology Stack
 
-- **Framework**: [Next.js](https://nextjs.org/) (App Router, React 19)
-- **Language**: [TypeScript](https://www.typescriptlang.org/) (strict mode)
-- **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
+- **Framework**: [Next.js](https://nextjs.org/) `16.4.2` (App Router, React `19.3.0`, Turbopack)
+- **Language**: [TypeScript](https://www.typescriptlang.org/) `5.9` (strict mode)
+- **Styling**: [Tailwind CSS v4](https://tailwindcss.com/) (`@tailwindcss/turbopack`)
 - **UI Components**: [shadcn/ui](https://ui.shadcn.com/) powered by [@base-ui/react](https://base-ui.com/) and [class-variance-authority](https://cva.style/)
 - **Icons**: [Lucide React](https://lucide.dev/)
+- **Database & Auth**: [Supabase](https://supabase.com/) PostgreSQL with Row Level Security (RLS) and `@supabase/ssr`
+- **AI Engine**: [Groq](https://groq.com/) Cloud API (model: `openai/gpt-oss-120b`, native server-only fetch client)
+- **Test Runner**: [Vitest](https://vitest.dev/) `3.2.7` with V8 coverage provider
 - **Package Manager**: npm
 
 ---
 
 ## Current Development Status
 
-> **Phases 1–4: Core Platform & Planning Workflows (Implemented)**
+> **Phases 1–8: Implemented & Verified**
 >
-> The project has completed its initial architectural foundation, Supabase database and authentication integration, intelligent event setup, and core planning engines:
-> - **Foundation & Application Shell (Phase 1)**: Next.js 16 App Router architecture, responsive UI components, and design system.
-> - **Database & Authentication (Phase 2)**: PostgreSQL schema, Row Level Security (RLS) policies, and session verification.
-> - **Intelligent Event Setup (Phase 3)**: Workspace creation, parameter management, and event profile editing.
-> - **Core Planning Features (Phase 4)**: Deterministic AI Event Plan Generator, Smart Budget Manager with integer-cent variance tracking, Dynamic Timeline & Checklist, and versioned plan revisions with atomic replacement.
->
-> **Next Planned Phase: Phase 5 — Conversational AI Copilot**
-> Interactive assistant for contextual planning queries, vendor inquiry drafting, and iterative plan refinement.
+> 1. **Foundation & Application Shell (Phase 1)**: Next.js 16 App Router architecture, responsive UI components, and design system.
+> 2. **Database & Authentication (Phase 2)**: PostgreSQL schema, Row Level Security (RLS) policies, Next.js 16 `proxy.ts`, and session verification via `getUser()`.
+> 3. **Intelligent Event Setup (Phase 3)**: Workspace creation, parameter management, and event profile editing.
+> 4. **Core Planning Engines (Phase 4)**: Deterministic AI Event Plan Generator, Smart Budget Manager with integer-cent variance tracking, Dynamic Timeline & Checklist, and versioned plan revisions with atomic replacement.
+> 5. **Conversational AI Copilot (Phase 5)**: Server-only Groq client, anti-injection prompt boundary delimiters, structured suggestions, and XSS-immune Markdown rendering.
+> 6. **What-If Budget Simulator (Phase 6)**: Side-by-side scenario sandboxing, category delta comparisons, and atomic database transaction RPC.
+> 7. **Event Risk Radar (Phase 7)**: 100% pure deterministic risk engine evaluating budget ceilings, overdue task dependencies, and checklist completeness.
+> 8. **Hardening, Code Quality & Exports (Phase 8)**: Printable executive PDF dossier, RFC 4180 CSV exports with formula injection defense, modularized templates, and centralized utilities targeting a strict 10/10 Code Quality standard.
 
 ---
 
@@ -108,7 +111,7 @@ Ensure you have the following installed locally:
    ```
    *(On Windows Command Prompt, use `copy .env.example .env.local`)*
 
-   Fill in placeholder variables as features are connected. For core planning workflows (Phases 1–4), Supabase database and authentication credentials are required. Groq API keys are reserved for the upcoming Phase 5 Conversational AI Copilot.
+   Fill in placeholder variables as features are connected. For core planning workflows, Supabase database and authentication credentials are required. A Groq API key is required for live AI Copilot features (gracefully falls back if unconfigured).
 
 4. **Start the local development server**:
    ```bash
@@ -126,18 +129,26 @@ All environment configuration is specified in `.env.example`:
 
 | Variable | Description | Exposure |
 | :--- | :--- | :--- |
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL (Phase 2+) | Client & Server |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase anonymous public key (Phase 2+) | Client & Server |
-| `GROQ_API_KEY` | Groq API authentication key for AI services (Phase 5 Copilot) | **Server-side only** |
-| `GROQ_MODEL` | Groq LLM model identifier for Phase 5 Copilot (default: `openai/gpt-oss-120b`) | Server-side only |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL | Client & Server |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase anonymous public key | Client & Server |
+| `GROQ_API_KEY` | Groq API authentication key for AI Copilot | **Server-side only** |
+| `GROQ_MODEL` | Groq LLM model identifier (default: `openai/gpt-oss-120b`) | Server-side only |
 | `NEXT_PUBLIC_APP_URL` | Base canonical application URL (default: `http://localhost:3000`) | Client & Server |
 
 ---
 
 ## Testing and Verification Commands
 
-Run the following commands to verify code quality and build validity:
+Run the following commands to verify code quality, tests, and build validity:
 
+- **Run all unit & integration tests**:
+  ```bash
+  npm test
+  ```
+- **Run tests with coverage**:
+  ```bash
+  npm run test:coverage
+  ```
 - **Lint code**:
   ```bash
   npm run lint
@@ -156,10 +167,12 @@ Run the following commands to verify code quality and build validity:
 ## Security Best Practices
 
 - **Never commit secrets**: Real API credentials, Supabase service keys, and Groq keys must **never** be checked into git. `.gitignore` is configured to ignore `.env*` while tracking `.env.example`.
-- **Server-side isolation**: Artificial intelligence keys (`GROQ_API_KEY`) and elevated database credentials must remain strictly within server-side execution environments (Next.js Server Actions / API Route Handlers) and must never use the `NEXT_PUBLIC_` prefix.
+- **Server-side isolation**: Artificial intelligence keys (`GROQ_API_KEY`) and elevated database credentials remain strictly within server-side execution environments (Next.js Server Actions / API Route Handlers) and never use the `NEXT_PUBLIC_` prefix.
+- **OWASP Spreadsheet Defense**: All CSV exports sanitize untrusted inputs against formula injection (CWE-1236).
+- **Open-Redirect Guards**: Authentication callback redirects validate relative paths strictly to prevent arbitrary external redirects.
 
 ---
 
 ## License
 
-The license for this project has not yet been selected. All rights reserved.
+All rights reserved. Heterogeneous event-planning platform.

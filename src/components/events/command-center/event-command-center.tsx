@@ -35,6 +35,7 @@ export function EventCommandCenter({
   taskError,
 }: EventCommandCenterProps) {
   const [activeSection, setActiveSection] = React.useState("overview");
+  const [isCopilotOpen, setIsCopilotOpen] = React.useState(false);
 
   const targetBudget = Number(event.budget) || 0;
 
@@ -77,14 +78,9 @@ export function EventCommandCenter({
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const handleOpenCopilot = () => {
-    const launcherButton = document.querySelector<HTMLButtonElement>(
-      'aside[aria-label="AI Copilot Assistant"] button'
-    );
-    if (launcherButton) {
-      launcherButton.click();
-    }
-  };
+  const handleOpenCopilot = React.useCallback(() => {
+    setIsCopilotOpen(true);
+  }, []);
 
   return (
     <div className="min-h-screen bg-slate-50/60 pb-24 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
@@ -230,6 +226,8 @@ export function EventCommandCenter({
         eventId={event.id}
         eventName={event.name}
         eventDate={event.event_date}
+        isOpen={isCopilotOpen}
+        onOpenChange={setIsCopilotOpen}
       />
     </div>
   );

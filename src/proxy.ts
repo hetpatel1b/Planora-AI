@@ -3,6 +3,22 @@ import { createServerClient } from "@supabase/ssr";
 import type { Database } from "@/types/database.types";
 
 /**
+ * Creates a redirect response preserving all cookies set on the source response.
+ * This prevents dropped Supabase auth cookies (such as rotated refresh tokens)
+ * when redirecting between public and protected routes.
+ */
+export function createRedirectResponse(
+  url: URL | string,
+  sourceResponse: NextResponse
+): NextResponse {
+  const redirectResponse = NextResponse.redirect(url);
+  sourceResponse.cookies.getAll().forEach((cookie) => {
+    redirectResponse.cookies.set(cookie);
+  });
+  return redirectResponse;
+}
+
+/**
  * Next.js 16 Proxy convention (renamed from middleware).
  * Handles Supabase SSR session token refreshes and protects authenticated routes.
  */
@@ -12,6 +28,25 @@ export async function proxy(request: NextRequest) {
       headers: request.headers,
     },
   });
+
+  const pathname = request.nextUrl.pathname;
+  const isDashboardRoute = pathname.startsWith("/dashboard");
+  const isAuthRoute = pathname === "/sign-in" || pathname === "/sign-up";
+
+  // Check if any Supabase session cookie is present (standard or chunked)
+  const hasAuthCookie = request.cookies
+    .getAll()
+    .some(
+      (c) =>
+        c.name.startsWith("sb-") &&
+        (c.name.endsWith("-auth-token") || c.name.includes("-auth-token."))
+    );
+
+  // If visiting an unauthenticated public route without session cookies,
+  // skip the external GoTrue network roundtrip.
+  if (!isDashboardRoute && !isAuthRoute && !hasAuthCookie) {
+    return response;
+  }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
@@ -29,9 +64,11 @@ export async function proxy(request: NextRequest) {
         cookiesToSet.forEach(({ name, value }) =>
           request.cookies.set(name, value)
         );
+        const prevCookies = response.cookies.getAll();
         response = NextResponse.next({
           request,
         });
+        prevCookies.forEach((c) => response.cookies.set(c));
         cookiesToSet.forEach(({ name, value, options }) =>
           response.cookies.set(name, value, options)
         );
@@ -44,21 +81,6 @@ export async function proxy(request: NextRequest) {
     },
   });
 
-  const pathname = request.nextUrl.pathname;
-  const isDashboardRoute = pathname.startsWith("/dashboard");
-  const isAuthRoute = pathname === "/sign-in" || pathname === "/sign-up";
-
-  // Check if any Supabase session cookie is present
-  const hasAuthCookie = request.cookies
-    .getAll()
-    .some((c) => c.name.startsWith("sb-") && c.name.includes("-auth-token"));
-
-  // If visiting an unauthenticated public route without session cookies,
-  // skip the external GoTrue network roundtrip.
-  if (!isDashboardRoute && !isAuthRoute && !hasAuthCookie) {
-    return response;
-  }
-
   // Server-verified identity check using getUser()
   const {
     data: { user },
@@ -69,13 +91,13 @@ export async function proxy(request: NextRequest) {
     if (!user) {
       const redirectUrl = new URL("/sign-in", request.url);
       redirectUrl.searchParams.set("redirectTo", pathname);
-      return NextResponse.redirect(redirectUrl);
+      return createRedirectResponse(redirectUrl, response);
     }
   }
 
   // Redirect authenticated users trying to access sign-in or sign-up
   if (isAuthRoute && user) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    return createRedirectResponse(new URL("/dashboard", request.url), response);
   }
 
   return response;

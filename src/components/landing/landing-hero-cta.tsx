@@ -17,19 +17,26 @@ interface LandingHeroCtaProps {
  */
 export function LandingHeroCta({ initialUser }: LandingHeroCtaProps) {
   const [user, setUser] = useState<LandingUser | null>(initialUser);
+  const [prevInitialUser, setPrevInitialUser] = useState<LandingUser | null>(initialUser);
+
+  // Sync state during render when server-provided initialUser changes (React 19 recommendation)
+  if (initialUser !== prevInitialUser) {
+    setPrevInitialUser(initialUser);
+    setUser(initialUser);
+  }
 
   useEffect(() => {
     try {
       const supabase = createClient();
       const {
         data: { subscription },
-      } = supabase.auth.onAuthStateChange((_event, session) => {
+      } = supabase.auth.onAuthStateChange((event, session) => {
         if (session?.user) {
           setUser({
             id: session.user.id,
             email: session.user.email,
           });
-        } else {
+        } else if (event === "SIGNED_OUT") {
           setUser(null);
         }
       });

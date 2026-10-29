@@ -223,4 +223,46 @@ describe("PlanGeneratorCard Component", () => {
     expect(mockRefresh).toHaveBeenCalledTimes(1);
     expect(screen.getByText("Active Plan Revision #2")).toBeDefined();
   });
+
+  it("regenerates blueprint draft and passes updated blueprint with new timestamp key", async () => {
+    const user = userEvent.setup();
+    mockGenerateEventPlanAction
+      .mockResolvedValueOnce({
+        success: true,
+        data: sampleBlueprint,
+      })
+      .mockResolvedValueOnce({
+        success: true,
+        data: {
+          ...sampleBlueprint,
+          summary: "Regenerated blueprint revision 2",
+          metadata: {
+            ...sampleBlueprint.metadata,
+            generatedAt: "2027-01-02T12:00:00.000Z",
+          },
+        },
+      });
+
+    render(
+      <PlanGeneratorCard
+        eventId={eventId}
+        eventName={eventName}
+      />
+    );
+
+    // 1. Initial generation
+    await user.click(screen.getByRole("button", { name: /generate event plan/i }));
+    await waitFor(() => {
+      expect(screen.getByText(/Mock Blueprint: Complete blueprint for 500 attendees/i)).toBeDefined();
+    });
+
+    // 2. Click Regenerate Draft
+    const regenBtn = screen.getByRole("button", { name: /regenerate draft/i });
+    await user.click(regenBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Mock Blueprint: Regenerated blueprint revision 2/i)).toBeDefined();
+    });
+    expect(mockGenerateEventPlanAction).toHaveBeenCalledTimes(2);
+  });
 });

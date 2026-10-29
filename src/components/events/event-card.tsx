@@ -3,13 +3,9 @@
 import * as React from "react";
 import Link from "next/link";
 import { type EventRow } from "@/lib/validations/event";
-import {
-  formatEventDate,
-  getStatusBadgeVariant,
-  formatStatusLabel,
-} from "@/lib/date-utils";
+import { formatEventDate } from "@/lib/date-utils";
 import { formatCurrency } from "@/lib/currency-utils";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/shared/status-badge";
 import { DeleteEventDialog } from "@/components/events/delete-event-dialog";
 import {
   Calendar,
@@ -51,9 +47,7 @@ export function EventCard({ event, onDeleted }: EventCardProps) {
                 <Tag className="size-3" aria-hidden="true" />
                 <span>{event.event_type}</span>
               </span>
-              <Badge variant={getStatusBadgeVariant(event.status)}>
-                {formatStatusLabel(event.status)}
-              </Badge>
+              <StatusBadge status={event.status} />
             </div>
 
             {/* Quick Card Controls (Touch-friendly minimum 44px tap zone on mobile) */}

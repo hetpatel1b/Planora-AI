@@ -165,6 +165,7 @@ export function PlanGeneratorCard({
 
         {/* Blueprint Viewer */}
         <PlanBlueprintViewer
+          key={state.blueprint.metadata?.generatedAt || `blueprint-${eventId}`}
           eventId={eventId}
           blueprint={state.blueprint}
           onAccepted={handleAccepted}

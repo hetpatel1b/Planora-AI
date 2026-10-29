@@ -1,7 +1,7 @@
 import {
   getStatusBadgeVariant,
   formatStatusLabel,
-} from "@/components/shared/status-badge";
+} from "@/lib/status-utils";
 
 /**
  * Planora AI — Date Utilities

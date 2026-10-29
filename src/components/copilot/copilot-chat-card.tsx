@@ -11,6 +11,11 @@ import {
   SuggestedBudgetItemCard,
   RecommendationsList,
 } from "@/components/copilot/copilot-suggestion-card";
+import {
+  type ParsedBlock,
+  parseMarkdownBlocks,
+  renderFormattedInline,
+} from "@/lib/markdown-utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -49,12 +54,6 @@ const STARTER_PROMPTS = [
   "What should I complete this week?",
   "How can I improve my current schedule?",
 ];
-
-import {
-  type ParsedBlock,
-  parseMarkdownBlocks,
-  renderFormattedInline,
-} from "@/lib/markdown-utils";
 
 export {
   type ParsedBlock,

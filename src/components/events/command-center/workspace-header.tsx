@@ -3,8 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { type EventRow } from "@/lib/validations/event";
-import { getStatusBadgeVariant, formatStatusLabel } from "@/lib/date-utils";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 import { ExportMenu } from "@/components/export/export-menu";
 import { DeleteEventDialogWrapper } from "@/components/events/delete-event-dialog-wrapper";
@@ -42,9 +41,7 @@ export function WorkspaceHeader({ event }: WorkspaceHeaderProps) {
               <Tag className="size-3" aria-hidden="true" />
               <span>{event.event_type}</span>
             </span>
-            <Badge variant={getStatusBadgeVariant(event.status)} className="hidden xs:inline-flex">
-              {formatStatusLabel(event.status)}
-            </Badge>
+            <StatusBadge status={event.status} className="hidden xs:inline-flex" />
           </div>
         </nav>
 

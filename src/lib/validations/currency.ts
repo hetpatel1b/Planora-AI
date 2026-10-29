@@ -7,6 +7,87 @@ export const MIN_CURRENCY_AMOUNT = 0;
 export const MAX_CURRENCY_AMOUNT = 9_999_999_999.99;
 export const MAX_CURRENCY_DECIMALS = 2;
 
+export interface CurrencyValidationResult {
+  valid: boolean;
+  amount?: number;
+  error?: string;
+}
+
+/**
+ * Validates a currency input (number or numeric string) according to Planora AI currency conventions.
+ * Returns structured validation result with parsed amount or descriptive error message.
+ */
+export function validateCurrencyValue(
+  val: unknown,
+  fieldLabel = "Amount"
+): CurrencyValidationResult {
+  let num: number;
+  if (typeof val === "string") {
+    const trimmed = val.trim();
+    if (/e/i.test(trimmed)) {
+      return {
+        valid: false,
+        error: "Scientific notation is not supported for currency amounts.",
+      };
+    }
+    const parts = trimmed.split(".");
+    if (parts.length > 2 || (parts.length === 2 && parts[1].length > MAX_CURRENCY_DECIMALS)) {
+      return {
+        valid: false,
+        error: `${fieldLabel} cannot have more than ${MAX_CURRENCY_DECIMALS} decimal places.`,
+      };
+    }
+    num = Number(trimmed);
+    if (isNaN(num)) {
+      return {
+        valid: false,
+        error: `${fieldLabel} must be a valid number.`,
+      };
+    }
+  } else if (typeof val === "number") {
+    if (!Number.isFinite(val)) {
+      return {
+        valid: false,
+        error: `${fieldLabel} must be a finite number.`,
+      };
+    }
+    const str = val.toString();
+    if (/e/i.test(str)) {
+      return {
+        valid: false,
+        error: `${fieldLabel} cannot have more than ${MAX_CURRENCY_DECIMALS} decimal places.`,
+      };
+    }
+    const parts = str.split(".");
+    if (parts.length > 1 && parts[1].length > MAX_CURRENCY_DECIMALS) {
+      return {
+        valid: false,
+        error: `${fieldLabel} cannot have more than ${MAX_CURRENCY_DECIMALS} decimal places.`,
+      };
+    }
+    num = val;
+  } else {
+    return {
+      valid: false,
+      error: `${fieldLabel} must be a valid number.`,
+    };
+  }
+
+  if (num < MIN_CURRENCY_AMOUNT) {
+    return {
+      valid: false,
+      error: `${fieldLabel} cannot be negative.`,
+    };
+  }
+  if (num > MAX_CURRENCY_AMOUNT) {
+    return {
+      valid: false,
+      error: `${fieldLabel} cannot exceed 9,999,999,999.99.`,
+    };
+  }
+  return { valid: true, amount: num };
+}
+
 /**
  * Validates and converts a currency input (number or numeric string)
  * to a 2-decimal-place bounded number.
@@ -18,80 +99,15 @@ export function parseCurrencyAmount(
   ctx: z.RefinementCtx,
   fieldLabel = "Amount"
 ): number | typeof z.NEVER {
-  let num: number;
-  if (typeof val === "string") {
-    const trimmed = val.trim();
-    if (/e/i.test(trimmed)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Scientific notation is not supported for currency amounts.",
-      });
-      return z.NEVER;
-    }
-    const parts = trimmed.split(".");
-    if (parts.length > 2 || (parts.length === 2 && parts[1].length > MAX_CURRENCY_DECIMALS)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `${fieldLabel} cannot have more than ${MAX_CURRENCY_DECIMALS} decimal places.`,
-      });
-      return z.NEVER;
-    }
-    num = Number(trimmed);
-    if (isNaN(num)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `${fieldLabel} must be a valid number.`,
-      });
-      return z.NEVER;
-    }
-  } else if (typeof val === "number") {
-    if (!Number.isFinite(val)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `${fieldLabel} must be a finite number.`,
-      });
-      return z.NEVER;
-    }
-    const str = val.toString();
-    if (/e/i.test(str)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `${fieldLabel} cannot have more than ${MAX_CURRENCY_DECIMALS} decimal places.`,
-      });
-      return z.NEVER;
-    }
-    const parts = str.split(".");
-    if (parts.length > 1 && parts[1].length > MAX_CURRENCY_DECIMALS) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `${fieldLabel} cannot have more than ${MAX_CURRENCY_DECIMALS} decimal places.`,
-      });
-      return z.NEVER;
-    }
-    num = val;
-  } else {
+  const result = validateCurrencyValue(val, fieldLabel);
+  if (!result.valid) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: `${fieldLabel} must be a valid number.`,
+      message: result.error!,
     });
     return z.NEVER;
   }
-
-  if (num < MIN_CURRENCY_AMOUNT) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: `${fieldLabel} cannot be negative.`,
-    });
-    return z.NEVER;
-  }
-  if (num > MAX_CURRENCY_AMOUNT) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: `${fieldLabel} cannot exceed 9,999,999,999.99.`,
-    });
-    return z.NEVER;
-  }
-  return num;
+  return result.amount!;
 }
 
 /**

@@ -5,10 +5,9 @@ import type { TaskRow, TaskStatus } from "@/lib/validations/task";
 import { toggleTaskStatusAction } from "@/lib/actions/tasks";
 import {
   formatEventDate,
-  getStatusBadgeVariant,
-  formatStatusLabel,
   isTaskOverdue,
 } from "@/lib/date-utils";
+import { StatusBadge } from "@/components/shared/status-badge";
 import { TaskDialog } from "@/components/timeline/task-dialog";
 import { DeleteTaskDialog } from "@/components/timeline/delete-task-dialog";
 import { Button } from "@/components/ui/button";
@@ -52,9 +51,9 @@ function getTimelineBucket(
   dueDateStr: string | null,
   status: TaskStatus,
   todayStartMs?: number
-): "overdue" | "today" | "this_week" | "upcoming" | "unscheduled" {
-  if (!dueDateStr) return "unscheduled";
-  if (status === "completed" || status === "cancelled") return "upcoming";
+): "overdue" | "today" | "this_week" | "upcoming" | "unscheduled" | "completed" {
+  const isClosed = status === "completed" || status === "cancelled";
+  if (!dueDateStr) return isClosed ? "completed" : "unscheduled";
 
   const dueDate = new Date(dueDateStr);
   const dueDay = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate()).getTime();
@@ -68,7 +67,7 @@ function getTimelineBucket(
 
   const diffDays = Math.round((dueDay - today) / (1000 * 60 * 60 * 24));
 
-  if (diffDays < 0) return "overdue";
+  if (diffDays < 0) return isClosed ? "completed" : "overdue";
   if (diffDays === 0) return "today";
   if (diffDays <= 7) return "this_week";
   return "upcoming";
@@ -193,6 +192,7 @@ export function TimelineChecklistManager({
     const thisWeek: TaskRow[] = [];
     const upcoming: TaskRow[] = [];
     const unscheduled: TaskRow[] = [];
+    const completed: TaskRow[] = [];
 
     const now = new Date();
     const todayStartMs = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
@@ -203,6 +203,7 @@ export function TimelineChecklistManager({
       else if (bucket === "today") today.push(t);
       else if (bucket === "this_week") thisWeek.push(t);
       else if (bucket === "upcoming") upcoming.push(t);
+      else if (bucket === "completed") completed.push(t);
       else unscheduled.push(t);
     }
 
@@ -212,6 +213,7 @@ export function TimelineChecklistManager({
       thisWeek,
       upcoming,
       unscheduled,
+      completed,
     };
   }, [filteredTasks]);
 
@@ -318,9 +320,7 @@ export function TimelineChecklistManager({
 
             <PriorityBadge priority={task.priority} />
 
-            <Badge variant={getStatusBadgeVariant(task.status)} className="text-[10px]">
-              {formatStatusLabel(task.status)}
-            </Badge>
+            <StatusBadge status={task.status} className="text-[10px]" />
 
             {task.is_vendor_checklist && (
               <Badge
@@ -828,6 +828,21 @@ export function TimelineChecklistManager({
               </div>
               <div className="space-y-3">
                 {timelineGroups.unscheduled.map(renderTaskCard)}
+              </div>
+            </div>
+          )}
+
+          {/* Completed / Closed Section */}
+          {timelineGroups.completed.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 border-b border-emerald-100 pb-2 dark:border-emerald-950">
+                <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" />
+                <h3 className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">
+                  Completed / Closed ({timelineGroups.completed.length})
+                </h3>
+              </div>
+              <div className="space-y-3">
+                {timelineGroups.completed.map(renderTaskCard)}
               </div>
             </div>
           )}

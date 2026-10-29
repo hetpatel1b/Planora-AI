@@ -66,6 +66,30 @@ export interface GroqChatMessageInput {
   content: string;
 }
 
+export interface GroqChatCompletionChoice {
+  message?: {
+    role?: string;
+    content?: string | null;
+  };
+  finish_reason?: string;
+  index?: number;
+}
+
+export interface GroqChatCompletionUsage {
+  prompt_tokens?: number;
+  completion_tokens?: number;
+  total_tokens?: number;
+}
+
+export interface GroqChatCompletionApiResponse {
+  id?: string;
+  object?: string;
+  created?: number;
+  model?: string;
+  choices?: GroqChatCompletionChoice[];
+  usage?: GroqChatCompletionUsage;
+}
+
 export interface GroqChatCompletionOptions {
   messages: GroqChatMessageInput[];
   model?: string;
@@ -249,12 +273,12 @@ export async function sendGroqChatCompletion(
     }
 
     // Inspect provider structure
+    const apiResponse = json as GroqChatCompletionApiResponse | null;
     if (
       typeof json !== "object" ||
       json === null ||
-      !("choices" in json) ||
-      !Array.isArray((json as { choices: unknown }).choices) ||
-      (json as { choices: unknown[] }).choices.length === 0
+      !Array.isArray(apiResponse?.choices) ||
+      apiResponse.choices.length === 0
     ) {
       return {
         success: false,
@@ -263,20 +287,7 @@ export async function sendGroqChatCompletion(
       };
     }
 
-    const firstChoice = (
-      json as {
-        choices: Array<{
-          message?: { content?: string };
-          finish_reason?: string;
-        }>;
-        usage?: {
-          prompt_tokens?: number;
-          completion_tokens?: number;
-          total_tokens?: number;
-        };
-      }
-    ).choices[0];
-
+    const firstChoice = apiResponse.choices[0];
     const rawContent = firstChoice.message?.content;
     if (typeof rawContent !== "string") {
       return {
@@ -296,11 +307,11 @@ export async function sendGroqChatCompletion(
         rawText: rawContent,
         model,
         finishReason: firstChoice.finish_reason,
-        usage: json && "usage" in json && typeof (json as { usage: unknown }).usage === "object"
+        usage: apiResponse.usage
           ? {
-              promptTokens: (json as { usage?: { prompt_tokens?: number } }).usage?.prompt_tokens,
-              completionTokens: (json as { usage?: { completion_tokens?: number } }).usage?.completion_tokens,
-              totalTokens: (json as { usage?: { total_tokens?: number } }).usage?.total_tokens,
+              promptTokens: apiResponse.usage.prompt_tokens,
+              completionTokens: apiResponse.usage.completion_tokens,
+              totalTokens: apiResponse.usage.total_tokens,
             }
           : undefined,
       },

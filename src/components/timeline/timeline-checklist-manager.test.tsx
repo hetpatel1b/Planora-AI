@@ -113,6 +113,36 @@ describe("TimelineChecklistManager Component", () => {
     expect(screen.getByText("Confirm Catering Menu")).toBeDefined();
   });
 
+  it("categorizes past completed tasks under Completed / Closed in timeline view", async () => {
+    const tasksWithPastCompleted: TaskRow[] = [
+      ...sampleTasks,
+      {
+        id: "task-past-done",
+        event_id: eventId,
+        user_id: "usr-1",
+        plan_revision_id: null,
+        title: "Archived Venue Inspection",
+        description: "Completed past task",
+        status: "completed",
+        priority: "medium",
+        due_date: "2025-01-01T12:00:00.000Z",
+        is_vendor_checklist: false,
+        created_at: "2025-01-01T10:00:00.000Z",
+        updated_at: "2025-01-01T10:00:00.000Z",
+      },
+    ];
+
+    render(
+      <TimelineChecklistManager
+        eventId={eventId}
+        initialTasks={tasksWithPastCompleted}
+      />
+    );
+
+    expect(screen.getByText(/Completed \/ Closed \(1\)/i)).toBeDefined();
+    expect(screen.getByText("Archived Venue Inspection")).toBeDefined();
+  });
+
   it("filters tasks interactively by search query", async () => {
     const user = userEvent.setup();
     render(

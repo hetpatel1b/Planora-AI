@@ -1,4 +1,5 @@
 import { toCents, fromCents } from "@/lib/budget-math";
+import { formatMoney } from "@/lib/currency-utils";
 import type { EventRow } from "@/lib/validations/event";
 import type { BudgetItemRow } from "@/lib/validations/budget";
 import type { TaskRow } from "@/lib/validations/task";
@@ -119,24 +120,24 @@ export function evaluateEventRisks(
     totalActualCents += actCents;
 
     // R1.3: Line-item variance overrun shock
-    // Triggered when an individual item's actual spend exceeds estimate by strictly > 20% AND strictly > $250
+    // Triggered when an individual item's actual spend exceeds estimate by strictly > 20% AND strictly > ₹250
     if (actCents > estCents && actCents > 0) {
       const overspendCents = actCents - estCents;
-      const isSignificantDollarAmount = overspendCents > 25000; // strictly > $250.00
+      const isSignificantAmount = overspendCents > 25000; // strictly > ₹250.00 (25,000 paise)
       const percentOver =
         estCents > 0
           ? Math.round((overspendCents / estCents) * 10000) / 100
           : 100;
 
-      if (isSignificantDollarAmount && percentOver > 20) {
+      if (isSignificantAmount && percentOver > 20) {
         risks.push({
           id: `risk-budget-item-overrun-${item.id}`,
           category: "budget_overrun",
           severity: "medium",
           title: `Line-Item Cost Variance: ${item.item_name}`,
-          explanation: `Line item "${item.item_name}" in category "${item.category}" exceeded its estimate by ₹${(
-            overspendCents / 100
-          ).toFixed(2)} (${percentOver}% over estimate).`,
+          explanation: `Line item "${item.item_name}" in category "${item.category}" exceeded its estimate by ${formatMoney(
+            fromCents(overspendCents)
+          )} (${percentOver}% over estimate).`,
           evidence: {
             itemId: item.id,
             itemName: item.item_name,
@@ -166,11 +167,11 @@ export function evaluateEventRisks(
       category: "budget_overrun",
       severity: "critical",
       title: "Actual Budget Overrun",
-      explanation: `Total recorded expenditures (₹${(
-        totalActualCents / 100
-      ).toFixed(2)}) exceed the target budget (₹${(targetCents / 100).toFixed(
-        2
-      )}) by ₹${(overrunCents / 100).toFixed(2)}.`,
+      explanation: `Total recorded expenditures (${formatMoney(
+        fromCents(totalActualCents)
+      )}) exceed the target budget (${formatMoney(fromCents(targetCents))}) by ${formatMoney(
+        fromCents(overrunCents)
+      )}.`,
       evidence: {
         targetBudget: fromCents(targetCents),
         totalActual: fromCents(totalActualCents),
@@ -191,11 +192,11 @@ export function evaluateEventRisks(
       category: "budget_overrun",
       severity: "high",
       title: "Projected Budget Overallocation",
-      explanation: `Total planned allocations (₹${(
-        totalEstimatedCents / 100
-      ).toFixed(2)}) exceed the target budget (₹${(targetCents / 100).toFixed(
-        2
-      )}) by ₹${(overallocationCents / 100).toFixed(2)}.`,
+      explanation: `Total planned allocations (${formatMoney(
+        fromCents(totalEstimatedCents)
+      )}) exceed the target budget (${formatMoney(fromCents(targetCents))}) by ${formatMoney(
+        fromCents(overallocationCents)
+      )}.`,
       evidence: {
         targetBudget: fromCents(targetCents),
         totalEstimated: fromCents(totalEstimatedCents),
@@ -520,9 +521,9 @@ export function evaluateEventRisks(
             category: "missing_checklist",
             severity: "medium",
             title: `Missing Vendor Checklist: ${item.category}`,
-            explanation: `Major budget allocation logged for "${item.category}" (₹${Number(
-              item.estimated_amount
-            ).toLocaleString("en-IN")}), but no vendor checklist tasks exist.`,
+            explanation: `Major budget allocation logged for "${item.category}" (${formatMoney(
+              Number(item.estimated_amount) || 0
+            )}), but no vendor checklist tasks exist.`,
             evidence: {
               category: item.category,
               estimatedAmount: Number(item.estimated_amount),

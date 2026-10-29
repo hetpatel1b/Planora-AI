@@ -12,6 +12,7 @@ import {
 } from "@/lib/budget-simulator";
 import { applyBudgetScenarioAction } from "@/lib/actions/simulator";
 import { formatMoney } from "@/lib/currency-utils";
+import { toCents, fromCents } from "@/lib/budget-math";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -151,7 +152,7 @@ export function WhatIfSimulator({
     setScenarios((prev) =>
       prev.map((s, idx) =>
         idx === activeScenarioIdx
-          ? { ...s, target_budget: isNaN(num as number) ? null : num }
+          ? { ...s, target_budget: num === null || !Number.isFinite(num) ? null : num }
           : s
       )
     );
@@ -226,7 +227,7 @@ export function WhatIfSimulator({
     if (!newItemName.trim() || isNaN(amount) || amount < 0) return;
 
     const newItem: ScenarioNewItem = {
-      tempId: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+      tempId: `temp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       category: newItemCategory,
       item_name: newItemName.trim(),
       estimated_amount: amount,
@@ -338,7 +339,8 @@ export function WhatIfSimulator({
       ) {
         const oldVal = Number(bItem.estimated_amount);
         const newVal = o.estimated_amount;
-        modified.push({ name: bItem.item_name, oldVal, newVal, delta: newVal - oldVal });
+        const delta = fromCents(toCents(newVal) - toCents(oldVal));
+        modified.push({ name: bItem.item_name, oldVal, newVal, delta });
       }
     }
 

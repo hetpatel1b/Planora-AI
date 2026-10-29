@@ -8,12 +8,19 @@ import {
 import type { BudgetItemRow } from "@/lib/validations/budget";
 import { MAX_SIMULATION_SCENARIOS } from "@/lib/validations/simulator";
 
+import {
+  MIN_CURRENCY_AMOUNT,
+  MAX_CURRENCY_AMOUNT,
+  MAX_CURRENCY_DECIMALS,
+  validateCurrencyValue,
+} from "@/lib/validations/currency";
+
 /**
  * Bounds consistent with PostgreSQL NUMERIC(12, 2) and Planora AI currency conventions.
  */
-export const MIN_SIMULATOR_AMOUNT = 0;
-export const MAX_SIMULATOR_AMOUNT = 9_999_999_999.99;
-export const MAX_SIMULATOR_DECIMALS = 2;
+export const MIN_SIMULATOR_AMOUNT = MIN_CURRENCY_AMOUNT;
+export const MAX_SIMULATOR_AMOUNT = MAX_CURRENCY_AMOUNT;
+export const MAX_SIMULATOR_DECIMALS = MAX_CURRENCY_DECIMALS;
 
 /**
  * Validates monetary numbers or numeric strings for what-if scenarios.
@@ -23,57 +30,18 @@ export function validateScenarioAmount(
   val: unknown,
   fieldLabel = "Amount"
 ): number {
-  let num: number;
-
-  if (typeof val === "string") {
-    const trimmed = val.trim();
-    if (/e/i.test(trimmed)) {
-      throw new Error(
-        `Invalid ${fieldLabel}: Scientific notation is not supported for currency amounts.`
-      );
+  const result = validateCurrencyValue(val, fieldLabel);
+  if (!result.valid) {
+    let msg = result.error!;
+    if (msg.includes("must be a valid number")) {
+      msg = `Invalid ${fieldLabel}: Must be a valid numeric value.`;
+    } else {
+      msg = `Invalid ${fieldLabel}: ${msg.replace(new RegExp(`^${fieldLabel} `, "i"), "")}`;
     }
-    const parts = trimmed.split(".");
-    if (parts.length > 2 || (parts.length === 2 && parts[1].length > MAX_SIMULATOR_DECIMALS)) {
-      throw new Error(
-        `Invalid ${fieldLabel}: Cannot have more than ${MAX_SIMULATOR_DECIMALS} decimal places.`
-      );
-    }
-    num = Number(trimmed);
-    if (isNaN(num)) {
-      throw new Error(`Invalid ${fieldLabel}: Must be a valid numeric value.`);
-    }
-  } else if (typeof val === "number") {
-    if (!Number.isFinite(val)) {
-      throw new Error(`Invalid ${fieldLabel}: Must be a finite number.`);
-    }
-    const str = val.toString();
-    if (/e/i.test(str)) {
-      throw new Error(
-        `Invalid ${fieldLabel}: Cannot have more than ${MAX_SIMULATOR_DECIMALS} decimal places.`
-      );
-    }
-    const parts = str.split(".");
-    if (parts.length > 1 && parts[1].length > MAX_SIMULATOR_DECIMALS) {
-      throw new Error(
-        `Invalid ${fieldLabel}: Cannot have more than ${MAX_SIMULATOR_DECIMALS} decimal places.`
-      );
-    }
-    num = val;
-  } else {
-    throw new Error(`Invalid ${fieldLabel}: Must be a number or numeric string.`);
+    throw new Error(msg);
   }
 
-  if (num < MIN_SIMULATOR_AMOUNT) {
-    throw new Error(`Invalid ${fieldLabel}: Cannot be negative.`);
-  }
-
-  if (num > MAX_SIMULATOR_AMOUNT) {
-    throw new Error(
-      `Invalid ${fieldLabel}: Cannot exceed 9,999,999,999.99.`
-    );
-  }
-
-  return num;
+  return result.amount!;
 }
 
 /**

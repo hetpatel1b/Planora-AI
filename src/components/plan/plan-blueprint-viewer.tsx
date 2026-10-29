@@ -71,6 +71,14 @@ export function PlanBlueprintViewer({
     () => new Set(blueprint.proposedBudgetItems.map((_, i) => i))
   );
 
+  // Synchronize selection state if blueprint prop updates during re-generation
+  const [prevBlueprint, setPrevBlueprint] = React.useState(blueprint);
+  if (blueprint !== prevBlueprint) {
+    setPrevBlueprint(blueprint);
+    setSelectedTaskIndexes(new Set(blueprint.suggestedTasks.map((_, i) => i)));
+    setSelectedBudgetItemIndexes(new Set(blueprint.proposedBudgetItems.map((_, i) => i)));
+  }
+
   // Confirmation modal and submission states
   const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
   const [isAccepting, setIsAccepting] = React.useState(false);
@@ -325,7 +333,7 @@ export function PlanBlueprintViewer({
           <div className="mt-4 flex flex-col gap-2.5">
             {blueprint.themes.map((theme, idx) => (
               <div
-                key={idx}
+                key={`theme-${idx}-${theme}`}
                 className="flex items-start gap-2.5 rounded-xl border border-indigo-100/80 bg-indigo-50/40 p-3 text-xs dark:border-indigo-950/60 dark:bg-indigo-950/30"
               >
                 <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-[10px] font-bold text-white">
@@ -357,7 +365,7 @@ export function PlanBlueprintViewer({
         <div className="mt-6 space-y-4">
           {blueprint.scheduleMilestones.map((milestone: PlanMilestone, idx) => (
             <div
-              key={idx}
+              key={`milestone-${idx}-${milestone.title}`}
               className="relative flex flex-col gap-2 rounded-xl border border-slate-100 bg-slate-50/60 p-4 transition hover:border-slate-200 dark:border-slate-800/60 dark:bg-slate-950/40 sm:flex-row sm:items-start sm:justify-between"
             >
               <div className="flex items-start gap-3">
@@ -443,7 +451,7 @@ export function PlanBlueprintViewer({
             const isSelected = selectedTaskIndexes.has(idx);
             return (
               <div
-                key={idx}
+                key={`task-${idx}-${task.title}`}
                 onClick={(e) => {
                   if (isAccepted) return;
                   if ((e.target as HTMLElement).closest('input[type="checkbox"], label')) return;
@@ -566,7 +574,7 @@ export function PlanBlueprintViewer({
             const isSelected = selectedBudgetItemIndexes.has(idx);
             return (
               <div
-                key={idx}
+                key={`budget-${idx}-${item.category}-${item.item_name}`}
                 onClick={(e) => {
                   if (isAccepted) return;
                   if ((e.target as HTMLElement).closest('input[type="checkbox"], label')) return;
@@ -637,7 +645,7 @@ export function PlanBlueprintViewer({
           <ul className="mt-4 space-y-2.5">
             {blueprint.keyRecommendations.map((rec, idx) => (
               <li
-                key={idx}
+                key={`rec-${idx}-${rec.slice(0, 24)}`}
                 className="flex items-start gap-3 text-xs leading-relaxed text-slate-700 dark:text-slate-300"
               >
                 <span className="mt-1 flex size-1.5 shrink-0 rounded-full bg-amber-500" />

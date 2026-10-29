@@ -423,5 +423,40 @@ describe("EventCommandCenter Component", () => {
       expect(budgetNavLink.getAttribute("href")).toBe("#budget");
       await user.click(budgetNavLink);
     });
+
+    it("renders the 4 health metric cards as accessible focusable buttons with clear accessible names", async () => {
+      render(
+        <EventCommandCenter
+          event={mockEvent}
+          budgetItems={mockBudgetItems}
+          planRevision={mockPlanRevision}
+          tasks={mockTasks}
+        />
+      );
+
+      // Checklist Tasks Card
+      const checklistBtn = screen.getByRole("button", { name: /Checklist Tasks:/i });
+      expect(checklistBtn).toBeDefined();
+      checklistBtn.focus();
+      expect(document.activeElement).toBe(checklistBtn);
+
+      // Budget Health Card
+      const budgetBtn = screen.getByRole("button", { name: /Budget Health:/i });
+      expect(budgetBtn).toBeDefined();
+      budgetBtn.focus();
+      expect(document.activeElement).toBe(budgetBtn);
+
+      // Risk Radar Card
+      const riskBtn = screen.getByRole("button", { name: /Risk Radar:/i });
+      expect(riskBtn).toBeDefined();
+      riskBtn.focus();
+      expect(document.activeElement).toBe(riskBtn);
+
+      // Plan Blueprint Card
+      const planBtn = screen.getByRole("button", { name: /Plan Blueprint:/i });
+      expect(planBtn).toBeDefined();
+      planBtn.focus();
+      expect(document.activeElement).toBe(planBtn);
+    });
   });
 });

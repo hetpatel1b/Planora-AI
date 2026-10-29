@@ -111,7 +111,7 @@ export function SuggestedTaskCard({ eventId, eventDate, task, index }: Suggested
         <div className="flex flex-wrap items-center gap-3 text-[10px] text-slate-500 dark:text-slate-400">
           {calculatedDueDate ? (
             <span className="flex items-center gap-1">
-              <Calendar className="size-3 text-slate-400" />
+              <Calendar className="size-3 text-slate-500 dark:text-slate-400" aria-hidden="true" />
               <span>{`Due: ${calculatedDueDate.slice(0, 10)}`}</span>
             </span>
           ) : task.suggested_days_before !== null && task.suggested_days_before !== undefined ? (

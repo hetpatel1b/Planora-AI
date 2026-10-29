@@ -134,6 +134,7 @@ export function EventCard({ event, onDeleted }: EventCardProps) {
         <div className="mt-5 pt-3 border-t border-slate-100 dark:border-slate-800/80">
           <Link
             href={`/dashboard/events/${event.id}`}
+            aria-label={`Open event workspace for ${event.name}`}
             className="inline-flex w-full items-center justify-between text-xs font-semibold text-violet-700 hover:text-violet-900 dark:text-violet-400 dark:hover:text-violet-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 rounded-sm py-1"
           >
             <span>Open Event Workspace</span>

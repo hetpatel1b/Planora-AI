@@ -178,10 +178,12 @@ export function PlanGeneratorCard({
   if (state.status === "generating") {
     return (
       <div
+        role="status"
+        aria-live="polite"
         className={`rounded-2xl border border-indigo-200 bg-gradient-to-b from-indigo-50/50 to-white p-8 text-center shadow-xs dark:border-indigo-950/70 dark:bg-gradient-to-b dark:from-indigo-950/20 dark:to-slate-900 ${className}`}
       >
         <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-indigo-100 text-indigo-600 shadow-xs dark:bg-indigo-950 dark:text-indigo-400">
-          <Loader2 className="size-7 animate-spin" />
+          <Loader2 className="size-7 animate-spin" aria-hidden="true" />
         </div>
 
         <h3 className="mt-4 text-base font-bold text-slate-950 dark:text-white">
@@ -218,6 +220,8 @@ export function PlanGeneratorCard({
   if (state.status === "error") {
     return (
       <div
+        role="alert"
+        aria-live="assertive"
         className={`rounded-2xl border border-rose-200 bg-rose-50/50 p-6 shadow-xs dark:border-rose-900/60 dark:bg-rose-950/20 ${className}`}
       >
         <div className="flex items-start gap-4">

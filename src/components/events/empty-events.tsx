@@ -42,7 +42,7 @@ export function EmptyEvents() {
       </div>
 
       <div className="mt-8 border-t border-slate-200/60 pt-6 dark:border-slate-800/80">
-        <div className="flex items-center justify-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+        <div className="flex items-center justify-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
           <Sparkles className="size-3 text-violet-500" aria-hidden="true" />
           <span>Supported Event Classifications</span>
         </div>

@@ -424,14 +424,14 @@ export default async function PrintPdfPage({ params }: PrintPdfPageProps) {
 
           {tasks.length > 0 ? (
             <div className="mt-4 overflow-hidden rounded-xl border border-slate-200">
-              <table className="w-full text-left text-xs">
+              <table className="w-full text-left text-xs" aria-label="Event Checklist Tasks">
                 <thead className="border-b border-slate-200 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                   <tr>
-                    <th className="py-2 px-3 w-28">Status</th>
-                    <th className="py-2 px-3">Task Title &amp; Description</th>
-                    <th className="py-2 px-3 w-28">Due Date</th>
-                    <th className="py-2 px-3 w-24">Priority</th>
-                    <th className="py-2 px-3 w-28">Type</th>
+                    <th scope="col" className="py-2 px-3 w-28">Status</th>
+                    <th scope="col" className="py-2 px-3">Task Title &amp; Description</th>
+                    <th scope="col" className="py-2 px-3 w-28">Due Date</th>
+                    <th scope="col" className="py-2 px-3 w-24">Priority</th>
+                    <th scope="col" className="py-2 px-3 w-28">Type</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -557,15 +557,15 @@ export default async function PrintPdfPage({ params }: PrintPdfPageProps) {
           {/* Category Breakdown Table */}
           {categoryBreakdown.length > 0 && (
             <div className="mt-4 overflow-hidden rounded-xl border border-slate-200">
-              <table className="w-full text-left text-xs">
+              <table className="w-full text-left text-xs" aria-label="Budget Category Breakdown">
                 <thead className="border-b border-slate-200 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                   <tr>
-                    <th className="py-2 px-3">Expense Category</th>
-                    <th className="py-2 px-3 text-right">Estimated</th>
-                    <th className="py-2 px-3 text-right">Actual</th>
-                    <th className="py-2 px-3 text-right">Variance</th>
-                    <th className="py-2 px-3 text-right">% of Target</th>
-                    <th className="py-2 px-3 text-center w-24">Status</th>
+                    <th scope="col" className="py-2 px-3">Expense Category</th>
+                    <th scope="col" className="py-2 px-3 text-right">Estimated</th>
+                    <th scope="col" className="py-2 px-3 text-right">Actual</th>
+                    <th scope="col" className="py-2 px-3 text-right">Variance</th>
+                    <th scope="col" className="py-2 px-3 text-right">% of Target</th>
+                    <th scope="col" className="py-2 px-3 text-center w-24">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">

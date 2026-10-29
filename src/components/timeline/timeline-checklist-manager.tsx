@@ -289,7 +289,7 @@ export function TimelineChecklistManager({
           type="button"
           onClick={() => handleToggleStatus(task)}
           disabled={isPendingToggle}
-          className="mt-0.5 shrink-0 rounded text-slate-400 hover:text-indigo-600 focus:outline-none dark:hover:text-indigo-400"
+          className="mt-0.5 shrink-0 rounded text-slate-500 hover:text-indigo-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:text-slate-400 dark:hover:text-indigo-400"
           aria-label={
             isCompleted
               ? `Mark "${task.title}" as incomplete`
@@ -352,24 +352,24 @@ export function TimelineChecklistManager({
                   overdue
                     ? "text-rose-600 dark:text-rose-400"
                     : isCompleted
-                    ? "text-slate-400"
+                    ? "text-slate-500 dark:text-slate-400"
                     : "text-slate-600 dark:text-slate-400"
                 }`}
               >
                 {overdue ? (
-                  <AlertCircle className="size-3.5 text-rose-500" />
+                  <AlertCircle className="size-3.5 text-rose-500" aria-hidden="true" />
                 ) : (
-                  <Calendar className="size-3.5 text-slate-400" />
+                  <Calendar className="size-3.5 text-slate-500 dark:text-slate-400" aria-hidden="true" />
                 )}
                 <span>Due {formatEventDate(task.due_date)}</span>
                 {overdue && <span className="font-bold">(Overdue)</span>}
               </span>
             ) : (
-              <span className="text-slate-400 italic">No deadline set</span>
+              <span className="text-slate-500 dark:text-slate-400 italic">No deadline set</span>
             )}
 
-            <span className="text-slate-300 dark:text-slate-700">•</span>
-            <span className="text-slate-400">
+            <span className="text-slate-300 dark:text-slate-700" aria-hidden="true">•</span>
+            <span className="text-slate-500 dark:text-slate-400">
               Added {formatEventDate(task.created_at)}
             </span>
           </div>
@@ -411,9 +411,9 @@ export function TimelineChecklistManager({
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <ListTodo className="size-5 text-indigo-600 dark:text-indigo-400" />
-              <h2 className="text-lg font-bold tracking-tight text-slate-950 dark:text-white">
+              <h3 className="text-lg font-bold tracking-tight text-slate-950 dark:text-white">
                 Dynamic Timeline &amp; Checklist
-              </h2>
+              </h3>
               <Badge variant="secondary" className="text-[10px]">
                 F04 Planning
               </Badge>
@@ -486,7 +486,7 @@ export function TimelineChecklistManager({
         <div className="mt-6 grid grid-cols-1 xs:grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-5">
           {/* Total Tasks */}
           <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-3.5 dark:border-slate-800/60 dark:bg-slate-950/40">
-            <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
+            <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
               Total Deliverables
             </p>
             <p className="mt-1 text-lg font-extrabold text-slate-950 dark:text-white">
@@ -496,14 +496,14 @@ export function TimelineChecklistManager({
 
           {/* Completed */}
           <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-3.5 dark:border-slate-800/60 dark:bg-slate-950/40">
-            <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
+            <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
               Completed
             </p>
             <div className="mt-1 flex items-baseline gap-1.5">
               <span className="text-lg font-extrabold text-emerald-600 dark:text-emerald-400">
                 {metrics.completed}
               </span>
-              <span className="text-xs text-slate-400">
+              <span className="text-xs text-slate-500 dark:text-slate-400">
                 ({metrics.completionRate}%)
               </span>
             </div>
@@ -511,7 +511,7 @@ export function TimelineChecklistManager({
 
           {/* In Progress / Pending */}
           <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-3.5 dark:border-slate-800/60 dark:bg-slate-950/40">
-            <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
+            <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
               Remaining Pending
             </p>
             <p className="mt-1 text-lg font-extrabold text-slate-950 dark:text-white">
@@ -527,7 +527,7 @@ export function TimelineChecklistManager({
                 : "border-slate-100 bg-slate-50/60 dark:border-slate-800/60 dark:bg-slate-950/40"
             }`}
           >
-            <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
+            <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
               Overdue
             </p>
             <div className="mt-1 flex items-center gap-1.5">
@@ -548,7 +548,7 @@ export function TimelineChecklistManager({
 
           {/* Vendor Checklist */}
           <div className="col-span-1 xs:col-span-2 sm:col-span-1 rounded-xl border border-slate-100 bg-slate-50/60 p-3.5 dark:border-slate-800/60 dark:bg-slate-950/40">
-            <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
+            <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
               Vendor Items
             </p>
             <div className="mt-1 flex items-baseline gap-1.5">
@@ -556,7 +556,7 @@ export function TimelineChecklistManager({
                 {metrics.vendorCount}
               </span>
               {metrics.vendorCount > 0 && (
-                <span className="text-xs text-slate-400">
+                <span className="text-xs text-slate-500 dark:text-slate-400">
                   ({metrics.completedVendorCount} done)
                 </span>
               )}
@@ -591,10 +591,11 @@ export function TimelineChecklistManager({
       {/* 2. Controls, Search & Filter Bar */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         {/* Status Filter Tabs */}
-        <div className="flex flex-wrap items-center gap-1 rounded-xl border border-slate-200/80 bg-white p-1 dark:border-slate-800 dark:bg-slate-900">
+        <div className="flex flex-wrap items-center gap-1 rounded-xl border border-slate-200/80 bg-white p-1 dark:border-slate-800 dark:bg-slate-900" role="group" aria-label="Filter tasks by status">
           <button
             type="button"
             onClick={() => setStatusFilter("ALL")}
+            aria-pressed={statusFilter === "ALL"}
             className={`rounded-lg px-2.5 py-1 text-xs font-medium transition ${
               statusFilter === "ALL"
                 ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900"
@@ -606,6 +607,7 @@ export function TimelineChecklistManager({
           <button
             type="button"
             onClick={() => setStatusFilter("pending")}
+            aria-pressed={statusFilter === "pending"}
             className={`rounded-lg px-2.5 py-1 text-xs font-medium transition ${
               statusFilter === "pending"
                 ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900"
@@ -617,6 +619,7 @@ export function TimelineChecklistManager({
           <button
             type="button"
             onClick={() => setStatusFilter("in_progress")}
+            aria-pressed={statusFilter === "in_progress"}
             className={`rounded-lg px-2.5 py-1 text-xs font-medium transition ${
               statusFilter === "in_progress"
                 ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900"
@@ -628,6 +631,7 @@ export function TimelineChecklistManager({
           <button
             type="button"
             onClick={() => setStatusFilter("completed")}
+            aria-pressed={statusFilter === "completed"}
             className={`rounded-lg px-2.5 py-1 text-xs font-medium transition ${
               statusFilter === "completed"
                 ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900"
@@ -639,6 +643,7 @@ export function TimelineChecklistManager({
           <button
             type="button"
             onClick={() => setStatusFilter("vendor")}
+            aria-pressed={statusFilter === "vendor"}
             className={`rounded-lg px-2.5 py-1 text-xs font-medium transition ${
               statusFilter === "vendor"
                 ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900"
@@ -653,7 +658,7 @@ export function TimelineChecklistManager({
         <div className="flex flex-wrap items-center gap-2">
           {/* Search Box */}
           <div className="relative min-w-[160px] sm:min-w-[200px]">
-            <Search className="absolute left-2.5 top-2.5 size-3.5 text-slate-400" />
+            <Search className="absolute left-2.5 top-2.5 size-3.5 text-slate-500 dark:text-slate-400" aria-hidden="true" />
             <Input
               type="text"
               placeholder="Search tasks..."
@@ -679,29 +684,31 @@ export function TimelineChecklistManager({
           </select>
 
           {/* View Toggle */}
-          <div className="flex items-center rounded-lg border border-slate-200 bg-white p-0.5 dark:border-slate-800 dark:bg-slate-900">
+          <div className="flex items-center rounded-lg border border-slate-200 bg-white p-0.5 dark:border-slate-800 dark:bg-slate-900" role="group" aria-label="View mode">
             <button
               type="button"
               onClick={() => setViewMode("timeline")}
+              aria-pressed={viewMode === "timeline"}
               className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition ${
                 viewMode === "timeline"
                   ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300"
-                  : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                  : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
               }`}
             >
-              <CalendarDays className="size-3.5" />
+              <CalendarDays className="size-3.5" aria-hidden="true" />
               <span>Timeline</span>
             </button>
             <button
               type="button"
               onClick={() => setViewMode("checklist")}
+              aria-pressed={viewMode === "checklist"}
               className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition ${
                 viewMode === "checklist"
                   ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300"
-                  : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                  : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
               }`}
             >
-              <ListTodo className="size-3.5" />
+              <ListTodo className="size-3.5" aria-hidden="true" />
               <span>Checklist</span>
             </button>
           </div>

@@ -140,7 +140,7 @@ export function ExportMenu({ eventId, eventName, className }: ExportMenuProps) {
             </div>
           )}
 
-          <div className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+          <div className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
             Export Options
           </div>
 
@@ -155,7 +155,7 @@ export function ExportMenu({ eventId, eventName, className }: ExportMenuProps) {
             className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-200 dark:hover:bg-slate-900 dark:hover:text-white"
           >
             <div className="flex items-center gap-2">
-              <FileText className="size-4 text-rose-600 dark:text-rose-400" />
+              <FileText className="size-4 text-rose-600 dark:text-rose-400" aria-hidden="true" />
               <div>
                 <p className="font-semibold">Event Dossier (PDF)</p>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">
@@ -163,7 +163,10 @@ export function ExportMenu({ eventId, eventName, className }: ExportMenuProps) {
                 </p>
               </div>
             </div>
-            <ExternalLink className="size-3 text-slate-400" />
+            <span className="inline-flex items-center">
+              <ExternalLink className="size-3 text-slate-400" aria-hidden="true" />
+              <span className="sr-only"> (opens in new tab)</span>
+            </span>
           </Link>
 
           <div className="my-1 border-t border-slate-100 dark:border-slate-800" />

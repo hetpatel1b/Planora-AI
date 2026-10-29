@@ -184,7 +184,11 @@ function BudgetItemDialogModal({
 
         {/* Form Error Banner */}
         {formError && (
-          <div className="mt-4 rounded-xl bg-rose-50 p-3 text-xs font-medium text-rose-700 dark:bg-rose-950/50 dark:text-rose-300">
+          <div
+            role="alert"
+            aria-live="assertive"
+            className="mt-4 rounded-xl bg-rose-50 p-3 text-xs font-medium text-rose-700 dark:bg-rose-950/50 dark:text-rose-300"
+          >
             {formError}
           </div>
         )}
@@ -326,7 +330,7 @@ function BudgetItemDialogModal({
                   aria-describedby={fieldErrors.actual_amount ? "item-actual-error item-actual-hint" : "item-actual-hint"}
                 />
               </div>
-              <p id="item-actual-hint" className="text-[10px] text-slate-400">
+              <p id="item-actual-hint" className="text-[10px] text-slate-500 dark:text-slate-400">
                 Defaults to ₹0.00 if left blank.
               </p>
               {fieldErrors.actual_amount && (

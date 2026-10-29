@@ -108,12 +108,14 @@ export function CommandCenterOverview({
       {/* 4 Core Health Metric Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {/* 1. Task Completion Progress */}
-        <div
+        <button
+          type="button"
           onClick={() => scrollToSection("timeline")}
-          className="group cursor-pointer rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs transition-all hover:border-violet-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 dark:hover:border-violet-800/60 min-w-0"
+          aria-label={`Checklist Tasks: ${taskCompletionPercent}% completed (${completedTasks} of ${totalTasks}). Click to navigate to timeline checklist.`}
+          className="group cursor-pointer rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs transition-all hover:border-violet-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-violet-800/60 min-w-0 text-left w-full"
         >
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
               Checklist Tasks
             </span>
             <div className="flex size-8 items-center justify-center rounded-lg bg-violet-50 text-violet-600 dark:bg-violet-950 dark:text-violet-400 group-hover:scale-105 transition-transform">
@@ -130,7 +132,14 @@ export function CommandCenterOverview({
               </span>
             </div>
             {/* Progress Bar */}
-            <div className="mt-3 h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+            <div
+              className="mt-3 h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden"
+              role="progressbar"
+              aria-valuenow={taskCompletionPercent}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label="Checklist completion percentage"
+            >
               <div
                 className="h-full bg-violet-600 rounded-full transition-all duration-300"
                 style={{ width: `${taskCompletionPercent}%` }}
@@ -150,20 +159,22 @@ export function CommandCenterOverview({
                   All due dates on schedule
                 </span>
               )}
-              <span className="text-slate-400 group-hover:text-violet-600 inline-flex items-center gap-0.5">
-                View <ArrowRight className="size-3" />
+              <span className="text-slate-500 dark:text-slate-400 group-hover:text-violet-600 inline-flex items-center gap-0.5">
+                View <ArrowRight className="size-3" aria-hidden="true" />
               </span>
             </div>
           </div>
-        </div>
+        </button>
 
         {/* 2. Budget Utilization & Remaining */}
-        <div
+        <button
+          type="button"
           onClick={() => scrollToSection("budget")}
-          className="group cursor-pointer rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs transition-all hover:border-violet-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 dark:hover:border-violet-800/60 min-w-0"
+          aria-label={`Budget Health: ${formatCurrency(remainingBudget)} remaining, ${utilizationPercent}% spent. Click to navigate to budget manager.`}
+          className="group cursor-pointer rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs transition-all hover:border-violet-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-violet-800/60 min-w-0 text-left w-full"
         >
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
               Budget Health
             </span>
             <div
@@ -192,7 +203,14 @@ export function CommandCenterOverview({
               </span>
             </div>
             {/* Progress Bar */}
-            <div className="mt-3 h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+            <div
+              className="mt-3 h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden"
+              role="progressbar"
+              aria-valuenow={Math.min(utilizationPercent, 100)}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label="Budget utilization percentage"
+            >
               <div
                 className={`h-full rounded-full transition-all duration-300 ${
                   isOverBudget ? "bg-rose-600" : "bg-emerald-600"
@@ -210,20 +228,22 @@ export function CommandCenterOverview({
               >
                 {isOverBudget ? "Ceiling exceeded" : `Cap: ${formatCurrency(targetBudget)}`}
               </span>
-              <span className="text-slate-400 group-hover:text-violet-600 inline-flex items-center gap-0.5">
-                Manage <ArrowRight className="size-3" />
+              <span className="text-slate-500 dark:text-slate-400 group-hover:text-violet-600 inline-flex items-center gap-0.5">
+                Manage <ArrowRight className="size-3" aria-hidden="true" />
               </span>
             </div>
           </div>
-        </div>
+        </button>
 
         {/* 3. Risk Radar Severity */}
-        <div
+        <button
+          type="button"
           onClick={() => scrollToSection("risks")}
-          className="group cursor-pointer rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs transition-all hover:border-violet-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 dark:hover:border-violet-800/60 min-w-0"
+          aria-label={`Risk Radar: ${assessment.overallRiskLevel} risk level with ${assessment.counts.total} risks. Click to inspect risk radar.`}
+          className="group cursor-pointer rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs transition-all hover:border-violet-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-violet-800/60 min-w-0 text-left w-full"
         >
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
               Risk Radar
             </span>
             <div
@@ -269,21 +289,23 @@ export function CommandCenterOverview({
                 : "No high-priority threats identified"}
             </p>
             <div className="mt-2.5 flex items-center justify-between text-[11px]">
-              <span className="text-slate-400">Deterministic radar</span>
-              <span className="text-slate-400 group-hover:text-violet-600 inline-flex items-center gap-0.5">
-                Inspect <ArrowRight className="size-3" />
+              <span className="text-slate-500 dark:text-slate-400">Deterministic radar</span>
+              <span className="text-slate-500 dark:text-slate-400 group-hover:text-violet-600 inline-flex items-center gap-0.5">
+                Inspect <ArrowRight className="size-3" aria-hidden="true" />
               </span>
             </div>
           </div>
-        </div>
+        </button>
 
         {/* 4. Active Blueprint Revision */}
-        <div
+        <button
+          type="button"
           onClick={() => scrollToSection("plan")}
-          className="group cursor-pointer rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs transition-all hover:border-violet-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 dark:hover:border-violet-800/60 min-w-0"
+          aria-label={`Plan Blueprint: ${activeRevisionNumber ? `Revision ${activeRevisionNumber}` : "Draft"}. Click to view blueprint.`}
+          className="group cursor-pointer rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs transition-all hover:border-violet-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-violet-800/60 min-w-0 text-left w-full"
         >
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
               Plan Blueprint
             </span>
             <div className="flex size-8 items-center justify-center rounded-lg bg-violet-50 text-violet-600 dark:bg-violet-950 dark:text-violet-400 group-hover:scale-105 transition-transform">
@@ -305,13 +327,13 @@ export function CommandCenterOverview({
                 : "Generate initial AI planning blueprint"}
             </p>
             <div className="mt-2.5 flex items-center justify-between text-[11px]">
-              <span className="text-slate-400">Rule-based synthesis</span>
-              <span className="text-slate-400 group-hover:text-violet-600 inline-flex items-center gap-0.5">
-                Blueprint <ArrowRight className="size-3" />
+              <span className="text-slate-500 dark:text-slate-400">Rule-based synthesis</span>
+              <span className="text-slate-500 dark:text-slate-400 group-hover:text-violet-600 inline-flex items-center gap-0.5">
+                Blueprint <ArrowRight className="size-3" aria-hidden="true" />
               </span>
             </div>
           </div>
-        </div>
+        </button>
       </div>
 
       {/* Needs Attention Alert Center */}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { Menu, X, LayoutDashboard, ArrowRight } from "lucide-react";
 import { LandingHeaderAuth, type LandingUser } from "./landing-header-auth";
@@ -13,14 +13,50 @@ interface LandingNavbarProps {
 
 export function LandingNavbar({ initialUser }: LandingNavbarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const launcherRef = useRef<HTMLButtonElement | null>(null);
+  const mobileNavRef = useRef<HTMLDivElement | null>(null);
 
-  // Close mobile menu on Escape key press
+  // Close mobile menu on Escape key press, handle focus trap, and restore focus
   useEffect(() => {
+    if (!mobileOpen) return;
+
+    // Focus the first navigable item
+    const navEl = mobileNavRef.current;
+    if (navEl) {
+      const focusable = navEl.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusable.length > 0) {
+        focusable[0].focus();
+      }
+    }
+
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && mobileOpen) {
+      if (e.key === "Escape") {
         setMobileOpen(false);
+        launcherRef.current?.focus();
+      } else if (e.key === "Tab" && mobileNavRef.current) {
+        const focusables = mobileNavRef.current.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusables.length === 0) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
       }
     };
+
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [mobileOpen]);
@@ -38,6 +74,7 @@ export function LandingNavbar({ initialUser }: LandingNavbarProps) {
 
   const closeMenu = useCallback(() => {
     setMobileOpen(false);
+    launcherRef.current?.focus();
   }, []);
 
   return (
@@ -142,6 +179,7 @@ export function LandingNavbar({ initialUser }: LandingNavbarProps) {
 
             {/* Mobile / Tablet Hamburger Button */}
             <button
+              ref={launcherRef}
               type="button"
               onClick={() => setMobileOpen(!mobileOpen)}
               className="inline-flex size-9 items-center justify-center rounded-lg border border-slate-200/90 bg-slate-50 text-slate-700 hover:bg-slate-100 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 lg:hidden dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white transition-colors"
@@ -161,6 +199,7 @@ export function LandingNavbar({ initialUser }: LandingNavbarProps) {
         {/* Accessible Mobile & Tablet Navigation Panel */}
         {mobileOpen && (
           <div
+            ref={mobileNavRef}
             id="mobile-navigation"
             role="dialog"
             aria-modal="true"
@@ -168,7 +207,7 @@ export function LandingNavbar({ initialUser }: LandingNavbarProps) {
             className="fixed inset-x-0 top-16 z-50 border-b border-slate-200 bg-white/95 px-4 pt-4 pb-6 shadow-xl backdrop-blur-lg lg:hidden dark:border-slate-800 dark:bg-slate-950/95 transition-all duration-200 max-h-[calc(100vh-4rem)] overflow-y-auto"
           >
             <div className="flex flex-col space-y-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-3">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 px-3">
                 Navigation
               </span>
 
@@ -192,7 +231,7 @@ export function LandingNavbar({ initialUser }: LandingNavbarProps) {
                 className="flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-900"
               >
                 <span>Features</span>
-                <span className="text-xs text-slate-400">8 Pillars</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400">8 Pillars</span>
               </a>
 
               <a
@@ -201,7 +240,7 @@ export function LandingNavbar({ initialUser }: LandingNavbarProps) {
                 className="flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-900"
               >
                 <span>Workspace Preview</span>
-                <span className="text-xs text-slate-400">Interactive Demo</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400">Interactive Demo</span>
               </a>
 
               <a
@@ -210,7 +249,7 @@ export function LandingNavbar({ initialUser }: LandingNavbarProps) {
                 className="flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-900"
               >
                 <span>Workflow</span>
-                <span className="text-xs text-slate-400">4 Stages</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400">4 Stages</span>
               </a>
 
               <a
@@ -219,11 +258,11 @@ export function LandingNavbar({ initialUser }: LandingNavbarProps) {
                 className="flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-900"
               >
                 <span>Capabilities & Roadmap</span>
-                <span className="text-xs text-slate-400">Architecture</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400">Architecture</span>
               </a>
 
               <div className="pt-3 mt-2 border-t border-slate-100 dark:border-slate-800">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-3 block mb-2">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 px-3 block mb-2">
                   Account
                 </span>
                 <div className="sm:hidden px-1">

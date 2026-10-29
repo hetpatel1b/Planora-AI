@@ -70,6 +70,53 @@ export function WhatIfSimulator({
   const [applyError, setApplyError] = React.useState<string | null>(null);
   const [applySuccess, setApplySuccess] = React.useState<string | null>(null);
   const [isComparisonView, setIsComparisonView] = React.useState(false);
+  const reviewTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const modalRef = React.useRef<HTMLDivElement | null>(null);
+
+  React.useEffect(() => {
+    if (!isReviewOpen) return;
+
+    // Trap focus inside modal
+    const modalEl = modalRef.current;
+    if (modalEl) {
+      const focusable = modalEl.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusable.length > 0) {
+        focusable[0].focus();
+      }
+    }
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsReviewOpen(false);
+        reviewTriggerRef.current?.focus();
+      } else if (e.key === "Tab" && modalRef.current) {
+        const focusables = modalRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusables.length === 0) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isReviewOpen]);
 
   // New Candidate Item form state
   const [isAddingNewItem, setIsAddingNewItem] = React.useState(false);
@@ -347,9 +394,10 @@ export function WhatIfSimulator({
             size="sm"
             variant="outline"
             onClick={() => setIsComparisonView(!isComparisonView)}
+            aria-pressed={isComparisonView}
             className="gap-1.5 text-xs h-8"
           >
-            <Columns className="size-3" />
+            <Columns className="size-3" aria-hidden="true" />
             <span>{isComparisonView ? "Hide Matrix" : "Compare Scenarios"}</span>
           </Button>
 
@@ -359,7 +407,7 @@ export function WhatIfSimulator({
             onClick={handleResetScenario}
             className="gap-1.5 text-xs text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 h-8"
           >
-            <RotateCcw className="size-3" />
+            <RotateCcw className="size-3" aria-hidden="true" />
             <span>Reset Baseline</span>
           </Button>
 
@@ -377,7 +425,7 @@ export function WhatIfSimulator({
       </div>
 
       {/* Scenario Tabs (Scenario A, Scenario B) */}
-      <div className="flex items-center gap-2 border-b border-indigo-100/60 pb-3 dark:border-indigo-900/40 overflow-x-auto no-scrollbar">
+      <div className="flex items-center gap-2 border-b border-indigo-100/60 pb-3 dark:border-indigo-900/40 overflow-x-auto no-scrollbar" role="group" aria-label="Scenarios">
         {scenarios.map((s, idx) => (
           <button
             key={s.id}
@@ -386,6 +434,7 @@ export function WhatIfSimulator({
               setActiveScenarioIdx(idx);
               setIsComparisonView(false);
             }}
+            aria-pressed={activeScenarioIdx === idx && !isComparisonView}
             className={`shrink-0 rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
               activeScenarioIdx === idx && !isComparisonView
                 ? "bg-indigo-600 text-white shadow-xs"
@@ -401,19 +450,19 @@ export function WhatIfSimulator({
       {isComparisonView && comparisonResults && (
         <div className="rounded-2xl border border-indigo-200 bg-white p-5 shadow-xs dark:border-indigo-900 dark:bg-slate-900 space-y-4">
           <h4 className="text-sm font-bold text-slate-950 dark:text-white flex items-center gap-1.5">
-            <Columns className="size-4 text-indigo-600 dark:text-indigo-400" />
+            <Columns className="size-4 text-indigo-600 dark:text-indigo-400" aria-hidden="true" />
             <span>Multi-Scenario Comparison Matrix</span>
           </h4>
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="border-b border-slate-200 text-slate-500 dark:border-slate-800">
+            <table className="w-full text-left text-xs" aria-label="Multi-Scenario Comparison Matrix">
+              <thead className="border-b border-slate-200 text-slate-600 dark:text-slate-400 dark:border-slate-800">
                 <tr>
-                  <th className="py-2 pr-4 font-semibold">Scenario</th>
-                  <th className="py-2 px-4 font-semibold">Target Budget</th>
-                  <th className="py-2 px-4 font-semibold">Projected Spend</th>
-                  <th className="py-2 px-4 font-semibold">Delta vs Baseline</th>
-                  <th className="py-2 px-4 font-semibold">Projected Savings</th>
-                  <th className="py-2 pl-4 font-semibold">Status</th>
+                  <th scope="col" className="py-2 pr-4 font-semibold">Scenario</th>
+                  <th scope="col" className="py-2 px-4 font-semibold">Target Budget</th>
+                  <th scope="col" className="py-2 px-4 font-semibold">Projected Spend</th>
+                  <th scope="col" className="py-2 px-4 font-semibold">Delta vs Baseline</th>
+                  <th scope="col" className="py-2 px-4 font-semibold">Projected Savings</th>
+                  <th scope="col" className="py-2 pl-4 font-semibold">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -485,20 +534,20 @@ export function WhatIfSimulator({
       >
         {/* Projected Total */}
         <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
-          <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
+          <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
             Projected Spend
           </p>
           <p className="mt-1 font-mono text-lg font-bold text-slate-950 dark:text-white">
             {formatMoney(simulationResult.scenarioSummary.totalEstimated)}
           </p>
-          <p className="mt-0.5 text-[11px] text-slate-500">
+          <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
             Baseline: {formatMoney(simulationResult.baselineSummary.totalEstimated)}
           </p>
         </div>
 
         {/* Delta vs Baseline */}
         <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
-          <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
+          <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
             Delta vs Baseline
           </p>
           <div className="mt-1 flex items-center gap-1.5">
@@ -513,14 +562,14 @@ export function WhatIfSimulator({
                   ? "text-emerald-600 dark:text-emerald-400"
                   : simulationResult.deltaEstimatedTotal > 0
                   ? "text-rose-600 dark:text-rose-400"
-                  : "text-slate-900 dark:text-white"
+                  : "text-slate-950 dark:text-white"
               }`}
             >
               {simulationResult.deltaEstimatedTotal > 0 ? "+" : ""}
               {formatMoney(simulationResult.deltaEstimatedTotal)}
             </span>
           </div>
-          <p className="mt-0.5 text-[11px] text-slate-500">
+          <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
             {simulationResult.deltaEstimatedTotal < 0
               ? "Cost reduction"
               : simulationResult.deltaEstimatedTotal > 0
@@ -531,20 +580,20 @@ export function WhatIfSimulator({
 
         {/* Projected Savings */}
         <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
-          <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
+          <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
             Projected Savings
           </p>
           <p className="mt-1 font-mono text-lg font-bold text-emerald-600 dark:text-emerald-400">
             {formatMoney(simulationResult.projectedSavings)}
           </p>
-          <p className="mt-0.5 text-[11px] text-slate-500">
+          <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
             Estimated spending saved
           </p>
         </div>
 
         {/* Projected Remaining / Overspend */}
         <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
-          <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
+          <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
             {simulationResult.projectedOverspending > 0
               ? "Projected Overspend"
               : "Remaining Cushion"}
@@ -639,8 +688,9 @@ export function WhatIfSimulator({
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="text-[11px] text-slate-500 block mb-1">Item Name</label>
+                <label htmlFor="candidate-item-name" className="text-[11px] text-slate-600 dark:text-slate-400 block mb-1">Item Name</label>
                 <Input
+                  id="candidate-item-name"
                   required
                   placeholder="e.g. Photo Booth Rental"
                   value={newItemName}
@@ -649,8 +699,9 @@ export function WhatIfSimulator({
                 />
               </div>
               <div>
-                <label className="text-[11px] text-slate-500 block mb-1">Category</label>
+                <label htmlFor="candidate-item-category" className="text-[11px] text-slate-600 dark:text-slate-400 block mb-1">Category</label>
                 <select
+                  id="candidate-item-category"
                   value={newItemCategory}
                   onChange={(e) => setNewItemCategory(e.target.value)}
                   className="w-full h-8 rounded-lg border border-slate-200 bg-white px-2 text-xs dark:border-slate-800 dark:bg-slate-900 text-slate-900 dark:text-slate-100"
@@ -666,8 +717,9 @@ export function WhatIfSimulator({
                 </select>
               </div>
               <div>
-                <label className="text-[11px] text-slate-500 block mb-1">Estimated Cost (₹)</label>
+                <label htmlFor="candidate-item-cost" className="text-[11px] text-slate-600 dark:text-slate-400 block mb-1">Estimated Cost (₹)</label>
                 <Input
+                  id="candidate-item-cost"
                   required
                   type="number"
                   step="0.01"
@@ -702,15 +754,15 @@ export function WhatIfSimulator({
 
         {/* Table of items */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="border-b border-slate-200 text-slate-500 dark:border-slate-800">
+          <table className="w-full text-left text-xs" aria-label="Scenario Line Items Allocation">
+            <thead className="border-b border-slate-200 text-slate-600 dark:text-slate-400 dark:border-slate-800">
               <tr>
-                <th className="py-2 pr-4 font-semibold">Expense Item</th>
-                <th className="py-2 px-4 font-semibold">Category</th>
-                <th className="py-2 px-4 font-semibold">Baseline Cost</th>
-                <th className="py-2 px-4 font-semibold">Hypothetical Estimate</th>
-                <th className="py-2 px-4 font-semibold">Delta</th>
-                <th className="py-2 pl-4 text-right font-semibold">Actions</th>
+                <th scope="col" className="py-2 pr-4 font-semibold">Expense Item</th>
+                <th scope="col" className="py-2 px-4 font-semibold">Category</th>
+                <th scope="col" className="py-2 px-4 font-semibold">Baseline Cost</th>
+                <th scope="col" className="py-2 px-4 font-semibold">Hypothetical Estimate</th>
+                <th scope="col" className="py-2 px-4 font-semibold">Delta</th>
+                <th scope="col" className="py-2 pl-4 text-right font-semibold">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -846,6 +898,7 @@ export function WhatIfSimulator({
         </div>
 
         <Button
+          ref={reviewTriggerRef}
           onClick={() => setIsReviewOpen(true)}
           disabled={itemDiff.totalChangesCount === 0}
           className="bg-indigo-600 text-white hover:bg-indigo-700 text-xs font-semibold shadow-xs"
@@ -857,6 +910,7 @@ export function WhatIfSimulator({
       {/* Review & Confirmation Modal */}
       {isReviewOpen && (
         <div
+          ref={modalRef}
           role="dialog"
           aria-modal="true"
           aria-labelledby="confirm-apply-title"
@@ -868,16 +922,21 @@ export function WhatIfSimulator({
                 id="confirm-apply-title"
                 className="text-base font-bold text-slate-950 dark:text-white flex items-center gap-2"
               >
-                <FileSpreadsheet className="size-4 text-indigo-600 dark:text-indigo-400" />
+                <FileSpreadsheet className="size-4 text-indigo-600 dark:text-indigo-400" aria-hidden="true" />
                 <span>Confirm Budget Scenario Application</span>
               </h3>
               <Button
                 size="sm"
                 variant="ghost"
-                onClick={() => setIsReviewOpen(false)}
+                onClick={() => {
+                  setIsReviewOpen(false);
+                  reviewTriggerRef.current?.focus();
+                }}
+                aria-label="Close scenario review"
                 className="size-7 p-0"
               >
-                <X className="size-4" />
+                <X className="size-4" aria-hidden="true" />
+                <span className="sr-only">Close scenario review</span>
               </Button>
             </div>
 
@@ -926,16 +985,24 @@ export function WhatIfSimulator({
 
             {/* Error Message */}
             {applyError && (
-              <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800 dark:border-rose-900 dark:bg-rose-950/60 dark:text-rose-200 flex items-start gap-2">
-                <AlertTriangle className="size-4 shrink-0 mt-0.5 text-rose-600" />
+              <div
+                role="alert"
+                aria-live="assertive"
+                className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800 dark:border-rose-900 dark:bg-rose-950/60 dark:text-rose-200 flex items-start gap-2"
+              >
+                <AlertTriangle className="size-4 shrink-0 mt-0.5 text-rose-600" aria-hidden="true" />
                 <p>{applyError}</p>
               </div>
             )}
 
             {/* Success Message */}
             {applySuccess && (
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-200 flex items-start gap-2">
-                <CheckCircle2 className="size-4 shrink-0 mt-0.5 text-emerald-600" />
+              <div
+                role="status"
+                aria-live="polite"
+                className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-200 flex items-start gap-2"
+              >
+                <CheckCircle2 className="size-4 shrink-0 mt-0.5 text-emerald-600" aria-hidden="true" />
                 <p>{applySuccess}</p>
               </div>
             )}
@@ -944,7 +1011,10 @@ export function WhatIfSimulator({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setIsReviewOpen(false)}
+                onClick={() => {
+                  setIsReviewOpen(false);
+                  reviewTriggerRef.current?.focus();
+                }}
                 disabled={isApplying}
                 className="text-xs"
               >

@@ -95,6 +95,7 @@ export function WorkspaceNav({
                 key={item.id}
                 href={`#${item.id}`}
                 onClick={(e) => handleScrollTo(item.id, e)}
+                aria-current={isActive ? "location" : undefined}
                 className={`inline-flex shrink-0 items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-semibold transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 cursor-pointer ${
                   isActive
                     ? "bg-violet-50 text-violet-700 shadow-2xs dark:bg-violet-950/70 dark:text-violet-300"
@@ -105,7 +106,7 @@ export function WorkspaceNav({
                   className={`size-3.5 shrink-0 ${
                     isActive
                       ? "text-violet-600 dark:text-violet-400"
-                      : "text-slate-400 group-hover:text-slate-600 dark:text-slate-500"
+                      : "text-slate-500 group-hover:text-slate-600 dark:text-slate-400"
                   }`}
                   aria-hidden="true"
                 />

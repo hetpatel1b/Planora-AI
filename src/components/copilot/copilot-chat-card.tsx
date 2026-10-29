@@ -626,7 +626,7 @@ export function CopilotChatCard({
           </Button>
         </div>
 
-        <div className="mt-1.5 flex items-center justify-between px-1 text-[10px] text-slate-400 dark:text-slate-500 gap-2">
+        <div className="mt-1.5 flex items-center justify-between px-1 text-[10px] text-slate-500 dark:text-slate-400 gap-2">
           <span className="truncate">AI advice is advisory. Add suggestions via confirmation buttons above.</span>
           <span className="shrink-0">{`${inputValue.length}/2,000`}</span>
         </div>

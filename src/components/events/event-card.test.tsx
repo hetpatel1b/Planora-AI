@@ -106,10 +106,11 @@ describe("EventCard Component", () => {
     expect(html).toContain("₹0");
   });
 
-  it("renders primary workspace link with destination /dashboard/events/[id]", () => {
+  it("renders primary workspace link with destination /dashboard/events/[id] and accessible label", () => {
     const html = renderToString(<EventCard event={mockEvent} />);
 
     expect(html).toContain('href="/dashboard/events/evt-1234-abcd"');
     expect(html).toContain("Open Event Workspace");
+    expect(html).toContain('aria-label="Open event workspace for Global Tech Innovators Summit 2027"');
   });
 });

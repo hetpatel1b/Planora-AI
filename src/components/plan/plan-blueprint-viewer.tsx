@@ -376,16 +376,16 @@ export function PlanBlueprintViewer({
 
               <div className="flex shrink-0 flex-wrap items-center gap-2 pt-2 sm:pt-0">
                 <Badge variant="outline" className="text-[11px]">
-                  <Clock className="mr-1 size-3 text-slate-400" />
+                  <Clock className="mr-1 size-3 text-slate-500 dark:text-slate-400" aria-hidden="true" />
                   {milestone.timeframe}
                 </Badge>
                 {milestone.suggested_date ? (
                   <Badge variant="secondary" className="text-[11px]">
-                    <Calendar className="mr-1 size-3 text-slate-400" />
+                    <Calendar className="mr-1 size-3 text-slate-500 dark:text-slate-400" aria-hidden="true" />
                     {formatEventDate(milestone.suggested_date)}
                   </Badge>
                 ) : (
-                  <span className="text-[11px] text-slate-400 italic">
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 italic">
                     Relative date
                   </span>
                 )}
@@ -495,7 +495,7 @@ export function PlanBlueprintViewer({
 
                     {task.suggested_days_before !== null &&
                       task.suggested_days_before !== undefined && (
-                        <span className="text-[10px] text-slate-400">
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400">
                           {task.suggested_days_before === 0
                             ? "Event day"
                             : `${task.suggested_days_before} days prior`}

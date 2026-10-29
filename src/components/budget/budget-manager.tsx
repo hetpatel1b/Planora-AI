@@ -145,12 +145,12 @@ export function BudgetManager({
             <span className="inline-flex size-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400">
               <IndianRupee className="size-4" />
             </span>
-            <h2
+            <h3
               id="budget-manager-title"
               className="text-xl font-bold tracking-tight text-slate-950 dark:text-white"
             >
               Smart Budget Manager
-            </h2>
+            </h3>
           </div>
           <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
             Track allocations, monitor actual expenses, and prevent cost overruns with deterministic financial math.
@@ -525,7 +525,7 @@ export function BudgetManager({
                     </span>
                   </div>
                   {targetBudget > 0 && (
-                    <div className="flex justify-between text-[10px] text-slate-400 pt-0.5">
+                    <div className="flex justify-between text-[10px] text-slate-500 dark:text-slate-400 pt-0.5">
                       <span>Share of Budget:</span>
                       <span>{cat.percentOfTargetBudget.toFixed(1)}%</span>
                     </div>
@@ -553,7 +553,7 @@ export function BudgetManager({
           <div className="flex flex-wrap items-center gap-2">
             {/* Search Input */}
             <div className="relative min-w-[200px] flex-1 sm:flex-initial">
-              <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
+              <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-slate-500 dark:text-slate-400" aria-hidden="true" />
               <Input
                 type="text"
                 placeholder="Search items or notes..."
@@ -649,15 +649,16 @@ export function BudgetManager({
         ) : (
           /* Line Items Table */
           <div className="mt-4 overflow-x-auto">
-            <table className="w-full text-left text-xs">
+            <table className="w-full text-left text-xs" aria-label="Budget Line Items">
+              <caption className="sr-only">Budget Line Items</caption>
               <thead>
-                <tr className="border-b border-slate-100 text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:border-slate-800">
-                  <th className="pb-3 pr-4">Expense Item</th>
-                  <th className="pb-3 px-4">Category</th>
-                  <th className="pb-3 px-4 text-right">Estimated</th>
-                  <th className="pb-3 px-4 text-right">Actual</th>
-                  <th className="pb-3 px-4 text-right">Variance</th>
-                  <th className="pb-3 pl-4 text-right">Actions</th>
+                <tr className="border-b border-slate-100 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:text-slate-400">
+                  <th scope="col" className="pb-3 pr-4">Expense Item</th>
+                  <th scope="col" className="pb-3 px-4">Category</th>
+                  <th scope="col" className="pb-3 px-4 text-right">Estimated</th>
+                  <th scope="col" className="pb-3 px-4 text-right">Actual</th>
+                  <th scope="col" className="pb-3 px-4 text-right">Variance</th>
+                  <th scope="col" className="pb-3 pl-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
@@ -702,7 +703,7 @@ export function BudgetManager({
                             <span>-{formatMoney(Math.abs(variance))} under</span>
                           </span>
                         ) : (
-                          <span className="text-[11px] text-slate-400">
+                          <span className="text-[11px] text-slate-500 dark:text-slate-400">
                             On target
                           </span>
                         )}

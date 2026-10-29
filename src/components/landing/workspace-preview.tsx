@@ -505,7 +505,7 @@ export function WorkspacePreview() {
 
               {/* Sample Query Prompt Chips */}
               <div className="mt-3">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 block mb-1.5">
                   Try sample prompt:
                 </span>
                 <div className="flex flex-wrap gap-1.5">
@@ -545,7 +545,7 @@ export function WorkspacePreview() {
                   <Send className="size-3" aria-hidden="true" />
                 </Button>
               </div>
-              <p className="mt-1 text-[10px] text-slate-400 text-center">
+              <p className="mt-1 text-[10px] text-slate-500 dark:text-slate-400 text-center">
                 Interactive preview • Live Copilot powered by Groq LLM in active projects
               </p>
             </form>

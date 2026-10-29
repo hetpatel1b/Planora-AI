@@ -85,7 +85,7 @@ export function EventSummaryBar({ event }: EventSummaryBarProps) {
             <Calendar className="size-4" aria-hidden="true" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
+            <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
               Target Date
             </p>
             <p className="mt-0.5 font-semibold text-xs text-slate-900 dark:text-white truncate">
@@ -103,7 +103,7 @@ export function EventSummaryBar({ event }: EventSummaryBarProps) {
             <MapPin className="size-4" aria-hidden="true" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
+            <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
               Venue / Location
             </p>
             <p className="mt-0.5 font-semibold text-xs text-slate-900 dark:text-white truncate">
@@ -121,7 +121,7 @@ export function EventSummaryBar({ event }: EventSummaryBarProps) {
             <Users className="size-4" aria-hidden="true" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
+            <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
               Attendees
             </p>
             <p className="mt-0.5 font-semibold text-xs text-slate-900 dark:text-white truncate">
@@ -139,7 +139,7 @@ export function EventSummaryBar({ event }: EventSummaryBarProps) {
             <IndianRupee className="size-4" aria-hidden="true" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
+            <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
               Target Budget
             </p>
             <p className="mt-0.5 font-semibold text-xs text-slate-900 dark:text-white truncate">
@@ -212,7 +212,7 @@ export function EventSummaryBar({ event }: EventSummaryBarProps) {
               </p>
             </div>
 
-            <div className="sm:col-span-3 text-[11px] text-slate-400 dark:text-slate-500 pt-1 flex items-center justify-between flex-wrap gap-2">
+            <div className="sm:col-span-3 text-[11px] text-slate-500 dark:text-slate-400 pt-1 flex items-center justify-between flex-wrap gap-2">
               <span>Workspace ID: <code className="font-mono">{event.id}</code></span>
               <span>All parameters isolated by PostgreSQL Row Level Security.</span>
             </div>

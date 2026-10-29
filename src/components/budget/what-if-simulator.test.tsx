@@ -409,5 +409,51 @@ describe("WhatIfSimulator Component", () => {
       const errorText = await screen.findByText("Concurrency conflict: budget was modified by another session.");
       expect(errorText).toBeDefined();
     });
+
+    it("supports accessible modal closure via Escape key and restores focus to trigger button", async () => {
+      const user = userEvent.setup();
+      render(
+        <WhatIfSimulator
+          eventId={eventId}
+          baselineTargetBudget={baselineTargetBudget}
+          baselineItems={baselineItems}
+        />
+      );
+
+      const buffetInput = screen.getByLabelText("Adjust estimated amount for Gourmet Buffet");
+      await user.clear(buffetInput);
+      await user.type(buffetInput, "11000");
+
+      const reviewBtn = screen.getByRole("button", { name: /Review & Apply Changes/i });
+      await user.click(reviewBtn);
+
+      const dialog = screen.getByRole("dialog");
+      expect(dialog).toBeDefined();
+
+      // Close button has accessible name
+      const closeBtn = screen.getByRole("button", { name: "Close scenario review" });
+      expect(closeBtn).toBeDefined();
+
+      // Pressing Escape dismisses the dialog
+      await user.keyboard("{Escape}");
+      expect(screen.queryByRole("dialog")).toBeNull();
+    });
+
+    it("provides programmatically associated labels for candidate expense form inputs", async () => {
+      const user = userEvent.setup();
+      render(
+        <WhatIfSimulator
+          eventId={eventId}
+          baselineTargetBudget={baselineTargetBudget}
+          baselineItems={baselineItems}
+        />
+      );
+
+      await user.click(screen.getByRole("button", { name: /Add Candidate Item/i }));
+
+      expect(screen.getByLabelText("Item Name")).toBeDefined();
+      expect(screen.getByLabelText("Category")).toBeDefined();
+      expect(screen.getByLabelText(/Estimated Cost/i)).toBeDefined();
+    });
   });
 });

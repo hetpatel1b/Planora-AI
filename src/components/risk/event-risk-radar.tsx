@@ -179,12 +179,12 @@ export function EventRiskRadar({
             <span className="inline-flex size-7 items-center justify-center rounded-lg bg-rose-50 text-rose-600 dark:bg-rose-950 dark:text-rose-400">
               <ShieldAlert className="size-4" />
             </span>
-            <h2
+            <h3
               id="risk-radar-title"
               className="text-xl font-bold tracking-tight text-slate-950 dark:text-white"
             >
               Event Risk Radar
-            </h2>
+            </h3>
           </div>
           <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
             Deterministic, real-time threat detection analyzing budget overruns, overdue tasks, checklist gaps, and schedule bottlenecks.
@@ -367,7 +367,7 @@ export function EventRiskRadar({
                 {/* Grounded Evidence Box */}
                 {risk.evidence && Object.keys(risk.evidence).length > 0 && (
                   <div className="mt-3 rounded-xl border border-slate-100 bg-slate-50/80 p-3 text-[11px] font-mono text-slate-600 dark:border-slate-800/80 dark:bg-slate-950/40 dark:text-slate-400">
-                    <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block mb-1 font-sans">
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 block mb-1 font-sans">
                       Supporting Evidence
                     </span>
                     <div className="flex flex-wrap gap-x-4 gap-y-1 min-w-0">

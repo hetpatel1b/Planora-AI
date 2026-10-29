@@ -215,6 +215,7 @@ function SignUpContent() {
             <>
               {errorMessage && (
                 <div
+                  id="auth-error-banner"
                   className="mb-5 flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50/80 p-3.5 text-xs text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300"
                   role="alert"
                 >
@@ -267,6 +268,8 @@ function SignUpContent() {
                       type="email"
                       autoComplete="email"
                       required
+                      aria-invalid={Boolean(errorMessage)}
+                      aria-describedby={errorMessage ? "auth-error-banner" : undefined}
                       disabled={isLoading || isGithubLoading}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
@@ -290,6 +293,8 @@ function SignUpContent() {
                       autoComplete="new-password"
                       required
                       minLength={8}
+                      aria-invalid={Boolean(errorMessage)}
+                      aria-describedby={errorMessage ? "auth-error-banner" : undefined}
                       disabled={isLoading || isGithubLoading}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
@@ -299,7 +304,7 @@ function SignUpContent() {
                     <button
                       type="button"
                       onClick={() => setShowPassword((prev) => !prev)}
-                      className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 transition hover:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-r-md dark:hover:text-slate-200"
+                      className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-500 transition hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-r-md dark:text-slate-400 dark:hover:text-slate-200"
                       aria-label={
                         showPassword ? "Hide password" : "Show password"
                       }
@@ -328,6 +333,8 @@ function SignUpContent() {
                       autoComplete="new-password"
                       required
                       minLength={8}
+                      aria-invalid={Boolean(errorMessage)}
+                      aria-describedby={errorMessage ? "auth-error-banner" : undefined}
                       disabled={isLoading || isGithubLoading}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
@@ -337,7 +344,7 @@ function SignUpContent() {
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword((prev) => !prev)}
-                      className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 transition hover:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-r-md dark:hover:text-slate-200"
+                      className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-500 transition hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-r-md dark:text-slate-400 dark:hover:text-slate-200"
                       aria-label={
                         showConfirmPassword
                           ? "Hide confirm password"

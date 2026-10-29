@@ -32,13 +32,21 @@ export function validateScenarioAmount(
 ): number {
   const result = validateCurrencyValue(val, fieldLabel);
   if (!result.valid) {
-    let msg = result.error!;
-    if (msg.includes("must be a valid number")) {
-      msg = `Invalid ${fieldLabel}: Must be a valid numeric value.`;
+    let detail = result.error!;
+    if (detail.toLowerCase().includes("scientific notation")) {
+      detail = "Scientific notation is not supported for currency amounts.";
+    } else if (
+      detail.toLowerCase().includes("valid number") ||
+      detail.toLowerCase().includes("finite number")
+    ) {
+      detail = "Must be a valid numeric value.";
     } else {
-      msg = `Invalid ${fieldLabel}: ${msg.replace(new RegExp(`^${fieldLabel} `, "i"), "")}`;
+      detail = detail.replace(new RegExp(`^${fieldLabel}\\s+`, "i"), "");
+      if (detail.length > 0) {
+        detail = detail.charAt(0).toUpperCase() + detail.slice(1);
+      }
     }
-    throw new Error(msg);
+    throw new Error(`Invalid ${fieldLabel}: ${detail}`);
   }
 
   return result.amount!;

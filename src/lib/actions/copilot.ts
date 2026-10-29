@@ -8,6 +8,7 @@ import { getLatestPlanRevisionAction } from "@/lib/actions/plan";
 import { calculateBudgetSummary, calculateCategoryBreakdown } from "@/lib/budget-math";
 import { sendGroqChatCompletion } from "@/lib/ai/groq";
 import { buildCopilotMessages, type CopilotEventContext } from "@/lib/ai/copilot-prompt";
+import { checkCopilotRateLimit } from "@/lib/ai/rate-limiter";
 import {
   copilotRequestSchema,
   copilotResponseEnvelopeSchema,
@@ -56,6 +57,15 @@ export async function askCopilotAction(
       return {
         success: false,
         error: "Authentication required. Please sign in to consult the copilot.",
+      };
+    }
+
+    // 2b. Rate Limiting Check
+    const rateLimit = checkCopilotRateLimit(user.id);
+    if (!rateLimit.allowed) {
+      return {
+        success: false,
+        error: "You are sending messages too quickly. Please wait a moment before trying again.",
       };
     }
 

@@ -5,6 +5,7 @@ import { createClient, getAuthenticatedUser } from "@/lib/supabase/server";
 import { getEventById } from "@/lib/actions/events";
 import { generateEventPlan, type EventPlanInput } from "@/lib/plan-generator";
 import { sendGroqChatCompletion } from "@/lib/ai/groq";
+import { checkPlanGenerationRateLimit } from "@/lib/ai/rate-limiter";
 import {
   buildPlanGenerationMessages,
   parsePlanBlueprintResponse,
@@ -71,6 +72,15 @@ export async function generateEventPlanAction(
       return {
         success: false,
         error: "Authentication required to generate an event plan.",
+      };
+    }
+
+    // Rate Limiting Check
+    const rateLimit = checkPlanGenerationRateLimit(user.id);
+    if (!rateLimit.allowed) {
+      return {
+        success: false,
+        error: "Plan generation rate limit exceeded. Please wait a moment before generating another plan.",
       };
     }
 

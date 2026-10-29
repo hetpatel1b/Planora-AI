@@ -29,6 +29,15 @@ describe("auth-utils: getSafeRedirectUrl", () => {
     expect(getSafeRedirectUrl("//attacker.com")).toBe("/dashboard");
     expect(getSafeRedirectUrl("/\\attacker.com")).toBe("/dashboard");
     expect(getSafeRedirectUrl("/\\\\attacker.com")).toBe("/dashboard");
+    expect(getSafeRedirectUrl("///attacker.com")).toBe("/dashboard");
+    expect(getSafeRedirectUrl("/\\/attacker.com")).toBe("/dashboard");
+  });
+
+  it("blocks control characters and CRLF injection attempts", () => {
+    expect(getSafeRedirectUrl("/dashboard\r\nLocation: https://evil.com")).toBe("/dashboard");
+    expect(getSafeRedirectUrl("/dashboard\nSet-Cookie: evil=1")).toBe("/dashboard");
+    expect(getSafeRedirectUrl("/page\0evil")).toBe("/dashboard");
+    expect(getSafeRedirectUrl("/tab\tevil")).toBe("/dashboard");
   });
 
   it("blocks embedded URI schemes before query or hash (e.g. javascript:)", () => {

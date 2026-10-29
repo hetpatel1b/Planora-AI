@@ -3,6 +3,7 @@ import { generateEventPlanAction } from "./plan";
 import * as serverAuth from "@/lib/supabase/server";
 import * as eventActions from "@/lib/actions/events";
 import * as groqClient from "@/lib/ai/groq";
+import { resetAllRateLimits, checkPlanGenerationRateLimit } from "@/lib/ai/rate-limiter";
 
 describe("generateEventPlanAction", () => {
   const validEventId = "123e4567-e89b-12d3-a456-426614174000";
@@ -61,6 +62,7 @@ describe("generateEventPlanAction", () => {
 
   beforeEach(() => {
     vi.restoreAllMocks();
+    resetAllRateLimits();
     delete process.env.GROQ_API_KEY;
   });
 
@@ -88,6 +90,21 @@ describe("generateEventPlanAction", () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error).toContain("Authentication required");
+    }
+  });
+
+  it("rejects plan generation requests when rate limit threshold is exceeded", async () => {
+    mockAuthSuccess();
+
+    // Exhaust 5 permitted plan generation requests
+    for (let i = 0; i < 5; i++) {
+      checkPlanGenerationRateLimit(mockUser.id);
+    }
+
+    const result = await generateEventPlanAction(validEventId);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toContain("rate limit exceeded");
     }
   });
 

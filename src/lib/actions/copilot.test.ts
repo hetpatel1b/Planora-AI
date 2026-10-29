@@ -6,6 +6,7 @@ import * as budgetActions from "@/lib/actions/budget";
 import * as taskActions from "@/lib/actions/tasks";
 import * as planActions from "@/lib/actions/plan";
 import * as groqClient from "@/lib/ai/groq";
+import { resetAllRateLimits, checkCopilotRateLimit } from "@/lib/ai/rate-limiter";
 
 describe("askCopilotAction", () => {
   const validEventId = "123e4567-e89b-12d3-a456-426614174000";
@@ -30,6 +31,7 @@ describe("askCopilotAction", () => {
 
   beforeEach(() => {
     vi.restoreAllMocks();
+    resetAllRateLimits();
   });
 
   it("rejects invalid input schema (e.g. malformed event UUID)", async () => {
@@ -71,6 +73,28 @@ describe("askCopilotAction", () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error).toContain("Authentication required");
+    }
+  });
+
+  it("rejects requests when per-user rate limit is exceeded", async () => {
+    vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue({
+      data: { user: mockUser as unknown as import("@supabase/supabase-js").User },
+      error: null,
+    });
+
+    // Exhaust the 15 allowed requests
+    for (let i = 0; i < 15; i++) {
+      checkCopilotRateLimit(mockUser.id);
+    }
+
+    const result = await askCopilotAction({
+      eventId: validEventId,
+      messages: [{ role: "user", content: "Spam message" }],
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toContain("too quickly");
     }
   });
 

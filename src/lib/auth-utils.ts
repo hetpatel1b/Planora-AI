@@ -13,13 +13,18 @@ export function getSafeRedirectUrl(target?: string | null, fallback = "/dashboar
 
   const trimmed = target.trim();
 
+  // Reject control characters (prevents CRLF injection and HTTP response splitting)
+  if (/[\x00-\x1F\x7F]/.test(trimmed)) {
+    return fallback;
+  }
+
   // Must begin with a single slash
   if (!trimmed.startsWith("/")) {
     return fallback;
   }
 
-  // Block protocol-relative URLs (e.g. //evil.com or /\evil.com)
-  if (trimmed.startsWith("//") || trimmed.startsWith("/\\") || trimmed.startsWith("/\\\\")) {
+  // Block protocol-relative URLs (e.g. //evil.com, /\evil.com, ///evil.com, /\\evil.com)
+  if (/^\/[/\\]/.test(trimmed)) {
     return fallback;
   }
 

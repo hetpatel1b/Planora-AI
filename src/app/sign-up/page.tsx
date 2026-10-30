@@ -128,7 +128,7 @@ function SignUpContent() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col justify-center bg-slate-50/50 px-4 py-12 sm:px-6 lg:px-8 dark:bg-slate-950">
+    <main className="flex min-h-screen flex-col justify-center bg-slate-50/50 px-4 py-12 sm:px-6 lg:px-8 dark:bg-slate-950">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <Link
           href="/"
@@ -384,7 +384,7 @@ function SignUpContent() {
           )}
         </div>
       </div>
-    </div>
+    </main>
   );
 }
 

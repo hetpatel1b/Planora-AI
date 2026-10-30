@@ -1,6 +1,6 @@
--- Planora AI — Database Performance Optimization Migration (UNAPPLIED)
+-- Planora AI — Database Performance Optimization Migration
 -- Migration: 20261025193000_performance_composite_indexes_and_rpc.sql
--- Status: UNAPPLIED (Must be reviewed and explicitly applied via Supabase CLI or Dashboard)
+-- Status: Canonical Migration 4 in release sequence (Applied sequentially via Supabase CLI or CI pipeline)
 --
 -- Summary of Changes:
 -- 1. Composite Covering Indexes:

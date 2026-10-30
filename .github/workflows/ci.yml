@@ -103,7 +103,7 @@ jobs:
         with:
           version: latest
 
-      - name: Start isolated local Supabase container
+      - name: Start isolated local Supabase container & seed E2E credentials
         run: |
           supabase start
           API_URL=$(supabase status -o json | jq -r '.API_URL // "http://127.0.0.1:54321"')
@@ -111,8 +111,31 @@ jobs:
           if [ -z "$ANON_KEY" ]; then
             ANON_KEY=$(supabase status -o env | grep '^ANON_KEY=' | cut -d '=' -f2- | tr -d '"')
           fi
+          LOCAL_DB_URL=$(supabase status -o json | jq -r '.DB_URL // empty')
+          if [ -z "$LOCAL_DB_URL" ]; then
+            LOCAL_DB_URL=$(supabase status -o env | grep '^DB_URL=' | cut -d '=' -f2- | tr -d '"')
+          fi
+          if [ -z "$LOCAL_DB_URL" ]; then
+            LOCAL_DB_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+          fi
+
           echo "LOCAL_SUPABASE_URL=$API_URL" >> $GITHUB_ENV
           echo "LOCAL_SUPABASE_ANON_KEY=$ANON_KEY" >> $GITHUB_ENV
+
+          # Provision ephemeral E2E test user in local Supabase container
+          E2E_EMAIL="e2e_ci_runner@planora.local"
+          E2E_PASS="E2ETestSecretPass123!"
+
+          curl -s -X POST "$API_URL/auth/v1/signup" \
+            -H "apikey: $ANON_KEY" \
+            -H "Content-Type: application/json" \
+            -d "{\"email\":\"$E2E_EMAIL\",\"password\":\"$E2E_PASS\"}" || true
+
+          # Ensure email confirmation is marked confirmed in local PostgreSQL
+          psql -d "$LOCAL_DB_URL" -c "UPDATE auth.users SET email_confirmed_at = now() WHERE email = '$E2E_EMAIL';" || true
+
+          echo "E2E_TEST_USER_EMAIL=$E2E_EMAIL" >> $GITHUB_ENV
+          echo "E2E_TEST_USER_PASSWORD=$E2E_PASS" >> $GITHUB_ENV
 
       - name: Install dependencies
         run: npm ci
@@ -124,4 +147,6 @@ jobs:
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ env.LOCAL_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ env.LOCAL_SUPABASE_ANON_KEY }}
+          E2E_TEST_USER_EMAIL: ${{ env.E2E_TEST_USER_EMAIL }}
+          E2E_TEST_USER_PASSWORD: ${{ env.E2E_TEST_USER_PASSWORD }}
         run: npm run test:e2e

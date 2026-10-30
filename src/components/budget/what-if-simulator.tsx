@@ -11,7 +11,6 @@ import {
   type ScenarioResult,
 } from "@/lib/budget-simulator";
 import { applyBudgetScenarioAction } from "@/lib/actions/simulator";
-import { formatMoney } from "@/lib/currency-utils";
 import { toCents, fromCents } from "@/lib/budget-math";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,12 +19,12 @@ import { WhatIfReviewModal } from "@/components/budget/what-if-review-modal";
 import { WhatIfCandidateForm } from "@/components/budget/what-if-candidate-form";
 import { WhatIfKpiGrid } from "@/components/budget/what-if-kpi-grid";
 import { WhatIfComparisonMatrix } from "@/components/budget/what-if-comparison-matrix";
+import { WhatIfWorkbenchTable } from "@/components/budget/what-if-workbench-table";
 import {
   Sliders,
   RotateCcw,
   Plus,
   Columns,
-  Sparkles,
 } from "lucide-react";
 
 export interface WhatIfSimulatorProps {
@@ -470,139 +469,14 @@ export function WhatIfSimulator({
         />
 
         {/* Table of items */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs" aria-label="Scenario Line Items Allocation">
-            <thead className="border-b border-slate-200 text-slate-600 dark:text-slate-400 dark:border-slate-800">
-              <tr>
-                <th scope="col" className="py-2 pr-4 font-semibold">Expense Item</th>
-                <th scope="col" className="py-2 px-4 font-semibold">Category</th>
-                <th scope="col" className="py-2 px-4 font-semibold">Baseline Cost</th>
-                <th scope="col" className="py-2 px-4 font-semibold">Hypothetical Estimate</th>
-                <th scope="col" className="py-2 px-4 font-semibold">Delta</th>
-                <th scope="col" className="py-2 pl-4 text-right font-semibold">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {baselineItems.length === 0 && (!currentScenario.new_items || currentScenario.new_items.length === 0) && (
-                <tr>
-                  <td colSpan={6} className="py-6 text-center text-slate-500">
-                    No baseline budget items found. Add a candidate item to begin modeling.
-                  </td>
-                </tr>
-              )}
-              {/* Existing Items with overrides */}
-              {baselineItems.map((bItem) => {
-                const computed = simulationResult.computedItems.find((i) => i.id === bItem.id);
-                const isDeleted = !computed;
-                const baselineEst = Number(bItem.estimated_amount);
-                const hypotheticalEst = computed ? computed.estimated_amount : 0;
-                const delta = hypotheticalEst - baselineEst;
-
-                return (
-                  <tr
-                    key={bItem.id}
-                    className={`transition ${isDeleted ? "opacity-40 bg-slate-50 dark:bg-slate-900/40" : ""}`}
-                  >
-                    <td className="py-2.5 pr-4 font-medium text-slate-900 dark:text-slate-100">
-                      <div className="flex items-center gap-2">
-                        {isDeleted && <span className="line-through">{bItem.item_name}</span>}
-                        {!isDeleted && <span>{bItem.item_name}</span>}
-                        {computed?.isModified && (
-                          <Badge variant="outline" className="text-[10px] text-indigo-600 py-0">
-                            Edited
-                          </Badge>
-                        )}
-                        {isDeleted && (
-                          <Badge variant="destructive" className="text-[10px] py-0">
-                            Removed
-                          </Badge>
-                        )}
-                      </div>
-                    </td>
-                    <td className="py-2.5 px-4 text-slate-500">{bItem.category}</td>
-                    <td className="py-2.5 px-4 font-mono">{formatMoney(baselineEst)}</td>
-                    <td className="py-2.5 px-4">
-                      {!isDeleted ? (
-                        <div className="relative w-32">
-                          <span className="absolute left-2.5 top-1.5 text-xs text-slate-400">₹</span>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            aria-label={`Adjust estimated amount for ${bItem.item_name}`}
-                            value={hypotheticalEst}
-                            onChange={(e) =>
-                              handleItemEstimateChange(bItem.id, e.target.value)
-                            }
-                            className="pl-6 h-7 text-xs font-mono"
-                          />
-                        </div>
-                      ) : (
-                        <span className="font-mono text-slate-400">₹0.00</span>
-                      )}
-                    </td>
-                    <td
-                      className={`py-2.5 px-4 font-mono font-semibold ${
-                        delta < 0
-                          ? "text-emerald-600 dark:text-emerald-400"
-                          : delta > 0
-                          ? "text-rose-600 dark:text-rose-400"
-                          : "text-slate-500"
-                      }`}
-                    >
-                      {delta !== 0 ? `${delta > 0 ? "+" : ""}${formatMoney(delta)}` : "—"}
-                    </td>
-                    <td className="py-2.5 pl-4 text-right">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleItemDeleteToggle(bItem.id)}
-                        className={`h-7 px-2 text-xs ${
-                          isDeleted
-                            ? "text-indigo-600 hover:text-indigo-700"
-                            : "text-rose-600 hover:text-rose-700"
-                        }`}
-                      >
-                        {isDeleted ? "Restore" : "Remove"}
-                      </Button>
-                    </td>
-                  </tr>
-                );
-              })}
-
-              {/* Newly Proposed Items */}
-              {currentScenario.new_items?.map((newItem) => (
-                <tr key={newItem.tempId} className="bg-emerald-50/40 dark:bg-emerald-950/20">
-                  <td className="py-2.5 pr-4 font-medium text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-                    <Sparkles className="size-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                    <span>{newItem.item_name}</span>
-                    <Badge variant="outline" className="text-[10px] text-emerald-700 py-0">
-                      New
-                    </Badge>
-                  </td>
-                  <td className="py-2.5 px-4 text-slate-500">{newItem.category}</td>
-                  <td className="py-2.5 px-4 font-mono text-slate-400">₹0.00</td>
-                  <td className="py-2.5 px-4 font-mono font-semibold text-emerald-700 dark:text-emerald-300">
-                    {formatMoney(newItem.estimated_amount)}
-                  </td>
-                  <td className="py-2.5 px-4 font-mono text-emerald-600 dark:text-emerald-400 font-semibold">
-                    +{formatMoney(newItem.estimated_amount)}
-                  </td>
-                  <td className="py-2.5 pl-4 text-right">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleRemoveNewItem(newItem.tempId)}
-                      className="h-7 px-2 text-xs text-rose-600 hover:text-rose-700"
-                    >
-                      Delete
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <WhatIfWorkbenchTable
+          baselineItems={baselineItems}
+          simulationResult={simulationResult}
+          currentScenario={currentScenario}
+          onItemEstimateChange={handleItemEstimateChange}
+          onItemDeleteToggle={handleItemDeleteToggle}
+          onRemoveNewItem={handleRemoveNewItem}
+        />
       </div>
 
       {/* Review & Apply Banner / Action Footer */}

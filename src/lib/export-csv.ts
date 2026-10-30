@@ -14,6 +14,7 @@
  */
 
 import { getItemVariance } from "@/lib/budget-math";
+import { toDateInputValue } from "@/lib/date-utils";
 import type { TaskRow } from "@/lib/validations/task";
 import type { BudgetItemRow } from "@/lib/validations/budget";
 
@@ -171,35 +172,6 @@ export interface CsvExportOptions {
   includeBom?: boolean;
 }
 
-/**
- * Formats a due date safely into a standard calendar date string (YYYY-MM-DD),
- * or returns an empty string if null, undefined, or unparseable.
- */
-function formatTaskDueDate(dueDateStr: string | null | undefined): string {
-  if (!dueDateStr || typeof dueDateStr !== "string") {
-    return "";
-  }
-  const trimmed = dueDateStr.trim();
-  if (!trimmed) {
-    return "";
-  }
-
-  // Extract YYYY-MM-DD from ISO string or date-only string
-  if (trimmed.includes("T")) {
-    return trimmed.split("T")[0];
-  }
-  if (/^\d{4}-\d{2}-\d{2}/.test(trimmed)) {
-    return trimmed.slice(0, 10);
-  }
-
-  try {
-    const d = new Date(trimmed);
-    if (isNaN(d.getTime())) return "";
-    return d.toISOString().split("T")[0];
-  } catch {
-    return "";
-  }
-}
 
 /**
  * Generates an RFC 4180-compliant CSV string for event checklist tasks.
@@ -243,7 +215,7 @@ export function generateTasksCsv(
       formatTextField(task.id),
       formatTextField(task.title),
       formatTextField(task.description ?? ""),
-      escapeCsvField(formatTaskDueDate(task.due_date)),
+      escapeCsvField(toDateInputValue(task.due_date)),
       formatTextField(task.priority),
       formatTextField(task.status),
       task.is_vendor_checklist ? "Yes" : "No",
@@ -358,4 +330,23 @@ export function generateExportFilename(
 
   const cleanExt = extension.replace(/^\./, "").toLowerCase();
   return `planora-${slug}-${type}-${dateStr}.${cleanExt}`;
+}
+
+/**
+ * Constructs an RFC 4180-compliant downloadable HTTP Response with strict cache-invalidation headers.
+ */
+export function createCsvAttachmentResponse(
+  csvContent: string,
+  filename: string
+): Response {
+  return new Response(csvContent, {
+    status: 200,
+    headers: {
+      "Content-Type": "text/csv; charset=utf-8",
+      "Content-Disposition": `attachment; filename="${filename}"`,
+      "Cache-Control": "private, no-cache, no-store, must-revalidate",
+      Pragma: "no-cache",
+      Expires: "0",
+    },
+  });
 }

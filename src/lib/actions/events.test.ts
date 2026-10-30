@@ -12,9 +12,11 @@ import {
   MOCK_USER,
   TEST_IDS,
   createMockSupabaseClient,
+  createMockAuthSuccess,
+  createMockAuthFailure,
 } from "@/test/mocks/supabase";
 import type { EventRow } from "@/lib/validations/event";
-import type { UserResponse, AuthError, SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
@@ -58,17 +60,11 @@ describe("events server actions", () => {
   });
 
   const setupAuthSuccess = () => {
-    return vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue({
-      data: { user: MOCK_USER },
-      error: null,
-    } as unknown as UserResponse);
+    return vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue(createMockAuthSuccess());
   };
 
   const setupAuthFailure = () => {
-    return vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue({
-      data: { user: null },
-      error: { message: "Session expired", name: "AuthError", status: 401 } as unknown as AuthError,
-    } as unknown as UserResponse);
+    return vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue(createMockAuthFailure());
   };
 
   describe("createEventAction", () => {

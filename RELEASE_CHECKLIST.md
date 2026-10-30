@@ -44,15 +44,16 @@ Ensure the production PostgreSQL database has all sequential migrations applied 
 3. `20261025183000_tighten_accept_plan_blueprint_auth.sql` (Hardened RPC caller authentication).
 4. `20261025193000_performance_composite_indexes_and_rpc.sql` (Performance composite indexes).
 5. `20261029000000_apply_budget_scenario_rpc.sql` (Atomic `apply_budget_scenario` RPC for What-If Simulator).
+6. `20261030000000_ai_rate_limits.sql` (Table: `ai_rate_limits` and `check_ai_rate_limit` RPC for distributed AI rate limiting).
 
 ### Verification Steps
 - [ ] Run Supabase migration verification:
   ```bash
   npx supabase migration list --db-url "$PRODUCTION_DB_URL"
   ```
-- [ ] Verify that all 6 application tables (`profiles`, `events`, `budget_items`, `tasks`, `risks`, `plan_revisions`) have Row Level Security enabled (`ENABLE ROW LEVEL SECURITY`).
+- [ ] Verify that all 7 application tables (`profiles`, `events`, `budget_items`, `tasks`, `risks`, `plan_revisions`, `ai_rate_limits`) have Row Level Security enabled (`ENABLE ROW LEVEL SECURITY`).
 - [ ] Ensure anonymous access cannot query or insert records into any user-scoped tables.
-- [ ] Confirm `public.accept_plan_blueprint` and `public.apply_budget_scenario` RPCs execute with `SECURITY INVOKER` and empty search path (`SET search_path = ''`).
+- [ ] Confirm `public.accept_plan_blueprint`, `public.apply_budget_scenario`, and `public.check_ai_rate_limit` RPCs execute with `SECURITY INVOKER` and empty search path (`SET search_path = ''`).
 
 ---
 
@@ -80,8 +81,8 @@ npm run test:e2e
 npm run build
 ```
 
-- [ ] All 48 Vitest test suites (672 tests) pass with zero failures.
-- [ ] All 11 Playwright E2E browser tests pass with zero failures.
+- [ ] All 61 Vitest test suites (767 tests) pass with zero failures.
+- [ ] All 15 Playwright E2E browser tests pass with zero failures.
 - [ ] Next.js production build (`next build`) completes cleanly with all routes optimized.
 
 ---

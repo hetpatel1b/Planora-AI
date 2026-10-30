@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { User } from "@supabase/supabase-js";
 import { askCopilotAction } from "./copilot";
 import * as serverAuth from "@/lib/supabase/server";
 import * as eventActions from "@/lib/actions/events";
@@ -7,10 +8,22 @@ import * as taskActions from "@/lib/actions/tasks";
 import * as planActions from "@/lib/actions/plan";
 import * as groqClient from "@/lib/ai/groq";
 import { resetAllRateLimits, checkCopilotRateLimit } from "@/lib/ai/rate-limiter";
+import {
+  createMockAuthSuccess,
+  createMockAuthFailure,
+} from "@/test/mocks/supabase";
 
 describe("askCopilotAction", () => {
   const validEventId = "123e4567-e89b-12d3-a456-426614174000";
-  const mockUser = { id: "user-123", email: "planner@example.com" };
+  const mockUser: User = {
+    id: "user-123",
+    email: "planner@example.com",
+    app_metadata: {},
+    user_metadata: {},
+    aud: "authenticated",
+    created_at: "2026-10-01T00:00:00.000Z",
+    role: "authenticated",
+  };
 
   const mockEvent = {
     id: validEventId,
@@ -60,10 +73,9 @@ describe("askCopilotAction", () => {
   });
 
   it("rejects unauthenticated requests", async () => {
-    vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue({
-      data: { user: null },
-      error: new Error("No session found") as unknown as import("@supabase/supabase-js").AuthError,
-    } as unknown as import("@supabase/supabase-js").UserResponse);
+    vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue(
+      createMockAuthFailure("No session found")
+    );
 
     const result = await askCopilotAction({
       eventId: validEventId,
@@ -77,10 +89,9 @@ describe("askCopilotAction", () => {
   });
 
   it("rejects requests when per-user rate limit is exceeded", async () => {
-    vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue({
-      data: { user: mockUser as unknown as import("@supabase/supabase-js").User },
-      error: null,
-    });
+    vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue(
+      createMockAuthSuccess(mockUser)
+    );
 
     // Exhaust the 15 allowed requests
     for (let i = 0; i < 15; i++) {
@@ -99,10 +110,9 @@ describe("askCopilotAction", () => {
   });
 
   it("rejects requests if the event is not found or not owned by user", async () => {
-    vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue({
-      data: { user: mockUser as unknown as import("@supabase/supabase-js").User },
-      error: null,
-    });
+    vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue(
+      createMockAuthSuccess(mockUser)
+    );
 
     vi.spyOn(eventActions, "getEventById").mockResolvedValue({
       success: false,
@@ -121,10 +131,9 @@ describe("askCopilotAction", () => {
   });
 
   it("handles missing Groq configuration gracefully", async () => {
-    vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue({
-      data: { user: mockUser as unknown as import("@supabase/supabase-js").User },
-      error: null,
-    });
+    vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue(
+      createMockAuthSuccess(mockUser)
+    );
 
     vi.spyOn(eventActions, "getEventById").mockResolvedValue({
       success: true,
@@ -164,10 +173,9 @@ describe("askCopilotAction", () => {
   });
 
   it("handles provider rate limits and server errors cleanly", async () => {
-    vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue({
-      data: { user: mockUser as unknown as import("@supabase/supabase-js").User },
-      error: null,
-    });
+    vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue(
+      createMockAuthSuccess(mockUser)
+    );
 
     vi.spyOn(eventActions, "getEventById").mockResolvedValue({
       success: true,
@@ -207,10 +215,9 @@ describe("askCopilotAction", () => {
   });
 
   it("successfully processes request and returns validated completion and suggestions", async () => {
-    vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue({
-      data: { user: mockUser as unknown as import("@supabase/supabase-js").User },
-      error: null,
-    });
+    vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue(
+      createMockAuthSuccess(mockUser)
+    );
 
     vi.spyOn(eventActions, "getEventById").mockResolvedValue({
       success: true,
@@ -325,10 +332,9 @@ describe("askCopilotAction", () => {
   });
 
   it("falls back to text reply when model output suggestions fail validation", async () => {
-    vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue({
-      data: { user: mockUser as unknown as import("@supabase/supabase-js").User },
-      error: null,
-    });
+    vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue(
+      createMockAuthSuccess(mockUser)
+    );
 
     vi.spyOn(eventActions, "getEventById").mockResolvedValue({
       success: true,
@@ -379,10 +385,9 @@ describe("askCopilotAction", () => {
   });
 
   it("handles degraded subsystem responses (failed budget or task queries) without crashing", async () => {
-    vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue({
-      data: { user: mockUser as unknown as import("@supabase/supabase-js").User },
-      error: null,
-    });
+    vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue(
+      createMockAuthSuccess(mockUser)
+    );
 
     vi.spyOn(eventActions, "getEventById").mockResolvedValue({
       success: true,
@@ -427,10 +432,9 @@ describe("askCopilotAction", () => {
   });
 
   it("guarantees zero database mutations occur during askCopilotAction execution", async () => {
-    vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue({
-      data: { user: mockUser as unknown as import("@supabase/supabase-js").User },
-      error: null,
-    });
+    vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue(
+      createMockAuthSuccess(mockUser)
+    );
 
     vi.spyOn(eventActions, "getEventById").mockResolvedValue({
       success: true,

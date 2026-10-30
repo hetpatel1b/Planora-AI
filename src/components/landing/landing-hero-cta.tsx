@@ -16,14 +16,9 @@ interface LandingHeroCtaProps {
  * Displays "Go to Dashboard" when authenticated, or "Start planning" when unauthenticated.
  */
 export function LandingHeroCta({ initialUser }: LandingHeroCtaProps) {
-  const [user, setUser] = useState<LandingUser | null>(initialUser);
-  const [prevInitialUser, setPrevInitialUser] = useState<LandingUser | null>(initialUser);
-
-  // Sync state during render when server-provided initialUser changes (React 19 recommendation)
-  if (initialUser !== prevInitialUser) {
-    setPrevInitialUser(initialUser);
-    setUser(initialUser);
-  }
+  // Pure state derivation: clientUser tracks real-time auth changes without render-phase setState
+  const [clientUser, setClientUser] = useState<LandingUser | null | undefined>(undefined);
+  const user = clientUser !== undefined ? clientUser : initialUser;
 
   useEffect(() => {
     try {
@@ -32,12 +27,12 @@ export function LandingHeroCta({ initialUser }: LandingHeroCtaProps) {
         data: { subscription },
       } = supabase.auth.onAuthStateChange((event, session) => {
         if (session?.user) {
-          setUser({
+          setClientUser({
             id: session.user.id,
             email: session.user.email,
           });
         } else if (event === "SIGNED_OUT") {
-          setUser(null);
+          setClientUser(null);
         }
       });
 

@@ -25,14 +25,9 @@ interface LandingHeaderAuthProps {
  * When unauthenticated: Displays "Sign in" and "Start planning" (preview anchor).
  */
 export function LandingHeaderAuth({ initialUser }: LandingHeaderAuthProps) {
-  const [user, setUser] = useState<LandingUser | null>(initialUser);
-  const [prevInitialUser, setPrevInitialUser] = useState<LandingUser | null>(initialUser);
-
-  // Sync state during render when server-provided initialUser changes (React 19 recommendation)
-  if (initialUser !== prevInitialUser) {
-    setPrevInitialUser(initialUser);
-    setUser(initialUser);
-  }
+  // Pure state derivation: clientUser tracks real-time auth changes without render-phase setState
+  const [clientUser, setClientUser] = useState<LandingUser | null | undefined>(undefined);
+  const user = clientUser !== undefined ? clientUser : initialUser;
 
   useEffect(() => {
     try {
@@ -41,12 +36,12 @@ export function LandingHeaderAuth({ initialUser }: LandingHeaderAuthProps) {
         data: { subscription },
       } = supabase.auth.onAuthStateChange((event, session) => {
         if (session?.user) {
-          setUser({
+          setClientUser({
             id: session.user.id,
             email: session.user.email,
           });
         } else if (event === "SIGNED_OUT") {
-          setUser(null);
+          setClientUser(null);
         }
       });
 

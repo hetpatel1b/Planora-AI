@@ -13,11 +13,13 @@ import {
   createMockSupabaseClient,
   MOCK_USER,
   TEST_IDS,
+  createMockAuthSuccess,
+  createMockAuthFailure,
 } from "@/test/mocks/supabase";
 import type { AIPlanBlueprint, PlanRevisionRow } from "@/lib/validations/plan";
 import type { EventRow } from "@/lib/validations/event";
 import type { Json } from "@/types/database.types";
-import type { UserResponse, AuthError, SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
@@ -25,7 +27,15 @@ vi.mock("next/cache", () => ({
 
 describe("generateEventPlanAction", () => {
   const validEventId = "123e4567-e89b-12d3-a456-426614174000";
-  const mockUser = { id: "user-123", email: "organizer@example.com" };
+  const mockUser: import("@supabase/supabase-js").User = {
+    id: "user-123",
+    email: "organizer@example.com",
+    app_metadata: {},
+    user_metadata: {},
+    aud: "authenticated",
+    created_at: "2026-10-01T00:00:00.000Z",
+    role: "authenticated",
+  };
 
   const weddingEvent = {
     id: validEventId,
@@ -85,10 +95,9 @@ describe("generateEventPlanAction", () => {
   });
 
   const mockAuthSuccess = () =>
-    vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue({
-      data: { user: mockUser as unknown as import("@supabase/supabase-js").User },
-      error: null,
-    });
+    vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue(
+      createMockAuthSuccess(mockUser)
+    );
 
   it("rejects invalid event UUID format", async () => {
     const result = await generateEventPlanAction("invalid-uuid");
@@ -99,10 +108,9 @@ describe("generateEventPlanAction", () => {
   });
 
   it("rejects unauthenticated requests", async () => {
-    vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue({
-      data: { user: null },
-      error: null as unknown as AuthError,
-    });
+    vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue(
+      createMockAuthFailure("No session", 401)
+    );
 
     const result = await generateEventPlanAction(validEventId);
     expect(result.success).toBe(false);
@@ -410,17 +418,13 @@ describe("acceptPlanBlueprintAction", () => {
   });
 
   const setupAuthSuccess = () => {
-    return vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue({
-      data: { user: MOCK_USER },
-      error: null,
-    } as unknown as UserResponse);
+    return vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue(createMockAuthSuccess());
   };
 
   const setupAuthFailure = () => {
-    return vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue({
-      data: { user: null },
-      error: { message: "No session", name: "AuthError", status: 401 } as unknown as AuthError,
-    } as unknown as UserResponse);
+    return vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue(
+      createMockAuthFailure("No session", 401)
+    );
   };
 
   it("rejects invalid input schema (missing eventId or malformed blueprint)", async () => {
@@ -766,6 +770,35 @@ describe("acceptPlanBlueprintAction", () => {
     }
     expect(revalidatePath).not.toHaveBeenCalled();
   });
+
+  it("safely handles malformed database RPC response without throwing unhandled exceptions", async () => {
+    setupAuthSuccess();
+    vi.spyOn(eventActions, "getEventById").mockResolvedValue({
+      success: true,
+      data: mockEventRow,
+    });
+
+    const mockSupabase = createMockSupabaseClient({
+      rpcData: { corrupted: true, missing_fields: true },
+      rpcError: null,
+    });
+    vi.spyOn(serverAuth, "createClient").mockResolvedValue(mockSupabase as unknown as SupabaseClient);
+
+    const result = await acceptPlanBlueprintAction({
+      eventId: validEventId,
+      blueprint: sampleBlueprint,
+      selectedTaskIndexes: [0],
+      selectedBudgetItemIndexes: [0],
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toBe(
+        "Failed to apply plan revision: Malformed response from database transaction."
+      );
+    }
+    expect(revalidatePath).not.toHaveBeenCalled();
+  });
 });
 
 describe("getLatestPlanRevisionAction", () => {
@@ -841,17 +874,13 @@ describe("getLatestPlanRevisionAction", () => {
   });
 
   const setupAuthSuccess = () => {
-    return vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue({
-      data: { user: MOCK_USER },
-      error: null,
-    } as unknown as UserResponse);
+    return vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue(createMockAuthSuccess());
   };
 
   const setupAuthFailure = () => {
-    return vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue({
-      data: { user: null },
-      error: { message: "No session", name: "AuthError", status: 401 } as unknown as AuthError,
-    } as unknown as UserResponse);
+    return vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue(
+      createMockAuthFailure("No session", 401)
+    );
   };
 
   it("rejects invalid event UUID format", async () => {

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { Database } from "@/types/database.types";
+import type { Database, Json } from "@/types/database.types";
 import { TASK_PRIORITIES } from "@/lib/validations/task";
 import { createCurrencyAmountSchema } from "@/lib/validations/currency";
 
@@ -236,3 +236,40 @@ export type AcceptPlanBlueprintInput = z.infer<typeof acceptPlanBlueprintInputSc
 export type PlanRevisionRow = Database["public"]["Tables"]["plan_revisions"]["Row"];
 export type PlanRevisionInsert = Database["public"]["Tables"]["plan_revisions"]["Insert"];
 export type PlanRevisionUpdate = Database["public"]["Tables"]["plan_revisions"]["Update"];
+
+/**
+ * Runtime schema validating the authoritative database row structure returned
+ * by plan revision queries and the `accept_plan_blueprint` RPC transaction.
+ */
+export const planRevisionRowSchema: z.ZodType<PlanRevisionRow> = z.object({
+  id: z.string().uuid("Revision ID must be a valid UUID."),
+  event_id: z.string().uuid("Event ID must be a valid UUID."),
+  user_id: z.string().uuid("User ID must be a valid UUID."),
+  revision_number: z
+    .number("Revision number must be a number.")
+    .int("Revision number must be an integer.")
+    .positive("Revision number must be greater than 0."),
+  structured_plan: z.custom<Json>(
+    (val) => val !== undefined && val !== null,
+    "Structured plan payload is required."
+  ),
+  summary: z.string().nullable(),
+  is_active: z.boolean(),
+  created_at: z.string(),
+});
+
+/**
+ * Safely extracts an AIPlanBlueprint from a PlanRevision database row or payload.
+ * Returns null if the structured plan is missing, null, or not an object.
+ */
+export function extractPlanBlueprint(
+  revision?: { structured_plan?: unknown } | null
+): AIPlanBlueprint | null {
+  if (!revision || !revision.structured_plan) return null;
+  const raw = revision.structured_plan;
+  if (typeof raw === "object" && raw !== null && !Array.isArray(raw)) {
+    return raw as AIPlanBlueprint;
+  }
+  return null;
+}
+

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { Database } from "@/types/database.types";
+import { eventIdSchema } from "@/lib/validations/event";
 
 /**
  * Database-backed task priority values.
@@ -30,11 +31,9 @@ export const taskIdSchema = z
   .uuid("Task ID must be a valid UUID.");
 
 /**
- * UUID validator for parent event identifiers.
+ * Re-export authoritative eventIdSchema from event validations.
  */
-export const eventIdSchema = z
-  .string("Event ID is required.")
-  .uuid("Event ID must be a valid UUID.");
+export { eventIdSchema };
 
 /**
  * Safe due date validator.

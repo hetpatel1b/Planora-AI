@@ -6,10 +6,9 @@
  * and triggers a safe browser file download via Blob URL.
  */
 
-export interface DownloadResult {
-  success: boolean;
-  error?: string;
-}
+export type DownloadResult =
+  | { success: true; error?: never }
+  | { success: false; error: string };
 
 /**
  * Triggers a client-side CSV file download from an authorized API endpoint.

@@ -6,6 +6,8 @@ import { getBudgetItemsByEventId } from "@/lib/actions/budget";
 import { getTasksByEventId } from "@/lib/actions/tasks";
 import { getLatestPlanRevisionAction } from "@/lib/actions/plan";
 import { calculateBudgetSummary, calculateCategoryBreakdown } from "@/lib/budget-math";
+import { calculateTaskSummary } from "@/lib/task-math";
+import { extractPlanBlueprint } from "@/lib/validations/plan";
 import { sendGroqChatCompletion } from "@/lib/ai/groq";
 import { buildCopilotMessages, type CopilotEventContext } from "@/lib/ai/copilot-prompt";
 import { checkCopilotRateLimit } from "@/lib/ai/rate-limiter";
@@ -100,15 +102,7 @@ export async function askCopilotAction(
     let taskSummary: CopilotEventContext["taskSummary"] = null;
     if (taskResult.success && taskResult.data) {
       const allTasks = taskResult.data;
-      const totalTasks = allTasks.length;
-      const completedTasks = allTasks.filter((t) => t.status === "completed").length;
-      const pendingTasks = allTasks.filter(
-        (t) => t.status === "pending" || t.status === "in_progress"
-      ).length;
-      const vendorTasksCount = allTasks.filter((t) => t.is_vendor_checklist).length;
-      const completedVendorTasksCount = allTasks.filter(
-        (t) => t.is_vendor_checklist && t.status === "completed"
-      ).length;
+      const summary = calculateTaskSummary(allTasks);
 
       const urgentOrHighTasks = allTasks
         .filter(
@@ -122,11 +116,11 @@ export async function askCopilotAction(
         }));
 
       taskSummary = {
-        totalTasks,
-        completedTasks,
-        pendingTasks,
-        vendorTasksCount,
-        completedVendorTasksCount,
+        totalTasks: summary.total,
+        completedTasks: summary.completed,
+        pendingTasks: summary.activeNonCompleted,
+        vendorTasksCount: summary.vendorCount,
+        completedVendorTasksCount: summary.completedVendorCount,
         urgentOrHighTasks,
       };
     }
@@ -134,17 +128,12 @@ export async function askCopilotAction(
     // 7. Active Plan Revision Aggregation
     let activePlanSummary: CopilotEventContext["activePlanSummary"] = null;
     if (planResult.success && planResult.data) {
-      const structured =
-        typeof planResult.data.structured_plan === "object" && planResult.data.structured_plan !== null
-          ? (planResult.data.structured_plan as Record<string, unknown>)
-          : null;
+      const blueprint = extractPlanBlueprint(planResult.data);
 
       activePlanSummary = {
         summary: planResult.data.summary,
-        themes: Array.isArray(structured?.themes) ? (structured.themes as string[]) : undefined,
-        milestonesCount: Array.isArray(structured?.scheduleMilestones)
-          ? structured.scheduleMilestones.length
-          : undefined,
+        themes: blueprint?.themes,
+        milestonesCount: blueprint?.scheduleMilestones?.length,
       };
     }
 

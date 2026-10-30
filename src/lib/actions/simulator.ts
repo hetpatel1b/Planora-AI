@@ -5,10 +5,11 @@ import { createClient, getAuthenticatedUser } from "@/lib/supabase/server";
 import { getEventById } from "@/lib/actions/events";
 import {
   applyBudgetScenarioInputSchema,
+  applyBudgetScenarioRpcResponseSchema,
   type ApplyBudgetScenarioInput,
 } from "@/lib/validations/simulator";
+import { toJsonPayload } from "@/lib/json-utils";
 import type { ActionResult } from "@/types/actions";
-import type { Json } from "@/types/database.types";
 
 export interface ApplyBudgetScenarioResultData {
   applied: boolean;
@@ -119,8 +120,8 @@ export async function applyBudgetScenarioAction(
         p_event_id: payload.eventId,
         p_user_id: user.id,
         p_target_budget: payload.target_budget ?? null,
-        p_overrides: payload.item_overrides as unknown as Json,
-        p_new_items: payload.new_items as unknown as Json,
+        p_overrides: toJsonPayload(payload.item_overrides),
+        p_new_items: toJsonPayload(payload.new_items),
       }
     );
 
@@ -165,6 +166,19 @@ export async function applyBudgetScenarioAction(
         success: false,
         error:
           "Failed to apply budget scenario: No confirmation returned from database transaction.",
+      };
+    }
+
+    const parsedRpc = applyBudgetScenarioRpcResponseSchema.safeParse(rpcData);
+    if (!parsedRpc.success || !parsedRpc.data.applied) {
+      console.error(
+        "[applyBudgetScenarioAction] Database transaction returned malformed confirmation:",
+        parsedRpc.success ? "applied was false" : parsedRpc.error.flatten()
+      );
+      return {
+        success: false,
+        error:
+          "Failed to apply budget scenario: Malformed confirmation returned from database transaction.",
       };
     }
 

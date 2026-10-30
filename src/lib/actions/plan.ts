@@ -13,35 +13,16 @@ import {
 import {
   aiPlanBlueprintSchema,
   acceptPlanBlueprintInputSchema,
+  planRevisionRowSchema,
   type AIPlanBlueprint,
   type PlanRevisionRow,
 } from "@/lib/validations/plan";
 import { eventIdSchema } from "@/lib/validations/event";
 import { createBudgetItemSchema } from "@/lib/validations/budget";
 import { createTaskSchema } from "@/lib/validations/task";
+import { calculateTaskDueDate } from "@/lib/date-utils";
+import { toJsonPayload } from "@/lib/json-utils";
 import type { ActionResult } from "@/types/actions";
-import type { Json } from "@/types/database.types";
-
-/**
- * Calculates a task due date relative to the event date and daysBefore offset.
- */
-function calculateTaskDueDate(
-  eventDateStr: string | null | undefined,
-  daysBefore: number | null | undefined
-): string | null {
-  if (!eventDateStr || daysBefore === null || daysBefore === undefined) {
-    return null;
-  }
-  const eventTime = new Date(eventDateStr).getTime();
-  if (isNaN(eventTime)) return null;
-
-  const dueTime = eventTime - daysBefore * 24 * 60 * 60 * 1000;
-  const dueDate = new Date(dueTime);
-  const year = dueDate.getFullYear();
-  if (year < 2000 || year > 2100) return null;
-
-  return dueDate.toISOString();
-}
 
 /**
  * Action A: Generate an Event Plan Blueprint (Read-Only)
@@ -438,10 +419,10 @@ export async function acceptPlanBlueprintAction(
       {
         p_event_id: eventId,
         p_user_id: user.id,
-        p_structured_plan: blueprint as unknown as Json,
+        p_structured_plan: toJsonPayload(blueprint),
         p_summary: blueprint.summary,
-        p_tasks: taskRowsToInsert as unknown as Json,
-        p_budget_items: budgetRowsToInsert as unknown as Json,
+        p_tasks: toJsonPayload(taskRowsToInsert),
+        p_budget_items: toJsonPayload(budgetRowsToInsert),
       }
     );
 
@@ -478,7 +459,19 @@ export async function acceptPlanBlueprintAction(
       };
     }
 
-    const insertedRevision = rpcData as unknown as PlanRevisionRow;
+    const revisionParseResult = planRevisionRowSchema.safeParse(rpcData);
+    if (!revisionParseResult.success) {
+      console.error(
+        "[acceptPlanBlueprintAction] Database transaction returned malformed plan revision:",
+        revisionParseResult.error.flatten()
+      );
+      return {
+        success: false,
+        error: "Failed to apply plan revision: Malformed response from database transaction.",
+      };
+    }
+
+    const insertedRevision: PlanRevisionRow = revisionParseResult.data;
 
     // Revalidate event workspace page
     try {

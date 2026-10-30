@@ -95,6 +95,34 @@ export function isTaskOverdue(
 }
 
 /**
+ * Calculates a task due date relative to an event date and daysBefore offset.
+ *
+ * Invariants:
+ * - Returns null if eventDateStr is missing, null, undefined, or empty.
+ * - Returns null if daysBefore is null or undefined.
+ * - Returns null if eventDateStr cannot be parsed as a valid timestamp.
+ * - Restricts calculated year to 2000..2100 bounds to prevent epoch overflow.
+ * - Returns an ISO 8601 timestamp string.
+ */
+export function calculateTaskDueDate(
+  eventDateStr: string | null | undefined,
+  daysBefore: number | null | undefined
+): string | null {
+  if (!eventDateStr || daysBefore === null || daysBefore === undefined) {
+    return null;
+  }
+  const eventTime = new Date(eventDateStr).getTime();
+  if (isNaN(eventTime)) return null;
+
+  const dueTime = eventTime - daysBefore * 24 * 60 * 60 * 1000;
+  const dueDate = new Date(dueTime);
+  const year = dueDate.getFullYear();
+  if (year < 2000 || year > 2100) return null;
+
+  return dueDate.toISOString();
+}
+
+/**
  * Status badge formatting utilities.
  * @see "@/components/shared/status-badge" for canonical implementation and component.
  */

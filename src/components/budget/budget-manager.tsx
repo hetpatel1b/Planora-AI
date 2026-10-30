@@ -48,7 +48,33 @@ export function BudgetManager({
   initialItems,
   initialError,
 }: BudgetManagerProps) {
-  const [items, setItems] = React.useState<BudgetItemRow[]>(initialItems);
+  // Track items state paired with authoritative initialItems to eliminate render-phase setState calls
+  const [itemsState, setItemsState] = React.useState<{
+    initialItems: BudgetItemRow[];
+    items: BudgetItemRow[];
+  }>(() => ({
+    initialItems,
+    items: initialItems,
+  }));
+
+  // Resolve authoritative items: if server revalidation delivers new items, derive them without render restarts
+  const items = itemsState.initialItems === initialItems
+    ? itemsState.items
+    : initialItems;
+
+  const setItems = React.useCallback(
+    (updater: BudgetItemRow[] | ((prev: BudgetItemRow[]) => BudgetItemRow[])) => {
+      setItemsState((prevState) => {
+        const currentItems = prevState.initialItems === initialItems
+          ? prevState.items
+          : initialItems;
+        const nextItems = typeof updater === "function" ? updater(currentItems) : updater;
+        return { initialItems, items: nextItems };
+      });
+    },
+    [initialItems]
+  );
+
   const [searchQuery, setSearchQuery] = React.useState("");
   const [selectedCategory, setSelectedCategory] = React.useState<string>("ALL");
 
@@ -76,16 +102,6 @@ export function BudgetManager({
       setExportError(result.error || "Failed to download budget CSV.");
     }
   };
-
-  // Adjust state during render when server revalidation delivers new authoritative items.
-  // Aligns with official React documentation for "adjusting state when a prop changes":
-  // React immediately restarts the render with fresh state before DOM paint, avoiding
-  // the cascading renders and post-paint flicker flagged by eslint-plugin-react-hooks.
-  const [prevInitialItems, setPrevInitialItems] = React.useState(initialItems);
-  if (initialItems !== prevInitialItems) {
-    setPrevInitialItems(initialItems);
-    setItems(initialItems);
-  }
 
   // Deterministic summary calculations
   const summary = React.useMemo(() => {

@@ -6,6 +6,7 @@ import {
   getStatusBadgeVariant,
   formatStatusLabel,
   isTaskOverdue,
+  calculateTaskDueDate,
 } from "./date-utils";
 
 describe("date-utils", () => {
@@ -112,6 +113,39 @@ describe("date-utils", () => {
 
     it("returns false for invalid date strings", () => {
       expect(isTaskOverdue("not-a-valid-date", "pending", NOW)).toBe(false);
+    });
+  });
+
+  describe("calculateTaskDueDate", () => {
+    const EVENT_DATE = "2026-11-20T16:00:00.000Z";
+
+    it("calculates exact due date offset relative to event date", () => {
+      // 14 days before 2026-11-20 is 2026-11-06
+      const result = calculateTaskDueDate(EVENT_DATE, 14);
+      expect(result).toBe("2026-11-06T16:00:00.000Z");
+
+      // 0 days before is the event date itself
+      const sameDay = calculateTaskDueDate(EVENT_DATE, 0);
+      expect(sameDay).toBe("2026-11-20T16:00:00.000Z");
+    });
+
+    it("returns null when eventDateStr or daysBefore is null, undefined, or empty", () => {
+      expect(calculateTaskDueDate(null, 14)).toBeNull();
+      expect(calculateTaskDueDate(undefined, 14)).toBeNull();
+      expect(calculateTaskDueDate("", 14)).toBeNull();
+      expect(calculateTaskDueDate(EVENT_DATE, null)).toBeNull();
+      expect(calculateTaskDueDate(EVENT_DATE, undefined)).toBeNull();
+    });
+
+    it("returns null for non-parseable event date strings", () => {
+      expect(calculateTaskDueDate("invalid-date", 10)).toBeNull();
+    });
+
+    it("returns null if calculated year falls outside 2000-2100 bounds", () => {
+      // Event date in 1999
+      expect(calculateTaskDueDate("1999-01-01T00:00:00.000Z", 1)).toBeNull();
+      // Year 2150
+      expect(calculateTaskDueDate("2150-01-01T00:00:00.000Z", 1)).toBeNull();
     });
   });
 });

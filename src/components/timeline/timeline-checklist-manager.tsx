@@ -3,27 +3,24 @@
 import * as React from "react";
 import type { TaskRow, TaskStatus } from "@/lib/validations/task";
 import { toggleTaskStatusAction } from "@/lib/actions/tasks";
+import { calculateTaskSummary } from "@/lib/task-math";
+import { TimelineKpiGrid } from "@/components/timeline/timeline-kpi-grid";
 import {
-  formatEventDate,
-  isTaskOverdue,
-} from "@/lib/date-utils";
-import { StatusBadge } from "@/components/shared/status-badge";
+  TimelineFilterBar,
+  type FilterStatus,
+  type ViewMode,
+} from "@/components/timeline/timeline-filter-bar";
+import { TimelineTaskCard } from "@/components/timeline/timeline-task-card";
 import { TaskDialog } from "@/components/timeline/task-dialog";
 import { DeleteTaskDialog } from "@/components/timeline/delete-task-dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { PriorityBadge } from "@/components/shared/priority-badge";
 import {
   Calendar,
   Clock,
   CheckCircle2,
-  Circle,
   AlertCircle,
   Plus,
-  Search,
-  Edit2,
-  Trash2,
   ListTodo,
   CalendarDays,
   FileSpreadsheet,
@@ -39,9 +36,6 @@ export interface TimelineChecklistManagerProps {
   activeFilter?: FilterStatus;
   onFilterChange?: (filter: FilterStatus) => void;
 }
-
-type ViewMode = "timeline" | "checklist";
-type FilterStatus = "ALL" | "pending" | "in_progress" | "completed" | "vendor";
 
 
 
@@ -82,23 +76,43 @@ export function TimelineChecklistManager({
   activeFilter,
   onFilterChange,
 }: TimelineChecklistManagerProps) {
-  const [tasks, setTasks] = React.useState<TaskRow[]>(initialTasks);
+  // Track tasks state paired with authoritative initialTasks to eliminate render-phase setState calls
+  const [tasksState, setTasksState] = React.useState<{
+    initialTasks: TaskRow[];
+    tasks: TaskRow[];
+  }>(() => ({
+    initialTasks,
+    tasks: initialTasks,
+  }));
+
+  // Resolve authoritative tasks: if server revalidation delivers new tasks, derive them without render restarts
+  const tasks = tasksState.initialTasks === initialTasks
+    ? tasksState.tasks
+    : initialTasks;
+
+  const setTasks = React.useCallback(
+    (updater: TaskRow[] | ((prev: TaskRow[]) => TaskRow[])) => {
+      setTasksState((prevState) => {
+        const currentTasks = prevState.initialTasks === initialTasks
+          ? prevState.tasks
+          : initialTasks;
+        const nextTasks = typeof updater === "function" ? updater(currentTasks) : updater;
+        return { initialTasks, tasks: nextTasks };
+      });
+    },
+    [initialTasks]
+  );
+
   const [viewMode, setViewMode] = React.useState<ViewMode>("timeline");
   const [searchQuery, setSearchQuery] = React.useState("");
-  const [statusFilter, setStatusFilter] = React.useState<FilterStatus>(
-    activeFilter ?? "ALL"
-  );
+
+  // Controlled/uncontrolled filter state: prefers activeFilter when provided, without render-phase updates
+  const [internalFilter, setInternalFilter] = React.useState<FilterStatus>(activeFilter ?? "ALL");
+  const statusFilter = activeFilter ?? internalFilter;
   const [priorityFilter, setPriorityFilter] = React.useState<string>("ALL");
 
-  // Synchronize statusFilter if parent activeFilter updates
-  const [prevActiveFilter, setPrevActiveFilter] = React.useState(activeFilter);
-  if (activeFilter !== undefined && activeFilter !== prevActiveFilter) {
-    setPrevActiveFilter(activeFilter);
-    setStatusFilter(activeFilter);
-  }
-
   const handleFilterClick = (newFilter: FilterStatus) => {
-    setStatusFilter(newFilter);
+    setInternalFilter(newFilter);
     onFilterChange?.(newFilter);
   };
 
@@ -131,53 +145,8 @@ export function TimelineChecklistManager({
     }
   };
 
-  // Adjust state during render when server revalidation delivers new authoritative tasks.
-  // Aligns with official React documentation for "adjusting state when a prop changes":
-  // React immediately restarts the render with fresh state before DOM paint, avoiding
-  // the cascading renders and post-paint flicker flagged by eslint-plugin-react-hooks.
-  const [prevInitialTasks, setPrevInitialTasks] = React.useState(initialTasks);
-  if (initialTasks !== prevInitialTasks) {
-    setPrevInitialTasks(initialTasks);
-    setTasks(initialTasks);
-  }
-
-  // Summary Metrics
-  const metrics = React.useMemo(() => {
-    const total = tasks.length;
-    let completed = 0;
-    let inProgress = 0;
-    let pending = 0;
-    let overdue = 0;
-    let vendorCount = 0;
-    let completedVendorCount = 0;
-
-    for (const t of tasks) {
-      if (t.status === "completed") {
-        completed++;
-        if (t.is_vendor_checklist) completedVendorCount++;
-      } else if (t.status === "in_progress") inProgress++;
-      else if (t.status === "pending") pending++;
-
-      if (t.is_vendor_checklist) vendorCount++;
-      if (isTaskOverdue(t.due_date, t.status)) overdue++;
-    }
-
-    const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
-    const vendorCompletionRate =
-      vendorCount > 0 ? Math.round((completedVendorCount / vendorCount) * 100) : 0;
-
-    return {
-      total,
-      completed,
-      inProgress,
-      pending,
-      overdue,
-      vendorCount,
-      completedVendorCount,
-      completionRate,
-      vendorCompletionRate,
-    };
-  }, [tasks]);
+  // Summary Metrics computed deterministically via domain calculation engine
+  const metrics = React.useMemo(() => calculateTaskSummary(tasks), [tasks]);
 
   // Filtered task collection
   const filteredTasks = React.useMemo(() => {
@@ -288,140 +257,16 @@ export function TimelineChecklistManager({
   };
 
   // Helper for rendering a single task card
-  const renderTaskCard = (task: TaskRow) => {
-    const isCompleted = task.status === "completed";
-    const isPendingToggle = pendingToggles.has(task.id);
-    const overdue = isTaskOverdue(task.due_date, task.status);
-
-    return (
-      <div
-        key={task.id}
-        className={`group flex items-start gap-3.5 rounded-xl border p-4 transition-all ${
-          isCompleted
-            ? "border-slate-100 bg-slate-50/50 dark:border-slate-800/60 dark:bg-slate-900/40"
-            : overdue
-            ? "border-rose-200/80 bg-rose-50/30 dark:border-rose-900/50 dark:bg-rose-950/20"
-            : "border-slate-200/80 bg-white hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900"
-        }`}
-      >
-        {/* Toggle Checkbox */}
-        <button
-          type="button"
-          role="checkbox"
-          aria-checked={isCompleted}
-          onClick={() => handleToggleStatus(task)}
-          disabled={isPendingToggle}
-          className="mt-0.5 shrink-0 rounded text-slate-500 hover:text-indigo-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:text-slate-400 dark:hover:text-indigo-400 cursor-pointer"
-          aria-label={
-            isCompleted
-              ? `Mark "${task.title}" as incomplete`
-              : `Mark "${task.title}" as completed`
-          }
-        >
-          {isCompleted ? (
-            <CheckCircle2 className="size-5 text-emerald-600 dark:text-emerald-400" />
-          ) : (
-            <Circle className="size-5 hover:text-indigo-600 dark:hover:text-indigo-400" />
-          )}
-        </button>
-
-        {/* Content */}
-        <div className="min-w-0 flex-1 space-y-1.5">
-          <div className="flex flex-wrap items-center gap-2">
-            <span
-              className={`text-xs font-semibold ${
-                isCompleted
-                  ? "line-through text-slate-400 dark:text-slate-500"
-                  : "text-slate-950 dark:text-white"
-              }`}
-            >
-              {task.title}
-            </span>
-
-            <PriorityBadge priority={task.priority} />
-
-            <StatusBadge status={task.status} className="text-[10px]" />
-
-            {task.is_vendor_checklist && (
-              <Badge
-                variant="secondary"
-                className="text-[10px] bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-900"
-              >
-                Vendor Checklist
-              </Badge>
-            )}
-          </div>
-
-          {task.description && (
-            <p
-              className={`text-xs leading-relaxed ${
-                isCompleted
-                  ? "text-slate-400 dark:text-slate-500"
-                  : "text-slate-600 dark:text-slate-400"
-              }`}
-            >
-              {task.description}
-            </p>
-          )}
-
-          {/* Timeline & Due Date Info */}
-          <div className="flex flex-wrap items-center gap-3 pt-1 text-[11px]">
-            {task.due_date ? (
-              <span
-                className={`inline-flex items-center gap-1 font-medium ${
-                  overdue
-                    ? "text-rose-600 dark:text-rose-400"
-                    : isCompleted
-                    ? "text-slate-500 dark:text-slate-400"
-                    : "text-slate-600 dark:text-slate-400"
-                }`}
-              >
-                {overdue ? (
-                  <AlertCircle className="size-3.5 text-rose-500" aria-hidden="true" />
-                ) : (
-                  <Calendar className="size-3.5 text-slate-500 dark:text-slate-400" aria-hidden="true" />
-                )}
-                <span>Due {formatEventDate(task.due_date)}</span>
-                {overdue && <span className="font-bold">(Overdue)</span>}
-              </span>
-            ) : (
-              <span className="text-slate-500 dark:text-slate-400 italic">No deadline set</span>
-            )}
-
-            <span className="text-slate-300 dark:text-slate-700" aria-hidden="true">•</span>
-            <span className="text-slate-500 dark:text-slate-400">
-              Added {formatEventDate(task.created_at)}
-            </span>
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex shrink-0 items-center gap-1 opacity-90 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 focus-within:opacity-100 transition-opacity">
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-xs"
-            onClick={() => setEditingTask(task)}
-            aria-label={`Edit task "${task.title}"`}
-            className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-          >
-            <Edit2 className="size-3.5" />
-          </Button>
-
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-xs"
-            onClick={() => setDeletingTask(task)}
-            aria-label={`Delete task "${task.title}"`}
-            className="text-slate-500 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400"
-          >
-            <Trash2 className="size-3.5" />
-          </Button>
-        </div>
-      </div>
-    );
-  };
+  const renderTaskCard = (task: TaskRow) => (
+    <TimelineTaskCard
+      key={task.id}
+      task={task}
+      isPendingToggle={pendingToggles.has(task.id)}
+      onToggleStatus={handleToggleStatus}
+      onEdit={setEditingTask}
+      onDelete={setDeletingTask}
+    />
+  );
 
   return (
     <div className="space-y-6">
@@ -502,238 +347,22 @@ export function TimelineChecklistManager({
           </div>
         )}
 
-        {/* KPI Metrics Grid */}
-        <div className="mt-6 grid grid-cols-1 xs:grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-5">
-          {/* Total Tasks */}
-          <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-3.5 dark:border-slate-800/60 dark:bg-slate-950/40">
-            <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Total Deliverables
-            </p>
-            <p className="mt-1 text-lg font-extrabold text-slate-950 dark:text-white">
-              {metrics.total}
-            </p>
-          </div>
-
-          {/* Completed */}
-          <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-3.5 dark:border-slate-800/60 dark:bg-slate-950/40">
-            <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Completed
-            </p>
-            <div className="mt-1 flex items-baseline gap-1.5">
-              <span className="text-lg font-extrabold text-emerald-600 dark:text-emerald-400">
-                {metrics.completed}
-              </span>
-              <span className="text-xs text-slate-500 dark:text-slate-400">
-                ({metrics.completionRate}%)
-              </span>
-            </div>
-          </div>
-
-          {/* In Progress / Pending */}
-          <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-3.5 dark:border-slate-800/60 dark:bg-slate-950/40">
-            <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Remaining Pending
-            </p>
-            <p className="mt-1 text-lg font-extrabold text-slate-950 dark:text-white">
-              {metrics.pending + metrics.inProgress}
-            </p>
-          </div>
-
-          {/* Overdue */}
-          <div
-            className={`rounded-xl border p-3.5 ${
-              metrics.overdue > 0
-                ? "border-rose-200 bg-rose-50/60 text-rose-950 dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-200"
-                : "border-slate-100 bg-slate-50/60 dark:border-slate-800/60 dark:bg-slate-950/40"
-            }`}
-          >
-            <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Overdue
-            </p>
-            <div className="mt-1 flex items-center gap-1.5">
-              <span
-                className={`text-lg font-extrabold ${
-                  metrics.overdue > 0
-                    ? "text-rose-600 dark:text-rose-400"
-                    : "text-slate-950 dark:text-white"
-                }`}
-              >
-                {metrics.overdue}
-              </span>
-              {metrics.overdue > 0 && (
-                <AlertCircle className="size-4 text-rose-500 animate-pulse" />
-              )}
-            </div>
-          </div>
-
-          {/* Vendor Checklist */}
-          <div className="col-span-1 xs:col-span-2 sm:col-span-1 rounded-xl border border-slate-100 bg-slate-50/60 p-3.5 dark:border-slate-800/60 dark:bg-slate-950/40">
-            <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Vendor Items
-            </p>
-            <div className="mt-1 flex items-baseline gap-1.5">
-              <span className="text-lg font-extrabold text-purple-600 dark:text-purple-400">
-                {metrics.vendorCount}
-              </span>
-              {metrics.vendorCount > 0 && (
-                <span className="text-xs text-slate-500 dark:text-slate-400">
-                  ({metrics.completedVendorCount} done)
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Completion Progress Bar */}
-        <div className="mt-5 space-y-1.5">
-          <div className="flex justify-between text-[11px] font-medium text-slate-500 dark:text-slate-400">
-            <span>Overall Timeline Progress</span>
-            <span className="font-semibold text-slate-900 dark:text-white">
-              {metrics.completionRate}%
-            </span>
-          </div>
-          <div
-            className="h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800"
-            role="progressbar"
-            aria-valuenow={Math.min(100, Math.max(0, metrics.completionRate))}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-label={`Overall timeline progress: ${metrics.completionRate} percent`}
-          >
-            <div
-              className="h-full rounded-full bg-emerald-500 transition-all duration-500 ease-out"
-              style={{ width: `${Math.min(100, Math.max(0, metrics.completionRate))}%` }}
-            />
-          </div>
-        </div>
+        {/* KPI Metrics Grid & Progress Bar */}
+        <TimelineKpiGrid metrics={metrics} />
       </div>
 
       {/* 2. Controls, Search & Filter Bar */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        {/* Status Filter Tabs */}
-        <div className="flex flex-wrap items-center gap-1 rounded-xl border border-slate-200/80 bg-white p-1 dark:border-slate-800 dark:bg-slate-900" role="group" aria-label="Filter tasks by status">
-          <button
-            type="button"
-            onClick={() => handleFilterClick("ALL")}
-            aria-pressed={statusFilter === "ALL"}
-            className={`rounded-lg px-2.5 py-1 text-xs font-medium transition cursor-pointer ${
-              statusFilter === "ALL"
-                ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900"
-                : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-            }`}
-          >
-            All ({metrics.total})
-          </button>
-          <button
-            type="button"
-            onClick={() => handleFilterClick("pending")}
-            aria-pressed={statusFilter === "pending"}
-            className={`rounded-lg px-2.5 py-1 text-xs font-medium transition cursor-pointer ${
-              statusFilter === "pending"
-                ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900"
-                : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-            }`}
-          >
-            Pending ({metrics.pending})
-          </button>
-          <button
-            type="button"
-            onClick={() => handleFilterClick("in_progress")}
-            aria-pressed={statusFilter === "in_progress"}
-            className={`rounded-lg px-2.5 py-1 text-xs font-medium transition cursor-pointer ${
-              statusFilter === "in_progress"
-                ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900"
-                : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-            }`}
-          >
-            In Progress ({metrics.inProgress})
-          </button>
-          <button
-            type="button"
-            onClick={() => handleFilterClick("completed")}
-            aria-pressed={statusFilter === "completed"}
-            className={`rounded-lg px-2.5 py-1 text-xs font-medium transition cursor-pointer ${
-              statusFilter === "completed"
-                ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900"
-                : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-            }`}
-          >
-            Completed ({metrics.completed})
-          </button>
-          <button
-            type="button"
-            onClick={() => handleFilterClick("vendor")}
-            aria-pressed={statusFilter === "vendor"}
-            className={`rounded-lg px-2.5 py-1 text-xs font-medium transition cursor-pointer ${
-              statusFilter === "vendor"
-                ? "bg-purple-600 text-white shadow-2xs dark:bg-purple-600 dark:text-white"
-                : "text-purple-700 hover:text-purple-900 dark:text-purple-300 dark:hover:text-white"
-            }`}
-          >
-            Vendor ({metrics.vendorCount})
-          </button>
-        </div>
-
-        {/* View Switcher, Priority & Search */}
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Search Box */}
-          <div className="relative min-w-[160px] sm:min-w-[200px]">
-            <Search className="absolute left-2.5 top-2.5 size-3.5 text-slate-500 dark:text-slate-400" aria-hidden="true" />
-            <Input
-              type="text"
-              placeholder="Search tasks..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              aria-label="Search checklist tasks"
-              className="h-8 pl-8 text-xs"
-            />
-          </div>
-
-          {/* Priority Select */}
-          <select
-            value={priorityFilter}
-            onChange={(e) => setPriorityFilter(e.target.value)}
-            aria-label="Filter checklist tasks by priority"
-            className="h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-700 shadow-xs outline-none dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300"
-          >
-            <option value="ALL">All Priorities</option>
-            <option value="urgent">Urgent</option>
-            <option value="high">High</option>
-            <option value="medium">Medium</option>
-            <option value="low">Low</option>
-          </select>
-
-          {/* View Toggle */}
-          <div className="flex items-center rounded-lg border border-slate-200 bg-white p-0.5 dark:border-slate-800 dark:bg-slate-900" role="group" aria-label="View mode">
-            <button
-              type="button"
-              onClick={() => setViewMode("timeline")}
-              aria-pressed={viewMode === "timeline"}
-              className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition ${
-                viewMode === "timeline"
-                  ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300"
-                  : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-              }`}
-            >
-              <CalendarDays className="size-3.5" aria-hidden="true" />
-              <span>Timeline</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode("checklist")}
-              aria-pressed={viewMode === "checklist"}
-              className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition ${
-                viewMode === "checklist"
-                  ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300"
-                  : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-              }`}
-            >
-              <ListTodo className="size-3.5" aria-hidden="true" />
-              <span>Checklist</span>
-            </button>
-          </div>
-        </div>
-      </div>
+      <TimelineFilterBar
+        statusFilter={statusFilter}
+        onStatusFilterChange={handleFilterClick}
+        metrics={metrics}
+        searchQuery={searchQuery}
+        onSearchQueryChange={setSearchQuery}
+        priorityFilter={priorityFilter}
+        onPriorityFilterChange={setPriorityFilter}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+      />
 
       {/* 3. Task Display Body */}
       {filteredTasks.length === 0 ? (

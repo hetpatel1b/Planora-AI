@@ -98,14 +98,30 @@ jobs:
           node-version: 20
           cache: "npm"
 
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start isolated local Supabase container
+        run: |
+          supabase start
+          API_URL=$(supabase status -o json | jq -r '.API_URL // "http://127.0.0.1:54321"')
+          ANON_KEY=$(supabase status -o json | jq -r '.ANON_KEY // empty')
+          if [ -z "$ANON_KEY" ]; then
+            ANON_KEY=$(supabase status -o env | grep '^ANON_KEY=' | cut -d '=' -f2- | tr -d '"')
+          fi
+          echo "LOCAL_SUPABASE_URL=$API_URL" >> $GITHUB_ENV
+          echo "LOCAL_SUPABASE_ANON_KEY=$ANON_KEY" >> $GITHUB_ENV
+
       - name: Install dependencies
         run: npm ci
 
       - name: Install Playwright Chromium browser
         run: npx playwright install --with-deps chromium
 
-      - name: Run Playwright E2E tests
+      - name: Run Playwright E2E tests against isolated Supabase instance
         env:
-          NEXT_PUBLIC_SUPABASE_URL: "https://placeholder-project.supabase.co"
-          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "placeholder-publishable-key-for-ci-build-only"
+          NEXT_PUBLIC_SUPABASE_URL: ${{ env.LOCAL_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ env.LOCAL_SUPABASE_ANON_KEY }}
         run: npm run test:e2e

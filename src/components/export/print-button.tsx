@@ -12,6 +12,15 @@ export interface PrintButtonProps {
 
 export function PrintButton({ eventName, className }: PrintButtonProps) {
   const [isPrinting, setIsPrinting] = React.useState(false);
+  const printTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  React.useEffect(() => {
+    return () => {
+      if (printTimerRef.current) {
+        clearTimeout(printTimerRef.current);
+      }
+    };
+  }, []);
 
   const handlePrint = () => {
     setIsPrinting(true);
@@ -30,7 +39,7 @@ export function PrintButton({ eventName, className }: PrintButtonProps) {
       window.print();
 
       // Reset document title after a short delay so tab title isn't permanently altered
-      setTimeout(() => {
+      printTimerRef.current = setTimeout(() => {
         document.title = originalTitle;
         setIsPrinting(false);
       }, 1000);

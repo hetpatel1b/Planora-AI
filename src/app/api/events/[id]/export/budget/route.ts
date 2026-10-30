@@ -1,7 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient, getAuthenticatedUser } from "@/lib/supabase/server";
+import { getEventById } from "@/lib/actions/events";
 import { eventIdSchema } from "@/lib/validations/event";
-import { generateBudgetCsv, generateExportFilename } from "@/lib/export-csv";
+import {
+  generateBudgetCsv,
+  generateExportFilename,
+  createCsvAttachmentResponse,
+} from "@/lib/export-csv";
 
 /**
  * GET /api/events/[id]/export/budget
@@ -51,20 +56,15 @@ export async function GET(
     const eventId = idParse.data;
     const supabase = await createClient();
 
-    // 3. Verify event ownership (prevents cross-tenant access and ID enumeration)
-    const { data: event, error: eventError } = await supabase
-      .from("events")
-      .select("id, name, user_id")
-      .eq("id", eventId)
-      .eq("user_id", user.id)
-      .single();
-
-    if (eventError || !event) {
+    // 3. Verify event ownership via canonical getEventById (prevents cross-tenant access)
+    const eventResult = await getEventById(eventId);
+    if (!eventResult.success) {
       return NextResponse.json(
         { error: "Event not found or access denied." },
         { status: 404 }
       );
     }
+    const event = eventResult.data;
 
     // 4. Query authoritative saved budget records belonging strictly to this event and owner
     const { data: items, error: itemsError } = await supabase
@@ -88,16 +88,7 @@ export async function GET(
     const filename = generateExportFilename(event.name, "budget");
 
     // 6. Return downloadable attachment response with strict cache controls
-    return new Response(csvContent, {
-      status: 200,
-      headers: {
-        "Content-Type": "text/csv; charset=utf-8",
-        "Content-Disposition": `attachment; filename="${filename}"`,
-        "Cache-Control": "private, no-cache, no-store, must-revalidate",
-        Pragma: "no-cache",
-        Expires: "0",
-      },
-    });
+    return createCsvAttachmentResponse(csvContent, filename);
   } catch (error) {
     console.error("[export/budget] Unexpected failure:", error);
     return NextResponse.json(

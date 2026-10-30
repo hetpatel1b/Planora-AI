@@ -2,7 +2,11 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import type { AIPlanBlueprint, PlanRevisionRow } from "@/lib/validations/plan";
+import {
+  type AIPlanBlueprint,
+  type PlanRevisionRow,
+  extractPlanBlueprint,
+} from "@/lib/validations/plan";
 import { generateEventPlanAction } from "@/lib/actions/plan";
 import { PlanBlueprintViewer } from "@/components/plan/plan-blueprint-viewer";
 import { Button } from "@/components/ui/button";
@@ -41,54 +45,52 @@ export function PlanGeneratorCard({
 }: PlanGeneratorCardProps) {
   const router = useRouter();
 
-  // If an initial revision was passed, we can represent it as already having an accepted revision
-  const [state, setState] = React.useState<GeneratorState>(() => {
-    if (initialRevision) {
-      const blueprint =
-        typeof initialRevision.structured_plan === "object" &&
-        initialRevision.structured_plan !== null
-          ? (initialRevision.structured_plan as AIPlanBlueprint)
-          : undefined;
-      return { status: "accepted", revision: initialRevision, blueprint };
-    }
-    return { status: "idle" };
-  });
+  // Active workflow state: takes precedence over initialRevision during generation/review/acceptance
+  const [activeWorkflow, setActiveWorkflow] = React.useState<
+    | { status: "generating" }
+    | { status: "reviewing"; blueprint: AIPlanBlueprint }
+    | { status: "accepted"; revision: PlanRevisionRow; blueprint?: AIPlanBlueprint }
+    | { status: "error"; error: string }
+    | null
+  >(null);
 
-  // Sync state if initialRevision prop updates from server revalidation
-  const [prevInitialRevision, setPrevInitialRevision] = React.useState(initialRevision);
-  if (initialRevision !== prevInitialRevision) {
-    setPrevInitialRevision(initialRevision);
-    if (initialRevision && state.status !== "reviewing" && state.status !== "generating") {
-      const blueprint =
-        typeof initialRevision.structured_plan === "object" &&
-        initialRevision.structured_plan !== null
-          ? (initialRevision.structured_plan as AIPlanBlueprint)
-          : undefined;
-      setState({ status: "accepted", revision: initialRevision, blueprint });
+  // Clear local active workflow when new server authoritative revision arrives
+  const prevServerRevisionId = React.useRef(initialRevision?.id);
+  if (initialRevision?.id !== prevServerRevisionId.current) {
+    prevServerRevisionId.current = initialRevision?.id;
+    if (activeWorkflow?.status === "accepted") {
+      setActiveWorkflow(null);
     }
   }
 
+  // Derive effective state deterministically from workflow or server initialRevision
+  const state: GeneratorState = activeWorkflow ?? (
+    initialRevision
+      ? { status: "accepted", revision: initialRevision, blueprint: extractPlanBlueprint(initialRevision) ?? undefined }
+      : { status: "idle" }
+  );
+
   // Call the read-only generate action
   const handleGenerate = async () => {
-    setState({ status: "generating" });
+    setActiveWorkflow({ status: "generating" });
 
     try {
       const result = await generateEventPlanAction(eventId);
 
       if (!result.success) {
-        setState({
+        setActiveWorkflow({
           status: "error",
           error: result.error || "Failed to generate event planning blueprint.",
         });
         return;
       }
 
-      setState({
+      setActiveWorkflow({
         status: "reviewing",
         blueprint: result.data,
       });
     } catch {
-      setState({
+      setActiveWorkflow({
         status: "error",
         error: "An unexpected error occurred while communicating with the planning engine.",
       });
@@ -96,25 +98,12 @@ export function PlanGeneratorCard({
   };
 
   const handleDiscard = () => {
-    if (initialRevision) {
-      const blueprint =
-        typeof initialRevision.structured_plan === "object" &&
-        initialRevision.structured_plan !== null
-          ? (initialRevision.structured_plan as AIPlanBlueprint)
-          : undefined;
-      setState({ status: "accepted", revision: initialRevision, blueprint });
-    } else {
-      setState({ status: "idle" });
-    }
+    setActiveWorkflow(null);
   };
 
   const handleAccepted = (revision: PlanRevisionRow) => {
-    const blueprint =
-      typeof revision.structured_plan === "object" && revision.structured_plan !== null
-        ? (revision.structured_plan as AIPlanBlueprint)
-        : undefined;
-
-    setState({
+    const blueprint = extractPlanBlueprint(revision) ?? undefined;
+    setActiveWorkflow({
       status: "accepted",
       revision,
       blueprint,
@@ -300,7 +289,7 @@ export function PlanGeneratorCard({
                 size="sm"
                 onClick={() =>
                   state.blueprint &&
-                  setState({ status: "reviewing", blueprint: state.blueprint })
+                  setActiveWorkflow({ status: "reviewing", blueprint: state.blueprint })
                 }
                 className="gap-1.5"
               >

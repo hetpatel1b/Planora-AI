@@ -6,9 +6,9 @@ import { getEventById } from "@/lib/actions/events";
 import { getBudgetItemsByEventId } from "@/lib/actions/budget";
 import { getTasksByEventId } from "@/lib/actions/tasks";
 import { getLatestPlanRevisionAction } from "@/lib/actions/plan";
-import { calculateBudgetSummary, calculateCategoryBreakdown, getItemVariance } from "@/lib/budget-math";
+import { calculateBudgetSummary, calculateCategoryBreakdown } from "@/lib/budget-math";
 import { evaluateEventRisks } from "@/lib/risk-engine";
-import { formatCurrency, formatMoney } from "@/lib/currency-utils";
+import { formatCurrency } from "@/lib/currency-utils";
 import {
   formatEventDate,
   formatStatusLabel,
@@ -16,7 +16,9 @@ import {
 } from "@/lib/date-utils";
 import { PrintButton } from "@/components/export/print-button";
 import { Button } from "@/components/ui/button";
-import { PriorityBadge } from "@/components/shared/priority-badge";
+import { PdfDossierTaskSection } from "@/components/export/pdf-dossier-task-section";
+import { PdfDossierBudgetSection } from "@/components/export/pdf-dossier-budget-section";
+import { PdfDossierRiskSection } from "@/components/export/pdf-dossier-risk-section";
 import {
   ArrowLeft,
   Calendar,
@@ -27,7 +29,6 @@ import {
   Clock,
   Sparkles,
   Sliders,
-  ShieldCheck,
   AlertCircle,
   FileText,
   Info,
@@ -402,363 +403,28 @@ export default async function PrintPdfPage({ params }: PrintPdfPageProps) {
         {/* ================================================================== */}
         {/* SECTION 3: TIMELINE & CHECKLIST DELIVERABLES                       */}
         {/* ================================================================== */}
-        <section className="mt-8 border-b border-slate-200 pb-8 break-inside-avoid">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold text-slate-950">
-              Timeline Checklist &amp; Deliverables
-            </h2>
-            <div className="flex items-center gap-3 text-xs text-slate-600">
-              <span>Total: <strong>{totalTasks}</strong></span>
-              <span>•</span>
-              <span className="text-emerald-700">Completed: <strong>{completedTasks}</strong></span>
-              <span>•</span>
-              <span>Pending: <strong>{pendingTasks}</strong></span>
-              {overdueTasks > 0 && (
-                <>
-                  <span>•</span>
-                  <span className="text-rose-600 font-bold">Overdue: {overdueTasks}</span>
-                </>
-              )}
-            </div>
-          </div>
-
-          {tasks.length > 0 ? (
-            <div className="mt-4 overflow-hidden rounded-xl border border-slate-200">
-              <table className="w-full text-left text-xs" aria-label="Event Checklist Tasks">
-                <thead className="border-b border-slate-200 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                  <tr>
-                    <th scope="col" className="py-2 px-3 w-28">Status</th>
-                    <th scope="col" className="py-2 px-3">Task Title &amp; Description</th>
-                    <th scope="col" className="py-2 px-3 w-28">Due Date</th>
-                    <th scope="col" className="py-2 px-3 w-24">Priority</th>
-                    <th scope="col" className="py-2 px-3 w-28">Type</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {tasks.map((task) => {
-                    const isOverdue = isTaskOverdue(task.due_date, task.status, referenceMs);
-
-                    return (
-                      <tr key={task.id} className="break-inside-avoid">
-                        <td className="py-2 px-3 align-top">
-                          <span
-                            className={`inline-block rounded px-2 py-0.5 text-[10px] font-semibold uppercase ${
-                              task.status === "completed"
-                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                                : task.status === "in_progress"
-                                ? "bg-amber-50 text-amber-700 border border-amber-200"
-                                : "bg-slate-100 text-slate-700 border border-slate-200"
-                            }`}
-                          >
-                            {formatStatusLabel(task.status)}
-                          </span>
-                        </td>
-                        <td className="py-2 px-3 align-top">
-                          <p className={`font-semibold ${task.status === "completed" ? "line-through text-slate-400" : "text-slate-900"}`}>
-                            {task.title}
-                          </p>
-                          {task.description && (
-                            <p className="mt-0.5 text-[11px] text-slate-500 leading-relaxed break-words whitespace-pre-wrap">
-                              {task.description}
-                            </p>
-                          )}
-                        </td>
-                        <td className="py-2 px-3 align-top whitespace-nowrap">
-                          {task.due_date ? (
-                            <span className={isOverdue ? "font-bold text-rose-600" : "text-slate-700"}>
-                              {task.due_date.split("T")[0]}
-                              {isOverdue && " (Overdue)"}
-                            </span>
-                          ) : (
-                            <span className="text-slate-400">—</span>
-                          )}
-                        </td>
-                        <td className="py-2 px-3 align-top">
-                          <PriorityBadge priority={task.priority} />
-                        </td>
-                        <td className="py-2 px-3 align-top whitespace-nowrap">
-                          {task.is_vendor_checklist ? (
-                            <span className="rounded bg-purple-50 px-1.5 py-0.5 text-[10px] font-medium text-purple-700 border border-purple-200">
-                              Vendor Item
-                            </span>
-                          ) : (
-                            <span className="text-slate-500 text-[11px]">General</span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="mt-3 rounded-xl border border-dashed border-slate-200 p-4 text-center text-xs text-slate-500">
-              No checklist tasks recorded for this event.
-            </div>
-          )}
-        </section>
+        <PdfDossierTaskSection
+          tasks={tasks}
+          totalTasks={totalTasks}
+          completedTasks={completedTasks}
+          pendingTasks={pendingTasks}
+          overdueTasks={overdueTasks}
+          referenceMs={referenceMs}
+        />
 
         {/* ================================================================== */}
-        {/* SECTION 4: SMART BUDGET SUMMARY & CATEGORY BREAKDOWN               */}
+        {/* SECTIONS 4 & 5: SMART BUDGET SUMMARY & ITEMIZED EXPENSE LEDGER    */}
         {/* ================================================================== */}
-        <section className="mt-8 border-b border-slate-200 pb-8 break-inside-avoid">
-          <h2 className="text-base font-bold text-slate-950">
-            Financial Summary &amp; Category Allocations
-          </h2>
-
-          {/* Budget KPIs */}
-          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-5 text-xs">
-            <div className="rounded-xl border border-slate-200 p-3 bg-slate-50/60 print:bg-white">
-              <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500">
-                Target Budget
-              </p>
-              <p className="mt-1 text-sm font-extrabold text-slate-950">
-                {formatMoney(budgetSummary.targetBudget)}
-              </p>
-            </div>
-
-            <div className="rounded-xl border border-slate-200 p-3 bg-slate-50/60 print:bg-white">
-              <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500">
-                Planned Estimates
-              </p>
-              <p className="mt-1 text-sm font-extrabold text-slate-950">
-                {formatMoney(budgetSummary.totalEstimated)}
-              </p>
-            </div>
-
-            <div className="rounded-xl border border-slate-200 p-3 bg-slate-50/60 print:bg-white">
-              <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500">
-                Actual Expenditures
-              </p>
-              <p className="mt-1 text-sm font-extrabold text-slate-950">
-                {formatMoney(budgetSummary.totalActual)}
-              </p>
-            </div>
-
-            <div className="rounded-xl border border-slate-200 p-3 bg-slate-50/60 print:bg-white">
-              <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500">
-                Variance (Actual - Est)
-              </p>
-              <p className={`mt-1 text-sm font-extrabold ${budgetSummary.variance > 0 ? "text-rose-600" : "text-emerald-700"}`}>
-                {budgetSummary.variance > 0 ? `+${formatMoney(budgetSummary.variance)}` : formatMoney(budgetSummary.variance)}
-              </p>
-            </div>
-
-            <div className="rounded-xl border border-slate-200 p-3 bg-slate-50/60 print:bg-white">
-              <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500">
-                Remaining Balance
-              </p>
-              <p className={`mt-1 text-sm font-extrabold ${budgetSummary.remainingBudget < 0 ? "text-rose-600" : "text-slate-950"}`}>
-                {formatMoney(budgetSummary.remainingBudget)}
-              </p>
-            </div>
-          </div>
-
-          {/* Category Breakdown Table */}
-          {categoryBreakdown.length > 0 && (
-            <div className="mt-4 overflow-hidden rounded-xl border border-slate-200">
-              <table className="w-full text-left text-xs" aria-label="Budget Category Breakdown">
-                <thead className="border-b border-slate-200 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                  <tr>
-                    <th scope="col" className="py-2 px-3">Expense Category</th>
-                    <th scope="col" className="py-2 px-3 text-right">Estimated</th>
-                    <th scope="col" className="py-2 px-3 text-right">Actual</th>
-                    <th scope="col" className="py-2 px-3 text-right">Variance</th>
-                    <th scope="col" className="py-2 px-3 text-right">% of Target</th>
-                    <th scope="col" className="py-2 px-3 text-center w-24">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {categoryBreakdown.map((cat, i) => (
-                    <tr key={i} className="break-inside-avoid">
-                      <td className="py-2 px-3 font-semibold text-slate-900">
-                        {cat.category}
-                      </td>
-                      <td className="py-2 px-3 text-right font-medium text-slate-700">
-                        {formatMoney(cat.totalEstimated)}
-                      </td>
-                      <td className="py-2 px-3 text-right font-medium text-slate-700">
-                        {formatMoney(cat.totalActual)}
-                      </td>
-                      <td className={`py-2 px-3 text-right font-semibold ${cat.variance > 0 ? "text-rose-600" : "text-slate-700"}`}>
-                        {cat.variance > 0 ? `+${formatMoney(cat.variance)}` : formatMoney(cat.variance)}
-                      </td>
-                      <td className="py-2 px-3 text-right text-slate-600">
-                        {cat.percentageOfTargetBudget}%
-                      </td>
-                      <td className="py-2 px-3 text-center">
-                        {cat.isOverspent ? (
-                          <span className="rounded bg-rose-50 px-1.5 py-0.5 text-[10px] font-semibold text-rose-700 border border-rose-200">
-                            Overspent
-                          </span>
-                        ) : (
-                          <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200">
-                            On Track
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                  <tr className="border-t-2 border-slate-200 bg-slate-50/70 font-bold text-slate-950">
-                    <td className="py-2 px-3">Total Allocations</td>
-                    <td className="py-2 px-3 text-right">{formatMoney(budgetSummary.totalEstimated)}</td>
-                    <td className="py-2 px-3 text-right">{formatMoney(budgetSummary.totalActual)}</td>
-                    <td className="py-2 px-3 text-right">{formatMoney(budgetSummary.variance)}</td>
-                    <td className="py-2 px-3 text-right">{budgetSummary.utilizationPercent}%</td>
-                    <td className="py-2 px-3 text-center">
-                      {budgetSummary.isOverBudget ? (
-                        <span className="text-rose-600 text-[10px]">Over Budget</span>
-                      ) : (
-                        <span className="text-emerald-700 text-[10px]">Healthy</span>
-                      )}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
-
-        {/* ================================================================== */}
-        {/* SECTION 5: ITEMIZED EXPENSE LEDGER                                 */}
-        {/* ================================================================== */}
-        <section className="mt-8 border-b border-slate-200 pb-8 break-inside-avoid">
-          <h2 className="text-base font-bold text-slate-950">
-            Itemized Expense Ledger
-          </h2>
-
-          {budgetItems.length > 0 ? (
-            <div className="mt-4 overflow-hidden rounded-xl border border-slate-200">
-              <table className="w-full text-left text-xs">
-                <thead className="border-b border-slate-200 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                  <tr>
-                    <th className="py-2 px-3 w-36">Category</th>
-                    <th className="py-2 px-3">Item Name</th>
-                    <th className="py-2 px-3 text-right w-24">Estimated</th>
-                    <th className="py-2 px-3 text-right w-24">Actual</th>
-                    <th className="py-2 px-3 text-right w-24">Variance</th>
-                    <th className="py-2 px-3 w-1/3">Notes</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {budgetItems.map((item) => {
-                    const hasActual = item.actual_amount !== null && item.actual_amount !== undefined;
-                    const variance = getItemVariance(item);
-                    return (
-                      <tr key={item.id} className="break-inside-avoid">
-                        <td className="py-2 px-3 align-top font-medium text-slate-600">
-                          {item.category}
-                        </td>
-                        <td className="py-2 px-3 align-top font-semibold text-slate-900">
-                          {item.item_name}
-                        </td>
-                        <td className="py-2 px-3 align-top text-right text-slate-700">
-                          {formatMoney(Number(item.estimated_amount))}
-                        </td>
-                        <td className="py-2 px-3 align-top text-right text-slate-700">
-                          {hasActual ? (
-                            formatMoney(Number(item.actual_amount))
-                          ) : (
-                            <span className="text-slate-400">—</span>
-                          )}
-                        </td>
-                        <td className={`py-2 px-3 align-top text-right font-medium ${hasActual && variance > 0 ? "text-rose-600 font-bold" : "text-slate-700"}`}>
-                          {hasActual ? (
-                            variance > 0 ? `+${formatMoney(variance)}` : formatMoney(variance)
-                          ) : (
-                            <span className="text-slate-400">—</span>
-                          )}
-                        </td>
-                        <td className="py-2 px-3 align-top text-slate-500 text-[11px] leading-relaxed break-words whitespace-pre-wrap">
-                          {item.notes || "—"}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="mt-3 rounded-xl border border-dashed border-slate-200 p-4 text-center text-xs text-slate-500">
-              No itemized expense records logged.
-            </div>
-          )}
-        </section>
+        <PdfDossierBudgetSection
+          budgetSummary={budgetSummary}
+          categoryBreakdown={categoryBreakdown}
+          budgetItems={budgetItems}
+        />
 
         {/* ================================================================== */}
         {/* SECTION 6: REAL-TIME EVENT RISK RADAR FINDINGS                     */}
         {/* ================================================================== */}
-        <section className="mt-8 border-b border-slate-200 pb-8 break-inside-avoid">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="size-4 text-indigo-600 print:text-slate-700" />
-              <h2 className="text-base font-bold text-slate-950">
-                Real-Time Event Risk Radar Findings
-              </h2>
-            </div>
-            <div className="text-[11px] text-slate-500">
-              Overall Status: <strong className="capitalize">{riskAssessment.overallRiskLevel}</strong>
-            </div>
-          </div>
-
-          <p className="mt-1 text-[11px] text-slate-500">
-            Automated health assessment dynamically evaluated from authoritative timeline, budget, and blueprint records.
-          </p>
-
-          {riskAssessment.risks.length > 0 ? (
-            <div className="mt-4 overflow-hidden rounded-xl border border-slate-200">
-              <table className="w-full text-left text-xs">
-                <thead className="border-b border-slate-200 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                  <tr>
-                    <th className="py-2 px-3 w-24">Severity</th>
-                    <th className="py-2 px-3 w-28">Category</th>
-                    <th className="py-2 px-3">Risk Finding &amp; Evidence</th>
-                    <th className="py-2 px-3 w-1/3">Recommended Mitigation</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {riskAssessment.risks.map((risk) => (
-                    <tr key={risk.id} className="break-inside-avoid">
-                      <td className="py-2 px-3 align-top">
-                        <span
-                          className={`inline-block rounded px-2 py-0.5 text-[10px] font-bold uppercase ${
-                            risk.severity === "critical"
-                              ? "bg-rose-100 text-rose-800 border border-rose-300"
-                              : risk.severity === "high"
-                              ? "bg-amber-100 text-amber-800 border border-amber-300"
-                              : "bg-slate-100 text-slate-700 border border-slate-200"
-                          }`}
-                        >
-                          {risk.severity}
-                        </span>
-                      </td>
-                      <td className="py-2 px-3 align-top font-medium text-slate-600 capitalize">
-                        {risk.category.replace(/_/g, " ")}
-                      </td>
-                      <td className="py-2 px-3 align-top">
-                        <p className="font-bold text-slate-950">{risk.title}</p>
-                        <p className="mt-0.5 text-[11px] text-slate-600 leading-relaxed">
-                          {risk.explanation}
-                        </p>
-                      </td>
-                      <td className="py-2 px-3 align-top text-[11px] text-slate-700 leading-relaxed">
-                        {risk.suggestedMitigation}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 text-center text-xs text-emerald-800 print:bg-white print:border-slate-200 print:text-slate-700">
-              <ShieldCheck className="mx-auto size-5 text-emerald-600 print:text-slate-600 mb-1" />
-              <p className="font-bold">Event Plan Healthy</p>
-              <p className="mt-0.5 text-[11px]">
-                No critical or elevated risks detected across authoritative budget allocations, timeline deadlines, or checklists.
-              </p>
-            </div>
-          )}
-        </section>
+        <PdfDossierRiskSection riskAssessment={riskAssessment} />
 
         {/* ================================================================== */}
         {/* SECTION 7: DOCUMENT METADATA & FOOTER                             */}

@@ -1,5 +1,5 @@
 import { vi } from "vitest";
-import type { User, PostgrestError } from "@supabase/supabase-js";
+import type { User, PostgrestError, UserResponse, AuthError } from "@supabase/supabase-js";
 
 /**
  * Standard test user fixtures for authenticated action tests.
@@ -38,6 +38,26 @@ export const TEST_IDS = {
 };
 
 export type MockError = PostgrestError | { message: string; code?: string };
+
+/**
+ * Creates a strongly-typed mock UserResponse representing a successful authentication check.
+ */
+export function createMockAuthSuccess(user: User = MOCK_USER): UserResponse {
+  return {
+    data: { user },
+    error: null,
+  } as unknown as UserResponse;
+}
+
+/**
+ * Creates a strongly-typed mock UserResponse representing an unauthenticated or expired session.
+ */
+export function createMockAuthFailure(message = "Session expired", status = 401): UserResponse {
+  return {
+    data: { user: null },
+    error: { message, name: "AuthError", status } as unknown as AuthError,
+  } as unknown as UserResponse;
+}
 
 export interface MockQueryResult<T = unknown> {
   data: T | null;
@@ -109,6 +129,9 @@ export interface MockSupabaseClientConfig {
   defaultError?: MockError | null;
   rpcData?: unknown;
   rpcError?: MockError | null;
+  user?: User | null;
+  authError?: MockError | null;
+  signOutError?: MockError | null;
 }
 
 export interface MockSupabaseClient {
@@ -116,8 +139,10 @@ export interface MockSupabaseClient {
   rpc: ReturnType<typeof vi.fn>;
   auth: {
     getUser: ReturnType<typeof vi.fn>;
+    signOut: ReturnType<typeof vi.fn>;
   };
   getBuilderForTable: (table: string) => MockQueryBuilder | undefined;
+  getAllBuildersForTable: (table: string) => MockQueryBuilder[];
 }
 
 /**
@@ -160,9 +185,19 @@ export function createMockSupabaseClient(config: MockSupabaseClientConfig = {}):
     });
   });
 
-  const getUserSpy = vi.fn().mockResolvedValue({
-    data: { user: MOCK_USER },
-    error: null,
+  const getUserSpy = vi.fn().mockImplementation(() => {
+    const user = config.user !== undefined ? config.user : MOCK_USER;
+    const error = config.authError !== undefined ? config.authError : null;
+    return Promise.resolve({
+      data: { user },
+      error,
+    });
+  });
+
+  const signOutSpy = vi.fn().mockImplementation(() => {
+    return Promise.resolve({
+      error: config.signOutError !== undefined ? config.signOutError : null,
+    });
   });
 
   return {
@@ -170,10 +205,14 @@ export function createMockSupabaseClient(config: MockSupabaseClientConfig = {}):
     rpc: rpcSpy,
     auth: {
       getUser: getUserSpy,
+      signOut: signOutSpy,
     },
     getBuilderForTable: (table: string) => {
       const list = tableBuilders.get(table);
       return list && list.length > 0 ? list[list.length - 1] : undefined;
+    },
+    getAllBuildersForTable: (table: string) => {
+      return tableBuilders.get(table) || [];
     },
   };
 }

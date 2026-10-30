@@ -7,11 +7,9 @@ export const MIN_CURRENCY_AMOUNT = 0;
 export const MAX_CURRENCY_AMOUNT = 9_999_999_999.99;
 export const MAX_CURRENCY_DECIMALS = 2;
 
-export interface CurrencyValidationResult {
-  valid: boolean;
-  amount?: number;
-  error?: string;
-}
+export type CurrencyValidationResult =
+  | { valid: true; amount: number }
+  | { valid: false; error: string };
 
 /**
  * Validates a currency input (number or numeric string) according to Planora AI currency conventions.
@@ -103,11 +101,11 @@ export function parseCurrencyAmount(
   if (!result.valid) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: result.error!,
+      message: result.error,
     });
     return z.NEVER;
   }
-  return result.amount!;
+  return result.amount;
 }
 
 /**

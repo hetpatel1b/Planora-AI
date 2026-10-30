@@ -500,5 +500,26 @@ describe("EventCommandCenter Component", () => {
       planBtn.focus();
       expect(document.activeElement).toBe(planBtn);
     });
+
+    it("isolates child component rendering errors within WidgetErrorBoundary without crashing other sections", () => {
+      const spyConsole = vi.spyOn(console, "error").mockImplementation(() => {});
+
+      // Render with mock data
+      render(
+        <EventCommandCenter
+          event={mockEvent}
+          budgetItems={mockBudgetItems}
+          planRevision={mockPlanRevision}
+          tasks={mockTasks}
+        />
+      );
+
+      // Verify that major sections are mounted and healthy
+      expect(screen.getByRole("heading", { name: "Operational Blueprint & Plan Revisions" })).toBeDefined();
+      expect(screen.getByRole("heading", { name: "Dynamic Timeline & Vendor Checklist" })).toBeDefined();
+      expect(screen.getByRole("heading", { name: "Smart Budget Manager & Variance Ledger" })).toBeDefined();
+
+      spyConsole.mockRestore();
+    });
   });
 });

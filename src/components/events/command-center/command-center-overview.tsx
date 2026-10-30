@@ -3,7 +3,8 @@
 import * as React from "react";
 import type { TaskRow } from "@/lib/validations/task";
 import type { BudgetItemRow } from "@/lib/validations/budget";
-import type { PlanRevisionRow } from "@/lib/validations/plan";
+import { type PlanRevisionRow, extractPlanBlueprint } from "@/lib/validations/plan";
+import { calculateTaskSummary } from "@/lib/task-math";
 import type { DetectedRisk, RiskAssessmentResult } from "@/lib/risk-engine";
 import { formatCurrency } from "@/lib/currency-utils";
 import {
@@ -46,21 +47,16 @@ export function CommandCenterOverview({
   onOpenCopilot,
   onSelectVendorChecklist,
 }: CommandCenterOverviewProps) {
-  // Task calculations
-  const totalTasks = tasks.length;
-  const completedTasks = tasks.filter((t) => t.status === "completed").length;
-  const vendorTasks = tasks.filter((t) => t.is_vendor_checklist);
-  const totalVendorCount = vendorTasks.length;
-  const completedVendorCount = vendorTasks.filter((t) => t.status === "completed").length;
+  // Deterministic task metrics computed via domain calculation engine
+  const taskSummary = calculateTaskSummary(tasks);
+  const totalTasks = taskSummary.total;
+  const completedTasks = taskSummary.completed;
+  const totalVendorCount = taskSummary.vendorCount;
+  const completedVendorCount = taskSummary.completedVendorCount;
+  const taskCompletionPercent = taskSummary.completionRate;
 
-  // Extract themes and recommendations from active plan revision
-  const structuredPlan =
-    planRevision && typeof planRevision.structured_plan === "object" && planRevision.structured_plan !== null
-      ? (planRevision.structured_plan as {
-          themes?: string[];
-          keyRecommendations?: string[];
-        })
-      : null;
+  // Extract themes and recommendations from active plan revision safely
+  const structuredPlan = extractPlanBlueprint(planRevision);
   const themes = Array.isArray(structuredPlan?.themes) ? structuredPlan.themes : [];
   const keyRecommendations = Array.isArray(structuredPlan?.keyRecommendations)
     ? structuredPlan.keyRecommendations
@@ -70,8 +66,6 @@ export function CommandCenterOverview({
     (r: DetectedRisk) => r.category === "overdue_tasks"
   );
   const overdueCount = overdueTaskRisks.length;
-  const taskCompletionPercent =
-    totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
   // High & Critical risks from deterministic risk engine
   const criticalOrHighRisks = assessment.risks.filter(

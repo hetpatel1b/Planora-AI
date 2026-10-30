@@ -9,6 +9,7 @@ import { PriorityBadge } from "@/components/shared/priority-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatMoney } from "@/lib/currency-utils";
+import { calculateTaskDueDate } from "@/lib/date-utils";
 import {
   ListTodo,
   IndianRupee,
@@ -18,23 +19,6 @@ import {
   AlertCircle,
   Lightbulb,
 } from "lucide-react";
-
-/**
- * Calculates a concrete ISO due date string from an event date and days_before offset.
- */
-function computeDueDate(
-  eventDateStr: string | null | undefined,
-  daysBefore: number | null | undefined
-): string | null {
-  if (!eventDateStr || daysBefore === null || daysBefore === undefined) return null;
-  const eventTime = new Date(eventDateStr).getTime();
-  if (isNaN(eventTime)) return null;
-  const dueTime = eventTime - daysBefore * 24 * 60 * 60 * 1000;
-  const dueDate = new Date(dueTime);
-  const year = dueDate.getFullYear();
-  if (year < 2000 || year > 2100) return null;
-  return dueDate.toISOString();
-}
 
 interface SuggestedTaskCardProps {
   eventId: string;
@@ -48,7 +32,7 @@ export function SuggestedTaskCard({ eventId, eventDate, task, index }: Suggested
   const [status, setStatus] = React.useState<"idle" | "pending" | "added" | "error">("idle");
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
 
-  const calculatedDueDate = task.due_date || computeDueDate(eventDate, task.suggested_days_before);
+  const calculatedDueDate = task.due_date || calculateTaskDueDate(eventDate, task.suggested_days_before);
 
   const handleAdd = async () => {
     if (status === "pending" || status === "added") return;

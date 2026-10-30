@@ -61,23 +61,35 @@ export function PlanBlueprintViewer({
   onDiscard,
   className = "",
 }: PlanBlueprintViewerProps) {
-  // Task selection state (initialized to all suggested tasks selected)
-  const [selectedTaskIndexes, setSelectedTaskIndexes] = React.useState<Set<number>>(
-    () => new Set(blueprint.suggestedTasks.map((_, i) => i))
-  );
+  // Track selection state paired with the active blueprint to eliminate render-phase setState calls
+  const [taskSelections, setTaskSelections] = React.useState<{
+    blueprint: AIPlanBlueprint;
+    selectedTasks: Set<number>;
+  }>(() => ({
+    blueprint,
+    selectedTasks: new Set(blueprint.suggestedTasks.map((_, i) => i)),
+  }));
 
-  // Budget item selection state (initialized to all proposed items selected)
-  const [selectedBudgetItemIndexes, setSelectedBudgetItemIndexes] = React.useState<Set<number>>(
-    () => new Set(blueprint.proposedBudgetItems.map((_, i) => i))
-  );
+  const [budgetSelections, setBudgetSelections] = React.useState<{
+    blueprint: AIPlanBlueprint;
+    selectedBudgetItems: Set<number>;
+  }>(() => ({
+    blueprint,
+    selectedBudgetItems: new Set(blueprint.proposedBudgetItems.map((_, i) => i)),
+  }));
 
-  // Synchronize selection state if blueprint prop updates during re-generation
-  const [prevBlueprint, setPrevBlueprint] = React.useState(blueprint);
-  if (blueprint !== prevBlueprint) {
-    setPrevBlueprint(blueprint);
-    setSelectedTaskIndexes(new Set(blueprint.suggestedTasks.map((_, i) => i)));
-    setSelectedBudgetItemIndexes(new Set(blueprint.proposedBudgetItems.map((_, i) => i)));
-  }
+  // Resolve active selections: if blueprint changed, default to selecting all items without calling setState during render
+  const selectedTaskIndexes = React.useMemo(() => {
+    return taskSelections.blueprint === blueprint
+      ? taskSelections.selectedTasks
+      : new Set(blueprint.suggestedTasks.map((_, i) => i));
+  }, [taskSelections, blueprint]);
+
+  const selectedBudgetItemIndexes = React.useMemo(() => {
+    return budgetSelections.blueprint === blueprint
+      ? budgetSelections.selectedBudgetItems
+      : new Set(blueprint.proposedBudgetItems.map((_, i) => i));
+  }, [budgetSelections, blueprint]);
 
   // Confirmation modal and submission states
   const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
@@ -91,46 +103,40 @@ export function PlanBlueprintViewer({
 
   // Toggle all tasks
   const handleToggleAllTasks = () => {
-    if (selectedTaskIndexes.size === blueprint.suggestedTasks.length) {
-      setSelectedTaskIndexes(new Set());
-    } else {
-      setSelectedTaskIndexes(new Set(blueprint.suggestedTasks.map((_, i) => i)));
-    }
+    const next = selectedTaskIndexes.size === blueprint.suggestedTasks.length
+      ? new Set<number>()
+      : new Set(blueprint.suggestedTasks.map((_, i) => i));
+    setTaskSelections({ blueprint, selectedTasks: next });
   };
 
   // Toggle single task
   const handleToggleTask = (index: number) => {
-    setSelectedTaskIndexes((prev) => {
-      const next = new Set(prev);
-      if (next.has(index)) {
-        next.delete(index);
-      } else {
-        next.add(index);
-      }
-      return next;
-    });
+    const next = new Set(selectedTaskIndexes);
+    if (next.has(index)) {
+      next.delete(index);
+    } else {
+      next.add(index);
+    }
+    setTaskSelections({ blueprint, selectedTasks: next });
   };
 
   // Toggle all budget items
   const handleToggleAllBudgetItems = () => {
-    if (selectedBudgetItemIndexes.size === blueprint.proposedBudgetItems.length) {
-      setSelectedBudgetItemIndexes(new Set());
-    } else {
-      setSelectedBudgetItemIndexes(new Set(blueprint.proposedBudgetItems.map((_, i) => i)));
-    }
+    const next = selectedBudgetItemIndexes.size === blueprint.proposedBudgetItems.length
+      ? new Set<number>()
+      : new Set(blueprint.proposedBudgetItems.map((_, i) => i));
+    setBudgetSelections({ blueprint, selectedBudgetItems: next });
   };
 
   // Toggle single budget item
   const handleToggleBudgetItem = (index: number) => {
-    setSelectedBudgetItemIndexes((prev) => {
-      const next = new Set(prev);
-      if (next.has(index)) {
-        next.delete(index);
-      } else {
-        next.add(index);
-      }
-      return next;
-    });
+    const next = new Set(selectedBudgetItemIndexes);
+    if (next.has(index)) {
+      next.delete(index);
+    } else {
+      next.add(index);
+    }
+    setBudgetSelections({ blueprint, selectedBudgetItems: next });
   };
 
   // Safe integer-cent total calculation for selected budget items

@@ -16,18 +16,15 @@ import { toCents, fromCents } from "@/lib/budget-math";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { WhatIfReviewModal } from "@/components/budget/what-if-review-modal";
+import { WhatIfCandidateForm } from "@/components/budget/what-if-candidate-form";
+import { WhatIfKpiGrid } from "@/components/budget/what-if-kpi-grid";
+import { WhatIfComparisonMatrix } from "@/components/budget/what-if-comparison-matrix";
 import {
   Sliders,
   RotateCcw,
   Plus,
-  TrendingDown,
-  TrendingUp,
-  AlertTriangle,
-  CheckCircle2,
   Columns,
-  Check,
-  X,
-  FileSpreadsheet,
   Sparkles,
 } from "lucide-react";
 
@@ -72,58 +69,9 @@ export function WhatIfSimulator({
   const [applySuccess, setApplySuccess] = React.useState<string | null>(null);
   const [isComparisonView, setIsComparisonView] = React.useState(false);
   const reviewTriggerRef = React.useRef<HTMLButtonElement | null>(null);
-  const modalRef = React.useRef<HTMLDivElement | null>(null);
 
-  React.useEffect(() => {
-    if (!isReviewOpen) return;
-
-    // Trap focus inside modal
-    const modalEl = modalRef.current;
-    if (modalEl) {
-      const focusable = modalEl.querySelectorAll<HTMLElement>(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-      );
-      if (focusable.length > 0) {
-        focusable[0].focus();
-      }
-    }
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setIsReviewOpen(false);
-        reviewTriggerRef.current?.focus();
-      } else if (e.key === "Tab" && modalRef.current) {
-        const focusables = modalRef.current.querySelectorAll<HTMLElement>(
-          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-        );
-        if (focusables.length === 0) return;
-        const first = focusables[0];
-        const last = focusables[focusables.length - 1];
-        if (e.shiftKey) {
-          if (document.activeElement === first) {
-            e.preventDefault();
-            last.focus();
-          }
-        } else {
-          if (document.activeElement === last) {
-            e.preventDefault();
-            first.focus();
-          }
-        }
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isReviewOpen]);
-
-  // New Candidate Item form state
+  // New Candidate Item form visibility
   const [isAddingNewItem, setIsAddingNewItem] = React.useState(false);
-  const [newItemName, setNewItemName] = React.useState("");
-  const [newItemCategory, setNewItemCategory] = React.useState("Venue & Facilities");
-  const [newItemAmount, setNewItemAmount] = React.useState("");
 
   const currentScenario = scenarios[activeScenarioIdx] || scenarios[0];
 
@@ -221,16 +169,16 @@ export function WhatIfSimulator({
   };
 
   // Handler for adding candidate new item
-  const handleAddNewItem = (e: React.FormEvent) => {
-    e.preventDefault();
-    const amount = Number(newItemAmount);
-    if (!newItemName.trim() || isNaN(amount) || amount < 0) return;
-
+  const handleAddNewCandidateItem = (candidate: {
+    name: string;
+    category: string;
+    amount: number;
+  }) => {
     const newItem: ScenarioNewItem = {
       tempId: `temp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      category: newItemCategory,
-      item_name: newItemName.trim(),
-      estimated_amount: amount,
+      category: candidate.category,
+      item_name: candidate.name,
+      estimated_amount: candidate.amount,
       actual_amount: 0,
     };
 
@@ -241,10 +189,6 @@ export function WhatIfSimulator({
           : s
       )
     );
-
-    setNewItemName("");
-    setNewItemAmount("");
-    setIsAddingNewItem(false);
   };
 
   // Handler for removing a candidate new item
@@ -450,172 +394,11 @@ export function WhatIfSimulator({
 
       {/* Multi-Scenario Comparison Matrix View (If Toggled) */}
       {isComparisonView && comparisonResults && (
-        <div className="rounded-2xl border border-indigo-200 bg-white p-5 shadow-xs dark:border-indigo-900 dark:bg-slate-900 space-y-4">
-          <h4 className="text-sm font-bold text-slate-950 dark:text-white flex items-center gap-1.5">
-            <Columns className="size-4 text-indigo-600 dark:text-indigo-400" aria-hidden="true" />
-            <span>Multi-Scenario Comparison Matrix</span>
-          </h4>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs" aria-label="Multi-Scenario Comparison Matrix">
-              <thead className="border-b border-slate-200 text-slate-600 dark:text-slate-400 dark:border-slate-800">
-                <tr>
-                  <th scope="col" className="py-2 pr-4 font-semibold">Scenario</th>
-                  <th scope="col" className="py-2 px-4 font-semibold">Target Budget</th>
-                  <th scope="col" className="py-2 px-4 font-semibold">Projected Spend</th>
-                  <th scope="col" className="py-2 px-4 font-semibold">Delta vs Baseline</th>
-                  <th scope="col" className="py-2 px-4 font-semibold">Projected Savings</th>
-                  <th scope="col" className="py-2 pl-4 font-semibold">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                <tr className="bg-slate-50/60 font-semibold dark:bg-slate-950/40">
-                  <td className="py-2.5 pr-4">Baseline (Saved)</td>
-                  <td className="py-2.5 px-4 font-mono">
-                    {formatMoney(comparisonResults.baselineSummary.targetBudget)}
-                  </td>
-                  <td className="py-2.5 px-4 font-mono">
-                    {formatMoney(comparisonResults.baselineSummary.totalEstimated)}
-                  </td>
-                  <td className="py-2.5 px-4 font-mono text-slate-500">—</td>
-                  <td className="py-2.5 px-4 font-mono text-slate-500">—</td>
-                  <td className="py-2.5 pl-4">
-                    <Badge variant="outline">Current</Badge>
-                  </td>
-                </tr>
-                {comparisonResults.scenarios.map((sc) => (
-                  <tr key={sc.scenarioId}>
-                    <td className="py-2.5 pr-4 font-medium text-slate-900 dark:text-slate-100">
-                      {sc.scenarioName}
-                    </td>
-                    <td className="py-2.5 px-4 font-mono">
-                      {formatMoney(sc.effectiveTargetBudget)}
-                    </td>
-                    <td className="py-2.5 px-4 font-mono">
-                      {formatMoney(sc.scenarioSummary.totalEstimated)}
-                    </td>
-                    <td
-                      className={`py-2.5 px-4 font-mono font-semibold ${
-                        sc.deltaEstimatedTotal < 0
-                          ? "text-emerald-600 dark:text-emerald-400"
-                          : sc.deltaEstimatedTotal > 0
-                          ? "text-rose-600 dark:text-rose-400"
-                          : "text-slate-500"
-                      }`}
-                    >
-                      {sc.deltaEstimatedTotal > 0 ? "+" : ""}
-                      {formatMoney(sc.deltaEstimatedTotal)}
-                    </td>
-                    <td className="py-2.5 px-4 font-mono text-emerald-600 dark:text-emerald-400 font-semibold">
-                      {sc.projectedSavings > 0 ? formatMoney(sc.projectedSavings) : "—"}
-                    </td>
-                    <td className="py-2.5 pl-4">
-                      {sc.projectedOverspending > 0 ? (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-600 dark:text-rose-400">
-                          <AlertTriangle className="size-3" />
-                          <span>Over by {formatMoney(sc.projectedOverspending)}</span>
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-                          <Check className="size-3" />
-                          <span>Within Budget</span>
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <WhatIfComparisonMatrix comparisonResults={comparisonResults} />
       )}
 
       {/* KPI Cards: Projected Spend, Delta, Projected Savings, Remaining */}
-      <div
-        aria-live="polite"
-        className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4"
-      >
-        {/* Projected Total */}
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
-          <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
-            Projected Spend
-          </p>
-          <p className="mt-1 font-mono text-lg font-bold text-slate-950 dark:text-white">
-            {formatMoney(simulationResult.scenarioSummary.totalEstimated)}
-          </p>
-          <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
-            Baseline: {formatMoney(simulationResult.baselineSummary.totalEstimated)}
-          </p>
-        </div>
-
-        {/* Delta vs Baseline */}
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
-          <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
-            Delta vs Baseline
-          </p>
-          <div className="mt-1 flex items-center gap-1.5">
-            {simulationResult.deltaEstimatedTotal < 0 ? (
-              <TrendingDown className="size-4 text-emerald-600 dark:text-emerald-400" />
-            ) : simulationResult.deltaEstimatedTotal > 0 ? (
-              <TrendingUp className="size-4 text-rose-600 dark:text-rose-400" />
-            ) : null}
-            <span
-              className={`font-mono text-lg font-bold ${
-                simulationResult.deltaEstimatedTotal < 0
-                  ? "text-emerald-600 dark:text-emerald-400"
-                  : simulationResult.deltaEstimatedTotal > 0
-                  ? "text-rose-600 dark:text-rose-400"
-                  : "text-slate-950 dark:text-white"
-              }`}
-            >
-              {simulationResult.deltaEstimatedTotal > 0 ? "+" : ""}
-              {formatMoney(simulationResult.deltaEstimatedTotal)}
-            </span>
-          </div>
-          <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
-            {simulationResult.deltaEstimatedTotal < 0
-              ? "Cost reduction"
-              : simulationResult.deltaEstimatedTotal > 0
-              ? "Cost increase"
-              : "No change"}
-          </p>
-        </div>
-
-        {/* Projected Savings */}
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
-          <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
-            Projected Savings
-          </p>
-          <p className="mt-1 font-mono text-lg font-bold text-emerald-600 dark:text-emerald-400">
-            {formatMoney(simulationResult.projectedSavings)}
-          </p>
-          <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
-            Estimated spending saved
-          </p>
-        </div>
-
-        {/* Projected Remaining / Overspend */}
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
-          <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
-            {simulationResult.projectedOverspending > 0
-              ? "Projected Overspend"
-              : "Remaining Cushion"}
-          </p>
-          <p
-            className={`mt-1 font-mono text-lg font-bold ${
-              simulationResult.projectedOverspending > 0
-                ? "text-rose-600 dark:text-rose-400"
-                : "text-slate-950 dark:text-white"
-            }`}
-          >
-            {simulationResult.projectedOverspending > 0
-              ? `-${formatMoney(simulationResult.projectedOverspending)}`
-              : formatMoney(simulationResult.scenarioSummary.unallocatedBudget)}
-          </p>
-          <p className="mt-0.5 text-[11px] text-slate-500">
-            Target Ceiling: {formatMoney(simulationResult.effectiveTargetBudget)}
-          </p>
-        </div>
-      </div>
+      <WhatIfKpiGrid simulationResult={simulationResult} />
 
       {/* Target Budget Override Field */}
       <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -680,79 +463,11 @@ export function WhatIfSimulator({
         </div>
 
         {/* Add Candidate Item Inline Form */}
-        {isAddingNewItem && (
-          <form
-            onSubmit={handleAddNewItem}
-            className="rounded-xl border border-indigo-200 bg-indigo-50/40 p-4 dark:border-indigo-900 dark:bg-indigo-950/30 space-y-3"
-          >
-            <div className="font-semibold text-xs text-indigo-950 dark:text-indigo-200">
-              Add New Candidate Expense to Scenario
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div>
-                <label htmlFor="candidate-item-name" className="text-[11px] text-slate-600 dark:text-slate-400 block mb-1">Item Name</label>
-                <Input
-                  id="candidate-item-name"
-                  required
-                  placeholder="e.g. Photo Booth Rental"
-                  value={newItemName}
-                  onChange={(e) => setNewItemName(e.target.value)}
-                  className="h-8 text-xs"
-                />
-              </div>
-              <div>
-                <label htmlFor="candidate-item-category" className="text-[11px] text-slate-600 dark:text-slate-400 block mb-1">Category</label>
-                <select
-                  id="candidate-item-category"
-                  value={newItemCategory}
-                  onChange={(e) => setNewItemCategory(e.target.value)}
-                  className="w-full h-8 rounded-lg border border-slate-200 bg-white px-2 text-xs dark:border-slate-800 dark:bg-slate-900 text-slate-900 dark:text-slate-100"
-                >
-                  <option value="Venue & Facilities">Venue &amp; Facilities</option>
-                  <option value="Catering & Bar">Catering &amp; Bar</option>
-                  <option value="Decor & Styling">Decor &amp; Styling</option>
-                  <option value="Entertainment & AV">Entertainment &amp; AV</option>
-                  <option value="Photography & Video">Photography &amp; Video</option>
-                  <option value="Logistics & Rentals">Logistics &amp; Rentals</option>
-                  <option value="Staffing & Security">Staffing &amp; Security</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-              <div>
-                <label htmlFor="candidate-item-cost" className="text-[11px] text-slate-600 dark:text-slate-400 block mb-1">Estimated Cost (₹)</label>
-                <Input
-                  id="candidate-item-cost"
-                  required
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="0.00"
-                  value={newItemAmount}
-                  onChange={(e) => setNewItemAmount(e.target.value)}
-                  className="h-8 text-xs font-mono"
-                />
-              </div>
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                onClick={() => setIsAddingNewItem(false)}
-                className="text-xs h-7"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                size="sm"
-                className="bg-indigo-600 text-white hover:bg-indigo-700 text-xs h-7"
-              >
-                Save to Scenario
-              </Button>
-            </div>
-          </form>
-        )}
+        <WhatIfCandidateForm
+          isOpen={isAddingNewItem}
+          onClose={() => setIsAddingNewItem(false)}
+          onAdd={handleAddNewCandidateItem}
+        />
 
         {/* Table of items */}
         <div className="overflow-x-auto">
@@ -910,130 +625,16 @@ export function WhatIfSimulator({
       </div>
 
       {/* Review & Confirmation Modal */}
-      {isReviewOpen && (
-        <div
-          ref={modalRef}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="confirm-apply-title"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-xs"
-        >
-          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl dark:bg-slate-900 space-y-4">
-            <div className="flex items-center justify-between">
-              <h3
-                id="confirm-apply-title"
-                className="text-base font-bold text-slate-950 dark:text-white flex items-center gap-2"
-              >
-                <FileSpreadsheet className="size-4 text-indigo-600 dark:text-indigo-400" aria-hidden="true" />
-                <span>Confirm Budget Scenario Application</span>
-              </h3>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => {
-                  setIsReviewOpen(false);
-                  reviewTriggerRef.current?.focus();
-                }}
-                aria-label="Close scenario review"
-                className="size-7 p-0"
-              >
-                <X className="size-4" aria-hidden="true" />
-                <span className="sr-only">Close scenario review</span>
-              </Button>
-            </div>
-
-            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-              Applying this scenario will permanently update your saved budget items. All calculations are re-validated server-side.
-            </p>
-
-            {/* Itemized Diff Summary */}
-            <div className="max-h-60 overflow-y-auto rounded-xl border border-slate-100 bg-slate-50/60 p-3 text-xs space-y-2 dark:border-slate-800 dark:bg-slate-950/40">
-              {itemDiff.hasTargetBudgetChange && (
-                <div className="flex items-center justify-between font-mono pb-2 border-b border-slate-200 dark:border-slate-800">
-                  <span className="font-sans font-semibold text-slate-700 dark:text-slate-300">
-                    Target Budget Ceiling:
-                  </span>
-                  <span>
-                    {formatMoney(itemDiff.oldTargetBudget)} &rarr; {formatMoney(itemDiff.newTargetBudget)}
-                  </span>
-                </div>
-              )}
-
-              {itemDiff.modified.map((m) => (
-                <div key={m.name} className="flex items-center justify-between">
-                  <span className="truncate pr-2 font-medium text-slate-700 dark:text-slate-300">
-                    {m.name}
-                  </span>
-                  <span className="font-mono shrink-0">
-                    {formatMoney(m.oldVal)} &rarr; {formatMoney(m.newVal)} ({m.delta > 0 ? "+" : ""}{formatMoney(m.delta)})
-                  </span>
-                </div>
-              ))}
-
-              {itemDiff.added.map((a) => (
-                <div key={a.name} className="flex items-center justify-between text-emerald-700 dark:text-emerald-300 font-medium">
-                  <span className="truncate pr-2">+ {a.name} ({a.category})</span>
-                  <span className="font-mono shrink-0">{formatMoney(a.amount)}</span>
-                </div>
-              ))}
-
-              {itemDiff.deleted.map((d) => (
-                <div key={d.name} className="flex items-center justify-between text-rose-700 dark:text-rose-300 line-through">
-                  <span className="truncate pr-2">- {d.name}</span>
-                  <span className="font-mono shrink-0">{formatMoney(d.amount)}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Error Message */}
-            {applyError && (
-              <div
-                role="alert"
-                aria-live="assertive"
-                className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800 dark:border-rose-900 dark:bg-rose-950/60 dark:text-rose-200 flex items-start gap-2"
-              >
-                <AlertTriangle className="size-4 shrink-0 mt-0.5 text-rose-600" aria-hidden="true" />
-                <p>{applyError}</p>
-              </div>
-            )}
-
-            {/* Success Message */}
-            {applySuccess && (
-              <div
-                role="status"
-                aria-live="polite"
-                className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-200 flex items-start gap-2"
-              >
-                <CheckCircle2 className="size-4 shrink-0 mt-0.5 text-emerald-600" aria-hidden="true" />
-                <p>{applySuccess}</p>
-              </div>
-            )}
-
-            <div className="flex justify-end gap-2 pt-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setIsReviewOpen(false);
-                  reviewTriggerRef.current?.focus();
-                }}
-                disabled={isApplying}
-                className="text-xs"
-              >
-                Cancel
-              </Button>
-              <Button
-                size="sm"
-                onClick={handleApplyScenario}
-                disabled={isApplying}
-                className="bg-indigo-600 text-white hover:bg-indigo-700 text-xs font-semibold shadow-xs"
-              >
-                {isApplying ? "Persisting Scenario..." : "Confirm & Persist to Saved Budget"}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <WhatIfReviewModal
+        isOpen={isReviewOpen}
+        onClose={() => setIsReviewOpen(false)}
+        onConfirm={handleApplyScenario}
+        isApplying={isApplying}
+        applyError={applyError}
+        applySuccess={applySuccess}
+        itemDiff={itemDiff}
+        triggerRef={reviewTriggerRef}
+      />
     </div>
   );
 }

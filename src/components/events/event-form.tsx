@@ -15,21 +15,164 @@ import { createEventAction, updateEventAction } from "@/lib/actions/events";
 import { toDateInputValue, dateInputToIsoString } from "@/lib/date-utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
-  Calendar,
   Sparkles,
-  AlertCircle,
   Loader2,
   CheckCircle2,
-  Sliders,
 } from "lucide-react";
+import { EventFormErrorSummary } from "@/components/events/event-form-error-summary";
+import { EventFormLogisticsStage } from "@/components/events/event-form-logistics-stage";
+import { EventFormContextStage } from "@/components/events/event-form-context-stage";
 
 interface EventFormProps {
   mode: "create" | "edit";
   initialData?: EventRow;
   onSuccessRedirect?: string;
+}
+
+export interface EventFormFields {
+  name: string;
+  eventType: string;
+  customEventType: string;
+  eventDate: string;
+  location: string;
+  guestCount: string;
+  budget: string;
+  preferences: string;
+  constraints: string;
+  culturalRequirements: string;
+  status: EventStatus;
+}
+
+export interface EventFormState {
+  fields: EventFormFields;
+  isSubmitting: boolean;
+  formError: string | null;
+  fieldErrors: Record<string, string[] | undefined>;
+  successMessage: string | null;
+}
+
+export type EventFormAction =
+  | { type: "SET_FIELD"; field: keyof EventFormFields; value: string }
+  | { type: "SET_STATUS"; status: EventStatus }
+  | { type: "SET_GUEST_COUNT"; value: string }
+  | { type: "SET_BUDGET"; value: string }
+  | { type: "SUBMIT_START" }
+  | {
+      type: "SUBMIT_VALIDATION_ERROR";
+      formError: string;
+      fieldErrors: Record<string, string[] | undefined>;
+    }
+  | { type: "SUBMIT_SUCCESS"; message: string }
+  | {
+      type: "SUBMIT_ERROR";
+      formError: string;
+      fieldErrors?: Record<string, string[] | undefined>;
+    };
+
+function initEventFormState(initialData?: EventRow): EventFormState {
+  return {
+    fields: {
+      name: initialData?.name ?? "",
+      eventType: initialData?.event_type ?? "wedding",
+      customEventType:
+        initialData && !EVENT_TYPE_PRESETS.some((p) => p.value === initialData.event_type)
+          ? initialData.event_type
+          : "",
+      eventDate: toDateInputValue(initialData?.event_date),
+      location: initialData?.location ?? "",
+      guestCount: initialData ? String(initialData.guest_count) : "",
+      budget: initialData ? String(initialData.budget) : "",
+      preferences: initialData?.preferences ?? "",
+      constraints: initialData?.constraints ?? "",
+      culturalRequirements: initialData?.cultural_requirements ?? "",
+      status: initialData?.status ?? "draft",
+    },
+    isSubmitting: false,
+    formError: null,
+    fieldErrors: {},
+    successMessage: null,
+  };
+}
+
+function eventFormReducer(state: EventFormState, action: EventFormAction): EventFormState {
+  switch (action.type) {
+    case "SET_FIELD":
+      return {
+        ...state,
+        fields: {
+          ...state.fields,
+          [action.field]: action.value,
+        },
+      };
+    case "SET_STATUS":
+      return {
+        ...state,
+        fields: {
+          ...state.fields,
+          status: action.status,
+        },
+      };
+    case "SET_GUEST_COUNT": {
+      let val = action.value;
+      if (/^0\d+$/.test(val)) {
+        val = val.replace(/^0+/, "");
+      }
+      return {
+        ...state,
+        fields: {
+          ...state.fields,
+          guestCount: val,
+        },
+      };
+    }
+    case "SET_BUDGET": {
+      let val = action.value;
+      if (/^0\d+$/.test(val)) {
+        val = val.replace(/^0+/, "");
+      }
+      return {
+        ...state,
+        fields: {
+          ...state.fields,
+          budget: val,
+        },
+      };
+    }
+    case "SUBMIT_START":
+      return {
+        ...state,
+        isSubmitting: true,
+        formError: null,
+        fieldErrors: {},
+        successMessage: null,
+      };
+    case "SUBMIT_VALIDATION_ERROR":
+      return {
+        ...state,
+        isSubmitting: false,
+        formError: action.formError,
+        fieldErrors: action.fieldErrors,
+      };
+    case "SUBMIT_SUCCESS":
+      return {
+        ...state,
+        isSubmitting: false,
+        formError: null,
+        fieldErrors: {},
+        successMessage: action.message,
+      };
+    case "SUBMIT_ERROR":
+      return {
+        ...state,
+        isSubmitting: false,
+        formError: action.formError,
+        fieldErrors: action.fieldErrors ?? {},
+      };
+    default:
+      return state;
+  }
 }
 
 export function EventForm({
@@ -40,63 +183,57 @@ export function EventForm({
   const router = useRouter();
   const errorSummaryRef = React.useRef<HTMLDivElement>(null);
 
-  // Form field state
-  const [name, setName] = React.useState(initialData?.name ?? "");
-  const [eventType, setEventType] = React.useState(initialData?.event_type ?? "wedding");
-  const [customEventType, setCustomEventType] = React.useState(
-    initialData && !EVENT_TYPE_PRESETS.some((p) => p.value === initialData.event_type)
-      ? initialData.event_type
-      : ""
-  );
-  const [eventDate, setEventDate] = React.useState(
-    toDateInputValue(initialData?.event_date)
-  );
-  const [location, setLocation] = React.useState(initialData?.location ?? "");
-  const [guestCount, setGuestCount] = React.useState(
-    initialData ? String(initialData.guest_count) : ""
-  );
-  const [budget, setBudget] = React.useState(
-    initialData ? String(initialData.budget) : ""
-  );
-  const [preferences, setPreferences] = React.useState(
-    initialData?.preferences ?? ""
-  );
-  const [constraints, setConstraints] = React.useState(
-    initialData?.constraints ?? ""
-  );
-  const [culturalRequirements, setCulturalRequirements] = React.useState(
-    initialData?.cultural_requirements ?? ""
-  );
-  const [status, setStatus] = React.useState<EventStatus>(
-    initialData?.status ?? "draft"
+  // Consolidated form state machine via useReducer
+  const [state, dispatch] = React.useReducer(
+    eventFormReducer,
+    initialData,
+    initEventFormState
   );
 
-  // UI state
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [formError, setFormError] = React.useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = React.useState<
-    Record<string, string[] | undefined>
-  >({});
-  const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
+  const { fields, isSubmitting, formError, fieldErrors, successMessage } = state;
+  const {
+    name,
+    eventType,
+    customEventType,
+    eventDate,
+    location,
+    guestCount,
+    budget,
+    preferences,
+    constraints,
+    culturalRequirements,
+    status,
+  } = fields;
+
+  const setName = (value: string) =>
+    dispatch({ type: "SET_FIELD", field: "name", value });
+  const setEventType = (value: string) =>
+    dispatch({ type: "SET_FIELD", field: "eventType", value });
+  const setCustomEventType = (value: string) =>
+    dispatch({ type: "SET_FIELD", field: "customEventType", value });
+  const setEventDate = (value: string) =>
+    dispatch({ type: "SET_FIELD", field: "eventDate", value });
+  const setLocation = (value: string) =>
+    dispatch({ type: "SET_FIELD", field: "location", value });
+  const setPreferences = (value: string) =>
+    dispatch({ type: "SET_FIELD", field: "preferences", value });
+  const setConstraints = (value: string) =>
+    dispatch({ type: "SET_FIELD", field: "constraints", value });
+  const setCulturalRequirements = (value: string) =>
+    dispatch({ type: "SET_FIELD", field: "culturalRequirements", value });
+  const setStatus = (statusValue: EventStatus) =>
+    dispatch({ type: "SET_STATUS", status: statusValue });
 
   const isCustomType = eventType === "other";
   const resolvedEventType = isCustomType ? customEventType : eventType;
 
   // Clean numeric inputs avoiding sticky leading zeros
   const handleGuestCountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let val = e.target.value;
-    if (/^0\d+$/.test(val)) {
-      val = val.replace(/^0+/, "");
-    }
-    setGuestCount(val);
+    dispatch({ type: "SET_GUEST_COUNT", value: e.target.value });
   };
 
   const handleBudgetChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let val = e.target.value;
-    if (/^0\d+$/.test(val)) {
-      val = val.replace(/^0+/, "");
-    }
-    setBudget(val);
+    dispatch({ type: "SET_BUDGET", value: e.target.value });
   };
 
   const focusField = (fieldId: string) => {
@@ -109,9 +246,7 @@ export function EventForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setFormError(null);
-    setFieldErrors({});
-    setSuccessMessage(null);
+    dispatch({ type: "SUBMIT_START" });
 
     // Prepare raw values
     const rawPayload = {
@@ -132,8 +267,11 @@ export function EventForm({
       const clientValidation = createEventSchema.safeParse(rawPayload);
       if (!clientValidation.success) {
         const flattened = clientValidation.error.flatten().fieldErrors;
-        setFieldErrors(flattened);
-        setFormError("Please correct the highlighted errors in the form before submitting.");
+        dispatch({
+          type: "SUBMIT_VALIDATION_ERROR",
+          formError: "Please correct the highlighted errors in the form before submitting.",
+          fieldErrors: flattened,
+        });
         setTimeout(() => {
           errorSummaryRef.current?.focus();
           errorSummaryRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -144,8 +282,11 @@ export function EventForm({
       const clientValidation = updateEventSchema.safeParse(rawPayload);
       if (!clientValidation.success) {
         const flattened = clientValidation.error.flatten().fieldErrors;
-        setFieldErrors(flattened);
-        setFormError("Please correct the highlighted errors in the form before submitting.");
+        dispatch({
+          type: "SUBMIT_VALIDATION_ERROR",
+          formError: "Please correct the highlighted errors in the form before submitting.",
+          fieldErrors: flattened,
+        });
         setTimeout(() => {
           errorSummaryRef.current?.focus();
           errorSummaryRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -154,17 +295,15 @@ export function EventForm({
       }
     }
 
-    setIsSubmitting(true);
-
     try {
       if (mode === "create") {
         const result = await createEventAction(rawPayload);
         if (!result.success) {
-          setFormError(result.error);
-          if (result.fieldErrors) {
-            setFieldErrors(result.fieldErrors);
-          }
-          setIsSubmitting(false);
+          dispatch({
+            type: "SUBMIT_ERROR",
+            formError: result.error,
+            fieldErrors: result.fieldErrors,
+          });
           setTimeout(() => {
             errorSummaryRef.current?.focus();
             errorSummaryRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -172,24 +311,29 @@ export function EventForm({
           return;
         }
 
-        setSuccessMessage("Event workspace created successfully!");
+        dispatch({
+          type: "SUBMIT_SUCCESS",
+          message: "Event workspace created successfully!",
+        });
         const targetUrl =
           onSuccessRedirect || `/dashboard/events/${result.data.id}`;
         router.push(targetUrl);
       } else {
         if (!initialData?.id) {
-          setFormError("Missing event identifier.");
-          setIsSubmitting(false);
+          dispatch({
+            type: "SUBMIT_ERROR",
+            formError: "Missing event identifier.",
+          });
           return;
         }
 
         const result = await updateEventAction(initialData.id, rawPayload);
         if (!result.success) {
-          setFormError(result.error);
-          if (result.fieldErrors) {
-            setFieldErrors(result.fieldErrors);
-          }
-          setIsSubmitting(false);
+          dispatch({
+            type: "SUBMIT_ERROR",
+            formError: result.error,
+            fieldErrors: result.fieldErrors,
+          });
           setTimeout(() => {
             errorSummaryRef.current?.focus();
             errorSummaryRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -197,14 +341,19 @@ export function EventForm({
           return;
         }
 
-        setSuccessMessage("Event setup updated successfully!");
+        dispatch({
+          type: "SUBMIT_SUCCESS",
+          message: "Event setup updated successfully!",
+        });
         const targetUrl =
           onSuccessRedirect || `/dashboard/events/${initialData.id}`;
         router.push(targetUrl);
       }
     } catch {
-      setFormError("An unexpected network error occurred. Please try again.");
-      setIsSubmitting(false);
+      dispatch({
+        type: "SUBMIT_ERROR",
+        formError: "An unexpected network error occurred. Please try again.",
+      });
       setTimeout(() => {
         errorSummaryRef.current?.focus();
       }, 50);
@@ -218,82 +367,12 @@ export function EventForm({
       className="space-y-8 text-slate-900 dark:text-slate-100"
     >
       {/* Form Error Banner with Programmatic Focus */}
-      {formError && (
-        <div
-          ref={errorSummaryRef}
-          tabIndex={-1}
-          role="alert"
-          aria-live="assertive"
-          className="rounded-xl border border-rose-200 bg-rose-50/95 p-4 text-xs text-rose-900 shadow-2xs outline-none focus-visible:ring-2 focus-visible:ring-rose-500 dark:border-rose-900/60 dark:bg-rose-950/50 dark:text-rose-200"
-        >
-          <div className="flex items-start gap-3">
-            <AlertCircle className="size-4 shrink-0 text-rose-600 dark:text-rose-400 mt-0.5" aria-hidden="true" />
-            <div className="flex-1 space-y-1">
-              <p className="font-semibold">{formError}</p>
-              {Object.keys(fieldErrors).length > 0 && (
-                <ul className="mt-2 list-disc pl-4 space-y-1 text-[11px]">
-                  {Object.entries(fieldErrors).map(([fieldKey, messages]) => {
-                    if (!messages || messages.length === 0) return null;
-                    const fieldId =
-                      fieldKey === "name"
-                        ? "event-name"
-                        : fieldKey === "event_type"
-                        ? "event-type"
-                        : fieldKey === "status"
-                        ? "event-status"
-                        : fieldKey === "event_date"
-                        ? "event-date"
-                        : fieldKey === "location"
-                        ? "event-location"
-                        : fieldKey === "guest_count"
-                        ? "guest-count"
-                        : fieldKey === "budget"
-                        ? "event-budget"
-                        : fieldKey === "preferences"
-                        ? "event-preferences"
-                        : fieldKey === "constraints"
-                        ? "event-constraints"
-                        : "event-cultural";
-
-                    const fieldLabel =
-                      fieldKey === "name"
-                        ? "Event Name"
-                        : fieldKey === "event_type"
-                        ? "Event Classification"
-                        : fieldKey === "status"
-                        ? "Planning Status"
-                        : fieldKey === "event_date"
-                        ? "Target Event Date"
-                        : fieldKey === "location"
-                        ? "Venue or Location"
-                        : fieldKey === "guest_count"
-                        ? "Estimated Guest Count"
-                        : fieldKey === "budget"
-                        ? "Target Budget"
-                        : fieldKey === "preferences"
-                        ? "Preferences"
-                        : fieldKey === "constraints"
-                        ? "Planning Constraints"
-                        : "Cultural Requirements";
-
-                    return (
-                      <li key={fieldKey}>
-                        <button
-                          type="button"
-                          onClick={() => focusField(fieldId)}
-                          className="text-left font-medium text-rose-700 underline hover:text-rose-900 dark:text-rose-300 dark:hover:text-rose-100 cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-rose-500 rounded-xs"
-                        >
-                          {fieldLabel}: {messages[0]}
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      <EventFormErrorSummary
+        formError={formError}
+        fieldErrors={fieldErrors}
+        onFocusField={focusField}
+        errorSummaryRef={errorSummaryRef}
+      />
 
       {/* Form Success Banner */}
       {successMessage && (
@@ -522,290 +601,28 @@ export function EventForm({
       </section>
 
       {/* Section 2: Timing, Location & Scale */}
-      <section
-        aria-labelledby="stage-2-heading"
-        className="rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-8 shadow-xs dark:border-slate-800 dark:bg-slate-900"
-      >
-        <div className="flex items-center gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300 shadow-2xs">
-            <Calendar className="size-4" aria-hidden="true" />
-          </div>
-          <div className="min-w-0">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-violet-600 dark:text-violet-400">
-              Stage 2 of 3
-            </span>
-            <h2
-              id="stage-2-heading"
-              className="text-base font-bold text-slate-950 dark:text-white"
-            >
-              Schedule, Location &amp; Scale
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Target date, venue, expected attendees, and financial ceiling.
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2">
-          {/* Event Date */}
-          <div className="space-y-1.5">
-            <Label htmlFor="event-date">Target Event Date</Label>
-            <Input
-              id="event-date"
-              name="event_date"
-              type="date"
-              min="2000-01-01"
-              max="2100-12-31"
-              value={eventDate}
-              onChange={(e) => setEventDate(e.target.value)}
-              aria-invalid={!!fieldErrors.event_date}
-              aria-describedby={
-                fieldErrors.event_date
-                  ? "event-date-error event-date-hint"
-                  : "event-date-hint"
-              }
-              className="pl-3 focus-visible:ring-violet-500 focus-visible:border-violet-500"
-            />
-            {fieldErrors.event_date && (
-              <p id="event-date-error" className="text-xs font-medium text-rose-600 dark:text-rose-400">
-                {fieldErrors.event_date[0]}
-              </p>
-            )}
-            <p id="event-date-hint" className="text-[11px] text-slate-500 dark:text-slate-400">
-              Can be left empty for preliminary concept drafts.
-            </p>
-          </div>
-
-          {/* Location */}
-          <div className="space-y-1.5">
-            <Label htmlFor="event-location">Venue or Location</Label>
-            <Input
-              id="event-location"
-              name="location"
-              type="text"
-              maxLength={300}
-              placeholder="e.g. Yerba Buena Center, San Francisco, CA"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              aria-invalid={!!fieldErrors.location}
-              aria-describedby={
-                fieldErrors.location
-                  ? "location-error location-hint"
-                  : "location-hint"
-              }
-              className="focus-visible:ring-violet-500 focus-visible:border-violet-500"
-            />
-            {fieldErrors.location && (
-              <p id="location-error" className="text-xs font-medium text-rose-600 dark:text-rose-400">
-                {fieldErrors.location[0]}
-              </p>
-            )}
-            <p id="location-hint" className="text-[11px] text-slate-500 dark:text-slate-400">
-              Physical address, hotel/resort venue, or virtual meeting platform link.
-            </p>
-          </div>
-
-          {/* Guest Count */}
-          <div className="space-y-1.5">
-            <Label htmlFor="guest-count">Estimated Guest Count</Label>
-            <Input
-              id="guest-count"
-              name="guest_count"
-              type="number"
-              min={0}
-              max={10000000}
-              step={1}
-              placeholder="0"
-              value={guestCount}
-              onChange={handleGuestCountChange}
-              aria-invalid={!!fieldErrors.guest_count}
-              aria-describedby={
-                fieldErrors.guest_count
-                  ? "guest-count-error guest-count-hint"
-                  : "guest-count-hint"
-              }
-              className="focus-visible:ring-violet-500 focus-visible:border-violet-500"
-            />
-            {fieldErrors.guest_count && (
-              <p id="guest-count-error" className="text-xs font-medium text-rose-600 dark:text-rose-400">
-                {fieldErrors.guest_count[0]}
-              </p>
-            )}
-            <p id="guest-count-hint" className="text-[11px] text-slate-500 dark:text-slate-400">
-              Expected attendee scale; informs catering portions, room capacity, and badges.
-            </p>
-          </div>
-
-          {/* Estimated Budget */}
-          <div className="space-y-1.5">
-            <Label htmlFor="event-budget">Target Budget (INR ₹)</Label>
-            <div className="relative flex items-center">
-              <span
-                className="pointer-events-none absolute left-3 text-sm font-semibold text-slate-500 dark:text-slate-400"
-                aria-hidden="true"
-              >
-                ₹
-              </span>
-              <Input
-                id="event-budget"
-                name="budget"
-                type="number"
-                min={0}
-                max={999999999.99}
-                step="0.01"
-                placeholder="0.00"
-                value={budget}
-                onChange={handleBudgetChange}
-                aria-invalid={!!fieldErrors.budget}
-                aria-describedby={
-                  fieldErrors.budget
-                    ? "event-budget-error event-budget-hint"
-                    : "event-budget-hint"
-                }
-                className="pl-7 focus-visible:ring-violet-500 focus-visible:border-violet-500"
-              />
-            </div>
-            {fieldErrors.budget && (
-              <p id="event-budget-error" className="text-xs font-medium text-rose-600 dark:text-rose-400">
-                {fieldErrors.budget[0]}
-              </p>
-            )}
-            <p id="event-budget-hint" className="text-[11px] text-slate-500 dark:text-slate-400">
-              Initial spending ceiling; tracked in integer cents with live budget variance.
-            </p>
-          </div>
-        </div>
-      </section>
+      <EventFormLogisticsStage
+        eventDate={eventDate}
+        setEventDate={setEventDate}
+        location={location}
+        setLocation={setLocation}
+        guestCount={guestCount}
+        onGuestCountChange={handleGuestCountChange}
+        budget={budget}
+        onBudgetChange={handleBudgetChange}
+        fieldErrors={fieldErrors}
+      />
 
       {/* Section 3: Context, Preferences & Cultural Requirements */}
-      <section
-        aria-labelledby="stage-3-heading"
-        className="rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-8 shadow-xs dark:border-slate-800 dark:bg-slate-900"
-      >
-        <div className="flex items-center gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300 shadow-2xs">
-            <Sliders className="size-4" aria-hidden="true" />
-          </div>
-          <div className="min-w-0">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-violet-600 dark:text-violet-400">
-              Stage 3 of 3
-            </span>
-            <h2
-              id="stage-3-heading"
-              className="text-base font-bold text-slate-950 dark:text-white"
-            >
-              Planning Context &amp; Logistics
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Style preferences, operational boundaries, and cultural considerations.
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-6 space-y-6">
-          {/* Preferences */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between gap-2">
-              <Label htmlFor="event-preferences">Preferences &amp; Styling Guidelines</Label>
-              <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400" aria-hidden="true">
-                {preferences.length} / 2000
-              </span>
-            </div>
-            <Textarea
-              id="event-preferences"
-              name="preferences"
-              maxLength={2000}
-              placeholder="e.g. Modern minimalist design, plant-forward catering, acoustic warmth, keynote stage with LED backdrop"
-              value={preferences}
-              onChange={(e) => setPreferences(e.target.value)}
-              rows={3}
-              aria-invalid={!!fieldErrors.preferences}
-              aria-describedby={
-                fieldErrors.preferences
-                  ? "preferences-error preferences-hint"
-                  : "preferences-hint"
-              }
-              className="focus-visible:ring-violet-500 focus-visible:border-violet-500"
-            />
-            {fieldErrors.preferences && (
-              <p id="preferences-error" className="text-xs font-medium text-rose-600 dark:text-rose-400">
-                {fieldErrors.preferences[0]}
-              </p>
-            )}
-            <p id="preferences-hint" className="text-[11px] text-slate-500 dark:text-slate-400">
-              Sensory preferences, decorative tone, AV requirements, and guest experience themes.
-            </p>
-          </div>
-
-          {/* Planning Constraints */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between gap-2">
-              <Label htmlFor="event-constraints">Planning Constraints &amp; Hard Boundaries</Label>
-              <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400" aria-hidden="true">
-                {constraints.length} / 2000
-              </span>
-            </div>
-            <Textarea
-              id="event-constraints"
-              name="constraints"
-              maxLength={2000}
-              placeholder="e.g. Venue curfew at 11:00 PM, load-in allowed after 7:00 AM, elevator access required for stage gear, decibel cap 85dB"
-              value={constraints}
-              onChange={(e) => setConstraints(e.target.value)}
-              rows={3}
-              aria-invalid={!!fieldErrors.constraints}
-              aria-describedby={
-                fieldErrors.constraints
-                  ? "constraints-error constraints-hint"
-                  : "constraints-hint"
-              }
-              className="focus-visible:ring-violet-500 focus-visible:border-violet-500"
-            />
-            {fieldErrors.constraints && (
-              <p id="constraints-error" className="text-xs font-medium text-rose-600 dark:text-rose-400">
-                {fieldErrors.constraints[0]}
-              </p>
-            )}
-            <p id="constraints-hint" className="text-[11px] text-slate-500 dark:text-slate-400">
-              Strict deadlines, venue regulations, load-in curfews, sound limits, and permit cutoffs.
-            </p>
-          </div>
-
-          {/* Cultural & Dietary Requirements */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between gap-2">
-              <Label htmlFor="event-cultural">Cultural, Ceremony &amp; Dietary Requirements</Label>
-              <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400" aria-hidden="true">
-                {culturalRequirements.length} / 2000
-              </span>
-            </div>
-            <Textarea
-              id="event-cultural"
-              name="cultural_requirements"
-              maxLength={2000}
-              placeholder="e.g. Kosher & Halal certified stations, quiet prayer room available throughout event, tea welcoming ceremony at 1:30 PM"
-              value={culturalRequirements}
-              onChange={(e) => setCulturalRequirements(e.target.value)}
-              rows={3}
-              aria-invalid={!!fieldErrors.cultural_requirements}
-              aria-describedby={
-                fieldErrors.cultural_requirements
-                  ? "cultural-error cultural-hint"
-                  : "cultural-hint"
-              }
-              className="focus-visible:ring-violet-500 focus-visible:border-violet-500"
-            />
-            {fieldErrors.cultural_requirements && (
-              <p id="cultural-error" className="text-xs font-medium text-rose-600 dark:text-rose-400">
-                {fieldErrors.cultural_requirements[0]}
-              </p>
-            )}
-            <p id="cultural-hint" className="text-[11px] text-slate-500 dark:text-slate-400">
-              Dietary certifications (Halal, Kosher, Allergen-free), ceremonial timelines, prayer rooms.
-            </p>
-          </div>
-        </div>
-      </section>
+      <EventFormContextStage
+        preferences={preferences}
+        setPreferences={setPreferences}
+        constraints={constraints}
+        setConstraints={setConstraints}
+        culturalRequirements={culturalRequirements}
+        setCulturalRequirements={setCulturalRequirements}
+        fieldErrors={fieldErrors}
+      />
 
       {/* Action Footer with Enhanced Mobile Touch Targets */}
       <div className="flex flex-col-reverse items-center justify-end gap-3 sm:flex-row pt-2">

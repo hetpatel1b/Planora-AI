@@ -157,3 +157,18 @@ export const applyBudgetScenarioInputSchema = z
 export type ScenarioItemOverrideInput = z.infer<typeof scenarioItemOverrideSchema>;
 export type ScenarioNewItemInput = z.infer<typeof scenarioNewItemSchema>;
 export type ApplyBudgetScenarioInput = z.infer<typeof applyBudgetScenarioInputSchema>;
+
+/**
+ * Schema validating the database confirmation payload returned by
+ * the `apply_budget_scenario` RPC transaction.
+ */
+export const applyBudgetScenarioRpcResponseSchema = z.object({
+  applied: z.boolean(),
+  event_id: z.string().uuid().optional(),
+  overrides_applied: z.number().int().nonnegative().optional(),
+  items_inserted: z.number().int().nonnegative().optional(),
+});
+
+export type ApplyBudgetScenarioRpcResponse = z.infer<
+  typeof applyBudgetScenarioRpcResponseSchema
+>;

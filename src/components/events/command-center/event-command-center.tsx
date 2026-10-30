@@ -6,6 +6,7 @@ import type { BudgetItemRow } from "@/lib/validations/budget";
 import type { TaskRow } from "@/lib/validations/task";
 import type { PlanRevisionRow } from "@/lib/validations/plan";
 import { calculateBudgetSummary } from "@/lib/budget-math";
+import { calculateTaskSummary } from "@/lib/task-math";
 import { evaluateEventRisks } from "@/lib/risk-engine";
 import { WorkspaceHeader } from "@/components/events/command-center/workspace-header";
 import { EventSummaryBar } from "@/components/events/command-center/event-summary-bar";
@@ -16,6 +17,7 @@ import { TimelineChecklistManager } from "@/components/timeline/timeline-checkli
 import { BudgetManager } from "@/components/budget/budget-manager";
 import { EventRiskRadar } from "@/components/risk/event-risk-radar";
 import { FloatingCopilotDrawer } from "@/components/copilot/floating-copilot-drawer";
+import { WidgetErrorBoundary } from "@/components/shared/widget-error-boundary";
 
 export interface EventCommandCenterProps {
   event: EventRow;
@@ -41,7 +43,6 @@ export function EventCommandCenter({
   const [isCopilotOpen, setIsCopilotOpen] = React.useState(false);
 
   const targetBudget = Number(event.budget) || 0;
-  const vendorCount = tasks.filter((t) => t.is_vendor_checklist).length;
 
   const handleNavigate = React.useCallback((id: string) => {
     setActiveSection(id);
@@ -52,11 +53,17 @@ export function EventCommandCenter({
     }
   }, []);
 
-  // Authoritative calculations matching underlying modules
+  // Authoritative domain calculations matching underlying modules
   const budgetSummary = React.useMemo(
     () => calculateBudgetSummary(targetBudget, budgetItems),
     [targetBudget, budgetItems]
   );
+
+  const taskSummary = React.useMemo(
+    () => calculateTaskSummary(tasks),
+    [tasks]
+  );
+  const vendorCount = taskSummary.vendorCount;
 
   const assessment = React.useMemo(
     () =>
@@ -169,11 +176,13 @@ export function EventCommandCenter({
               Deterministic &amp; AI plan generator synthesizing phase milestones, vendor requirements, and budget allocations.
             </p>
           </div>
-          <PlanGeneratorCard
-            eventId={event.id}
-            eventName={event.name}
-            initialRevision={planRevision}
-          />
+          <WidgetErrorBoundary title="Operational Blueprint Section">
+            <PlanGeneratorCard
+              eventId={event.id}
+              eventName={event.name}
+              initialRevision={planRevision}
+            />
+          </WidgetErrorBoundary>
         </section>
 
         {/* AREA 6: Dynamic Timeline & Vendor Checklist */}
@@ -194,14 +203,16 @@ export function EventCommandCenter({
               Interactive milestone sequencing, overdue tracking, task priority filters, and checklist views.
             </p>
           </div>
-          <TimelineChecklistManager
-            eventId={event.id}
-            eventDate={event.event_date}
-            initialTasks={tasks}
-            initialError={taskError}
-            activeFilter={timelineFilter}
-            onFilterChange={(f) => setTimelineFilter(f)}
-          />
+          <WidgetErrorBoundary title="Dynamic Timeline Section">
+            <TimelineChecklistManager
+              eventId={event.id}
+              eventDate={event.event_date}
+              initialTasks={tasks}
+              initialError={taskError}
+              activeFilter={timelineFilter}
+              onFilterChange={(f) => setTimelineFilter(f)}
+            />
+          </WidgetErrorBoundary>
         </section>
 
         {/* AREA 7: Smart Budget Manager */}
@@ -221,12 +232,14 @@ export function EventCommandCenter({
               Integer-cent variance tracking, category breakdowns, and hypothetical What-If budget scenarios.
             </p>
           </div>
-          <BudgetManager
-            eventId={event.id}
-            targetBudget={targetBudget}
-            initialItems={budgetItems}
-            initialError={budgetError}
-          />
+          <WidgetErrorBoundary title="Smart Budget Section">
+            <BudgetManager
+              eventId={event.id}
+              targetBudget={targetBudget}
+              initialItems={budgetItems}
+              initialError={budgetError}
+            />
+          </WidgetErrorBoundary>
         </section>
 
         {/* AREA 8: Event Risk Radar */}
@@ -246,13 +259,15 @@ export function EventCommandCenter({
               Automated threat detection across budget ceilings, overdue task dependencies, and checklist completeness.
             </p>
           </div>
-          <EventRiskRadar
-            event={event}
-            budgetItems={budgetItems}
-            tasks={tasks}
-            activePlanRevision={planRevision}
-            assessment={assessment}
-          />
+          <WidgetErrorBoundary title="Risk Radar Section">
+            <EventRiskRadar
+              event={event}
+              budgetItems={budgetItems}
+              tasks={tasks}
+              activePlanRevision={planRevision}
+              assessment={assessment}
+            />
+          </WidgetErrorBoundary>
         </section>
       </main>
 

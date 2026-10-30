@@ -16,6 +16,8 @@
  *    invalid parameters, or unexpected database infrastructure errors.
  */
 
+import { isJsonObject } from "@/lib/json-utils";
+
 export interface RateLimitResult {
   allowed: boolean;
   remaining: number;
@@ -188,12 +190,20 @@ export async function checkDistributedRateLimit(
         p_window_seconds: options.windowSeconds,
       });
 
-      if (!error && data) {
-        const rpcResult = data as { allowed: boolean; remaining: number; reset_ms: number };
+      if (!error && isJsonObject(data)) {
+        const allowed = typeof data.allowed === "boolean" ? data.allowed : false;
+        const remaining =
+          typeof data.remaining === "number" && Number.isFinite(data.remaining)
+            ? data.remaining
+            : 0;
+        const resetMs =
+          typeof data.reset_ms === "number" && Number.isFinite(data.reset_ms)
+            ? data.reset_ms
+            : 0;
         return {
-          allowed: Boolean(rpcResult.allowed),
-          remaining: Number(rpcResult.remaining),
-          resetMs: Number(rpcResult.reset_ms),
+          allowed,
+          remaining,
+          resetMs,
         };
       }
 

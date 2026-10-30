@@ -1,12 +1,26 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
+import type { User } from "@supabase/supabase-js";
 import { GET as getTasksExport } from "./tasks/route";
 import { GET as getBudgetExport } from "./budget/route";
 import * as serverAuth from "@/lib/supabase/server";
+import {
+  createMockSupabaseClient,
+  createMockAuthSuccess,
+  createMockAuthFailure,
+} from "@/test/mocks/supabase";
 
 describe("Export Route Handlers (/api/events/[id]/export/*)", () => {
   const validEventId = "11111111-2222-4333-8444-555555555555";
-  const mockUser = { id: "user-test-123", email: "planner@planora.ai" };
+  const mockUser: User = {
+    id: "user-test-123",
+    app_metadata: {},
+    user_metadata: {},
+    aud: "authenticated",
+    created_at: "2026-10-01T00:00:00.000Z",
+    email: "planner@planora.ai",
+    role: "authenticated",
+  };
 
   const mockEvent = {
     id: validEventId,
@@ -57,10 +71,9 @@ describe("Export Route Handlers (/api/events/[id]/export/*)", () => {
 
   describe("Tasks Export Route (GET /api/events/[id]/export/tasks)", () => {
     it("returns 401 when the session is unauthenticated", async () => {
-      vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue({
-        data: { user: null },
-        error: new Error("No session") as unknown as import("@supabase/supabase-js").AuthError,
-      } as unknown as import("@supabase/supabase-js").UserResponse);
+      vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue(
+        createMockAuthFailure("No session")
+      );
 
       const req = createMockRequest(`/api/events/${validEventId}/export/tasks`);
       const res = await getTasksExport(req, {
@@ -73,10 +86,9 @@ describe("Export Route Handlers (/api/events/[id]/export/*)", () => {
     });
 
     it("returns 400 when the event ID is malformed (not a UUID)", async () => {
-      vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue({
-        data: { user: mockUser as unknown as import("@supabase/supabase-js").User },
-        error: null,
-      });
+      vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue(
+        createMockAuthSuccess(mockUser)
+      );
 
       const req = createMockRequest("/api/events/invalid-uuid/export/tasks");
       const res = await getTasksExport(req, {
@@ -89,23 +101,18 @@ describe("Export Route Handlers (/api/events/[id]/export/*)", () => {
     });
 
     it("returns 404 when the event is not found or owned by another user", async () => {
-      vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue({
-        data: { user: mockUser as unknown as import("@supabase/supabase-js").User },
-        error: null,
-      });
+      vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue(
+        createMockAuthSuccess(mockUser)
+      );
 
-      const mockSupabase = {
-        from: vi.fn().mockReturnValue({
-          select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                single: vi.fn().mockResolvedValue({ data: null, error: { message: "Not found" } }),
-              }),
-            }),
-          }),
-        }),
-      };
-      vi.spyOn(serverAuth, "createClient").mockResolvedValue(mockSupabase as unknown as Awaited<ReturnType<typeof serverAuth.createClient>>);
+      const mockSupabase = createMockSupabaseClient({
+        tables: {
+          events: { data: null, error: { message: "Not found" } },
+        },
+      });
+      vi.spyOn(serverAuth, "createClient").mockResolvedValue(
+        mockSupabase as unknown as Awaited<ReturnType<typeof serverAuth.createClient>>
+      );
 
       const req = createMockRequest(`/api/events/${validEventId}/export/tasks`);
       const res = await getTasksExport(req, {
@@ -118,44 +125,19 @@ describe("Export Route Handlers (/api/events/[id]/export/*)", () => {
     });
 
     it("returns 500 when task query encounters a database error", async () => {
-      vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue({
-        data: { user: mockUser as unknown as import("@supabase/supabase-js").User },
-        error: null,
-      });
+      vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue(
+        createMockAuthSuccess(mockUser)
+      );
 
-      const mockSupabase = {
-        from: vi.fn().mockImplementation((table: string) => {
-          if (table === "events") {
-            return {
-              select: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  eq: vi.fn().mockReturnValue({
-                    single: vi.fn().mockResolvedValue({ data: mockEvent, error: null }),
-                  }),
-                }),
-              }),
-            };
-          }
-          if (table === "tasks") {
-            return {
-              select: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  eq: vi.fn().mockReturnValue({
-                    order: vi.fn().mockReturnValue({
-                      order: vi.fn().mockResolvedValue({
-                        data: null,
-                        error: { message: "Query timeout" },
-                      }),
-                    }),
-                  }),
-                }),
-              }),
-            };
-          }
-          return {};
-        }),
-      };
-      vi.spyOn(serverAuth, "createClient").mockResolvedValue(mockSupabase as unknown as Awaited<ReturnType<typeof serverAuth.createClient>>);
+      const mockSupabase = createMockSupabaseClient({
+        tables: {
+          events: { data: mockEvent, error: null },
+          tasks: { data: null, error: { message: "Query timeout" } },
+        },
+      });
+      vi.spyOn(serverAuth, "createClient").mockResolvedValue(
+        mockSupabase as unknown as Awaited<ReturnType<typeof serverAuth.createClient>>
+      );
 
       const req = createMockRequest(`/api/events/${validEventId}/export/tasks`);
       const res = await getTasksExport(req, {
@@ -168,44 +150,19 @@ describe("Export Route Handlers (/api/events/[id]/export/*)", () => {
     });
 
     it("successfully returns CSV with headers, attachment disposition, and no-store caching", async () => {
-      vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue({
-        data: { user: mockUser as unknown as import("@supabase/supabase-js").User },
-        error: null,
-      });
+      vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue(
+        createMockAuthSuccess(mockUser)
+      );
 
-      const mockSupabase = {
-        from: vi.fn().mockImplementation((table: string) => {
-          if (table === "events") {
-            return {
-              select: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  eq: vi.fn().mockReturnValue({
-                    single: vi.fn().mockResolvedValue({ data: mockEvent, error: null }),
-                  }),
-                }),
-              }),
-            };
-          }
-          if (table === "tasks") {
-            return {
-              select: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  eq: vi.fn().mockReturnValue({
-                    order: vi.fn().mockReturnValue({
-                      order: vi.fn().mockResolvedValue({
-                        data: mockTasks,
-                        error: null,
-                      }),
-                    }),
-                  }),
-                }),
-              }),
-            };
-          }
-          return {};
-        }),
-      };
-      vi.spyOn(serverAuth, "createClient").mockResolvedValue(mockSupabase as unknown as Awaited<ReturnType<typeof serverAuth.createClient>>);
+      const mockSupabase = createMockSupabaseClient({
+        tables: {
+          events: { data: mockEvent, error: null },
+          tasks: { data: mockTasks, error: null },
+        },
+      });
+      vi.spyOn(serverAuth, "createClient").mockResolvedValue(
+        mockSupabase as unknown as Awaited<ReturnType<typeof serverAuth.createClient>>
+      );
 
       const req = createMockRequest(`/api/events/${validEventId}/export/tasks`);
       const res = await getTasksExport(req, {
@@ -225,44 +182,19 @@ describe("Export Route Handlers (/api/events/[id]/export/*)", () => {
     });
 
     it("handles empty task datasets cleanly, returning 200 with CSV headers", async () => {
-      vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue({
-        data: { user: mockUser as unknown as import("@supabase/supabase-js").User },
-        error: null,
-      });
+      vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue(
+        createMockAuthSuccess(mockUser)
+      );
 
-      const mockSupabase = {
-        from: vi.fn().mockImplementation((table: string) => {
-          if (table === "events") {
-            return {
-              select: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  eq: vi.fn().mockReturnValue({
-                    single: vi.fn().mockResolvedValue({ data: mockEvent, error: null }),
-                  }),
-                }),
-              }),
-            };
-          }
-          if (table === "tasks") {
-            return {
-              select: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  eq: vi.fn().mockReturnValue({
-                    order: vi.fn().mockReturnValue({
-                      order: vi.fn().mockResolvedValue({
-                        data: [],
-                        error: null,
-                      }),
-                    }),
-                  }),
-                }),
-              }),
-            };
-          }
-          return {};
-        }),
-      };
-      vi.spyOn(serverAuth, "createClient").mockResolvedValue(mockSupabase as unknown as Awaited<ReturnType<typeof serverAuth.createClient>>);
+      const mockSupabase = createMockSupabaseClient({
+        tables: {
+          events: { data: mockEvent, error: null },
+          tasks: { data: [], error: null },
+        },
+      });
+      vi.spyOn(serverAuth, "createClient").mockResolvedValue(
+        mockSupabase as unknown as Awaited<ReturnType<typeof serverAuth.createClient>>
+      );
 
       const req = createMockRequest(`/api/events/${validEventId}/export/tasks`);
       const res = await getTasksExport(req, {
@@ -275,56 +207,37 @@ describe("Export Route Handlers (/api/events/[id]/export/*)", () => {
     });
 
     it("performs zero database mutations", async () => {
-      vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue({
-        data: { user: mockUser as unknown as import("@supabase/supabase-js").User },
-        error: null,
+      vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue(
+        createMockAuthSuccess(mockUser)
+      );
+
+      const mockSupabase = createMockSupabaseClient({
+        tables: {
+          events: { data: mockEvent, error: null },
+          tasks: { data: mockTasks, error: null },
+        },
       });
-
-      const insertMock = vi.fn();
-      const updateMock = vi.fn();
-      const deleteMock = vi.fn();
-
-      const mockSupabase = {
-        from: vi.fn().mockImplementation(() => {
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  single: vi.fn().mockResolvedValue({ data: mockEvent, error: null }),
-                  order: vi.fn().mockReturnValue({
-                    order: vi.fn().mockResolvedValue({
-                      data: mockTasks,
-                      error: null,
-                    }),
-                  }),
-                }),
-              }),
-            }),
-            insert: insertMock,
-            update: updateMock,
-            delete: deleteMock,
-          };
-        }),
-      };
-      vi.spyOn(serverAuth, "createClient").mockResolvedValue(mockSupabase as unknown as Awaited<ReturnType<typeof serverAuth.createClient>>);
+      vi.spyOn(serverAuth, "createClient").mockResolvedValue(
+        mockSupabase as unknown as Awaited<ReturnType<typeof serverAuth.createClient>>
+      );
 
       const req = createMockRequest(`/api/events/${validEventId}/export/tasks`);
       await getTasksExport(req, {
         params: Promise.resolve({ id: validEventId }),
       });
 
-      expect(insertMock).not.toHaveBeenCalled();
-      expect(updateMock).not.toHaveBeenCalled();
-      expect(deleteMock).not.toHaveBeenCalled();
+      const tasksBuilder = mockSupabase.getBuilderForTable("tasks");
+      expect(tasksBuilder?.insert).not.toHaveBeenCalled();
+      expect(tasksBuilder?.update).not.toHaveBeenCalled();
+      expect(tasksBuilder?.delete).not.toHaveBeenCalled();
     });
   });
 
   describe("Budget Export Route (GET /api/events/[id]/export/budget)", () => {
     it("returns 401 when the session is unauthenticated", async () => {
-      vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue({
-        data: { user: null },
-        error: new Error("No session") as unknown as import("@supabase/supabase-js").AuthError,
-      } as unknown as import("@supabase/supabase-js").UserResponse);
+      vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue(
+        createMockAuthFailure("No session")
+      );
 
       const req = createMockRequest(`/api/events/${validEventId}/export/budget`);
       const res = await getBudgetExport(req, {
@@ -337,10 +250,9 @@ describe("Export Route Handlers (/api/events/[id]/export/*)", () => {
     });
 
     it("returns 400 when the event ID is malformed (not a UUID)", async () => {
-      vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue({
-        data: { user: mockUser as unknown as import("@supabase/supabase-js").User },
-        error: null,
-      });
+      vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue(
+        createMockAuthSuccess(mockUser)
+      );
 
       const req = createMockRequest("/api/events/invalid-uuid/export/budget");
       const res = await getBudgetExport(req, {
@@ -353,23 +265,18 @@ describe("Export Route Handlers (/api/events/[id]/export/*)", () => {
     });
 
     it("returns 404 when the event is not found or owned by another user", async () => {
-      vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue({
-        data: { user: mockUser as unknown as import("@supabase/supabase-js").User },
-        error: null,
-      });
+      vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue(
+        createMockAuthSuccess(mockUser)
+      );
 
-      const mockSupabase = {
-        from: vi.fn().mockReturnValue({
-          select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                single: vi.fn().mockResolvedValue({ data: null, error: { message: "Not found" } }),
-              }),
-            }),
-          }),
-        }),
-      };
-      vi.spyOn(serverAuth, "createClient").mockResolvedValue(mockSupabase as unknown as Awaited<ReturnType<typeof serverAuth.createClient>>);
+      const mockSupabase = createMockSupabaseClient({
+        tables: {
+          events: { data: null, error: { message: "Not found" } },
+        },
+      });
+      vi.spyOn(serverAuth, "createClient").mockResolvedValue(
+        mockSupabase as unknown as Awaited<ReturnType<typeof serverAuth.createClient>>
+      );
 
       const req = createMockRequest(`/api/events/${validEventId}/export/budget`);
       const res = await getBudgetExport(req, {
@@ -382,44 +289,19 @@ describe("Export Route Handlers (/api/events/[id]/export/*)", () => {
     });
 
     it("returns 500 when budget query encounters a database error", async () => {
-      vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue({
-        data: { user: mockUser as unknown as import("@supabase/supabase-js").User },
-        error: null,
-      });
+      vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue(
+        createMockAuthSuccess(mockUser)
+      );
 
-      const mockSupabase = {
-        from: vi.fn().mockImplementation((table: string) => {
-          if (table === "events") {
-            return {
-              select: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  eq: vi.fn().mockReturnValue({
-                    single: vi.fn().mockResolvedValue({ data: mockEvent, error: null }),
-                  }),
-                }),
-              }),
-            };
-          }
-          if (table === "budget_items") {
-            return {
-              select: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  eq: vi.fn().mockReturnValue({
-                    order: vi.fn().mockReturnValue({
-                      order: vi.fn().mockResolvedValue({
-                        data: null,
-                        error: { message: "Query timeout" },
-                      }),
-                    }),
-                  }),
-                }),
-              }),
-            };
-          }
-          return {};
-        }),
-      };
-      vi.spyOn(serverAuth, "createClient").mockResolvedValue(mockSupabase as unknown as Awaited<ReturnType<typeof serverAuth.createClient>>);
+      const mockSupabase = createMockSupabaseClient({
+        tables: {
+          events: { data: mockEvent, error: null },
+          budget_items: { data: null, error: { message: "Query timeout" } },
+        },
+      });
+      vi.spyOn(serverAuth, "createClient").mockResolvedValue(
+        mockSupabase as unknown as Awaited<ReturnType<typeof serverAuth.createClient>>
+      );
 
       const req = createMockRequest(`/api/events/${validEventId}/export/budget`);
       const res = await getBudgetExport(req, {
@@ -432,44 +314,19 @@ describe("Export Route Handlers (/api/events/[id]/export/*)", () => {
     });
 
     it("successfully returns CSV with headers, unadorned decimal numbers, and attachment headers", async () => {
-      vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue({
-        data: { user: mockUser as unknown as import("@supabase/supabase-js").User },
-        error: null,
-      });
+      vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue(
+        createMockAuthSuccess(mockUser)
+      );
 
-      const mockSupabase = {
-        from: vi.fn().mockImplementation((table: string) => {
-          if (table === "events") {
-            return {
-              select: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  eq: vi.fn().mockReturnValue({
-                    single: vi.fn().mockResolvedValue({ data: mockEvent, error: null }),
-                  }),
-                }),
-              }),
-            };
-          }
-          if (table === "budget_items") {
-            return {
-              select: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  eq: vi.fn().mockReturnValue({
-                    order: vi.fn().mockReturnValue({
-                      order: vi.fn().mockResolvedValue({
-                        data: mockBudgetItems,
-                        error: null,
-                      }),
-                    }),
-                  }),
-                }),
-              }),
-            };
-          }
-          return {};
-        }),
-      };
-      vi.spyOn(serverAuth, "createClient").mockResolvedValue(mockSupabase as unknown as Awaited<ReturnType<typeof serverAuth.createClient>>);
+      const mockSupabase = createMockSupabaseClient({
+        tables: {
+          events: { data: mockEvent, error: null },
+          budget_items: { data: mockBudgetItems, error: null },
+        },
+      });
+      vi.spyOn(serverAuth, "createClient").mockResolvedValue(
+        mockSupabase as unknown as Awaited<ReturnType<typeof serverAuth.createClient>>
+      );
 
       const req = createMockRequest(`/api/events/${validEventId}/export/budget`);
       const res = await getBudgetExport(req, {
@@ -489,44 +346,19 @@ describe("Export Route Handlers (/api/events/[id]/export/*)", () => {
     });
 
     it("handles empty budget datasets cleanly, returning 200 with CSV headers", async () => {
-      vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue({
-        data: { user: mockUser as unknown as import("@supabase/supabase-js").User },
-        error: null,
-      });
+      vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue(
+        createMockAuthSuccess(mockUser)
+      );
 
-      const mockSupabase = {
-        from: vi.fn().mockImplementation((table: string) => {
-          if (table === "events") {
-            return {
-              select: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  eq: vi.fn().mockReturnValue({
-                    single: vi.fn().mockResolvedValue({ data: mockEvent, error: null }),
-                  }),
-                }),
-              }),
-            };
-          }
-          if (table === "budget_items") {
-            return {
-              select: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  eq: vi.fn().mockReturnValue({
-                    order: vi.fn().mockReturnValue({
-                      order: vi.fn().mockResolvedValue({
-                        data: [],
-                        error: null,
-                      }),
-                    }),
-                  }),
-                }),
-              }),
-            };
-          }
-          return {};
-        }),
-      };
-      vi.spyOn(serverAuth, "createClient").mockResolvedValue(mockSupabase as unknown as Awaited<ReturnType<typeof serverAuth.createClient>>);
+      const mockSupabase = createMockSupabaseClient({
+        tables: {
+          events: { data: mockEvent, error: null },
+          budget_items: { data: [], error: null },
+        },
+      });
+      vi.spyOn(serverAuth, "createClient").mockResolvedValue(
+        mockSupabase as unknown as Awaited<ReturnType<typeof serverAuth.createClient>>
+      );
 
       const req = createMockRequest(`/api/events/${validEventId}/export/budget`);
       const res = await getBudgetExport(req, {
@@ -539,47 +371,29 @@ describe("Export Route Handlers (/api/events/[id]/export/*)", () => {
     });
 
     it("performs zero database mutations", async () => {
-      vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue({
-        data: { user: mockUser as unknown as import("@supabase/supabase-js").User },
-        error: null,
+      vi.spyOn(serverAuth, "getAuthenticatedUser").mockResolvedValue(
+        createMockAuthSuccess(mockUser)
+      );
+
+      const mockSupabase = createMockSupabaseClient({
+        tables: {
+          events: { data: mockEvent, error: null },
+          budget_items: { data: mockBudgetItems, error: null },
+        },
       });
-
-      const insertMock = vi.fn();
-      const updateMock = vi.fn();
-      const deleteMock = vi.fn();
-
-      const mockSupabase = {
-        from: vi.fn().mockImplementation(() => {
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  single: vi.fn().mockResolvedValue({ data: mockEvent, error: null }),
-                  order: vi.fn().mockReturnValue({
-                    order: vi.fn().mockResolvedValue({
-                      data: mockBudgetItems,
-                      error: null,
-                    }),
-                  }),
-                }),
-              }),
-            }),
-            insert: insertMock,
-            update: updateMock,
-            delete: deleteMock,
-          };
-        }),
-      };
-      vi.spyOn(serverAuth, "createClient").mockResolvedValue(mockSupabase as unknown as Awaited<ReturnType<typeof serverAuth.createClient>>);
+      vi.spyOn(serverAuth, "createClient").mockResolvedValue(
+        mockSupabase as unknown as Awaited<ReturnType<typeof serverAuth.createClient>>
+      );
 
       const req = createMockRequest(`/api/events/${validEventId}/export/budget`);
       await getBudgetExport(req, {
         params: Promise.resolve({ id: validEventId }),
       });
 
-      expect(insertMock).not.toHaveBeenCalled();
-      expect(updateMock).not.toHaveBeenCalled();
-      expect(deleteMock).not.toHaveBeenCalled();
+      const budgetBuilder = mockSupabase.getBuilderForTable("budget_items");
+      expect(budgetBuilder?.insert).not.toHaveBeenCalled();
+      expect(budgetBuilder?.update).not.toHaveBeenCalled();
+      expect(budgetBuilder?.delete).not.toHaveBeenCalled();
     });
   });
 });

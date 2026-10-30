@@ -5,6 +5,7 @@ import {
 import type { EventPlanInput, GeneratePlanOptions } from "@/lib/plan-generator";
 import type { GroqChatMessageInput } from "@/lib/ai/groq";
 import { formatCurrency } from "@/lib/currency-utils";
+import { isJsonObject } from "@/lib/json-utils";
 
 /**
  * Planora AI — Context-Aware GenAI Event Plan Prompt Builder & Parser
@@ -140,8 +141,8 @@ export function parsePlanBlueprintResponse(
   // 1. Direct JSON parse
   try {
     const parsed = JSON.parse(trimmed);
-    if (typeof parsed === "object" && parsed !== null) {
-      candidateObj = parsed as Record<string, unknown>;
+    if (isJsonObject(parsed)) {
+      candidateObj = parsed;
     }
   } catch {
     // Continue
@@ -153,8 +154,8 @@ export function parsePlanBlueprintResponse(
     if (match && match[1]) {
       try {
         const parsed = JSON.parse(match[1].trim());
-        if (typeof parsed === "object" && parsed !== null) {
-          candidateObj = parsed as Record<string, unknown>;
+        if (isJsonObject(parsed)) {
+          candidateObj = parsed;
         }
       } catch {
         // Continue
@@ -169,8 +170,8 @@ export function parsePlanBlueprintResponse(
     if (firstBrace !== -1 && lastBrace > firstBrace) {
       try {
         const parsed = JSON.parse(trimmed.slice(firstBrace, lastBrace + 1));
-        if (typeof parsed === "object" && parsed !== null) {
-          candidateObj = parsed as Record<string, unknown>;
+        if (isJsonObject(parsed)) {
+          candidateObj = parsed;
         }
       } catch {
         // Continue
@@ -194,15 +195,18 @@ export function parsePlanBlueprintResponse(
 
   // Harmonize proposedBudgetItems: ensure numbers with 2 decimals
   if (Array.isArray(candidateObj.proposedBudgetItems)) {
-    candidateObj.proposedBudgetItems = (candidateObj.proposedBudgetItems as Record<string, unknown>[]).map(
-      (item) => ({
-        ...item,
-        estimated_amount:
-          typeof item.estimated_amount === "number"
-            ? Number(item.estimated_amount.toFixed(2))
-            : Number(Number(item.estimated_amount || 0).toFixed(2)),
-      })
-    );
+    candidateObj.proposedBudgetItems = candidateObj.proposedBudgetItems.map((item) => {
+      if (isJsonObject(item)) {
+        return {
+          ...item,
+          estimated_amount:
+            typeof item.estimated_amount === "number"
+              ? Number(item.estimated_amount.toFixed(2))
+              : Number(Number(item.estimated_amount || 0).toFixed(2)),
+        };
+      }
+      return item;
+    });
   }
 
   // Validate strictly against official schema

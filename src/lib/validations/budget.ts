@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { Database } from "@/types/database.types";
 import { createCurrencyAmountSchema } from "@/lib/validations/currency";
+import { eventIdSchema } from "@/lib/validations/event";
 
 /**
  * Common budget category presets for event expenses.
@@ -30,11 +31,9 @@ export const budgetItemIdSchema = z
   .uuid("Budget item ID must be a valid UUID.");
 
 /**
- * UUID validator for parent event identifiers.
+ * Re-export authoritative eventIdSchema from event validations.
  */
-export const eventIdSchema = z
-  .string("Event ID is required.")
-  .uuid("Event ID must be a valid UUID.");
+export { eventIdSchema };
 
 /**
  * Validates expense category:

@@ -335,6 +335,27 @@ export interface Database {
           },
         ];
       };
+      ai_rate_limits: {
+        Row: {
+          id: string;
+          user_id: string;
+          action: string;
+          requested_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          action: string;
+          requested_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          action?: string;
+          requested_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;

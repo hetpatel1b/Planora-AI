@@ -11,6 +11,7 @@ import {
   generateTasksCsv,
   generateBudgetCsv,
   generateExportFilename,
+  createCsvAttachmentResponse,
 } from "./export-csv";
 import type { TaskRow } from "@/lib/validations/task";
 import type { BudgetItemRow } from "@/lib/validations/budget";
@@ -445,6 +446,24 @@ describe("CSV Export Engine (export-csv.ts)", () => {
     it("normalizes international diacritics into safe ASCII", () => {
       const filename = generateExportFilename("Café Gala & Fête", "budget", "csv", fixedDate);
       expect(filename).toBe("planora-cafe-gala-fete-budget-2026-10-26.csv");
+    });
+  });
+
+  describe("createCsvAttachmentResponse", () => {
+    it("constructs Response with correct status, content-type, disposition, and strict cache headers", async () => {
+      const csv = "col1,col2\r\nval1,val2\r\n";
+      const filename = "test-export.csv";
+      const response = createCsvAttachmentResponse(csv, filename);
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get("Content-Type")).toBe("text/csv; charset=utf-8");
+      expect(response.headers.get("Content-Disposition")).toBe('attachment; filename="test-export.csv"');
+      expect(response.headers.get("Cache-Control")).toBe("private, no-cache, no-store, must-revalidate");
+      expect(response.headers.get("Pragma")).toBe("no-cache");
+      expect(response.headers.get("Expires")).toBe("0");
+
+      const text = await response.text();
+      expect(text).toBe(csv);
     });
   });
 });

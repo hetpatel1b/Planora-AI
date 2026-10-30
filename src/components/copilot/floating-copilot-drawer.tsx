@@ -51,12 +51,13 @@ export function FloatingCopilotDrawer({
       // Prevent background body scroll when open on mobile
       const originalOverflow = document.body.style.overflow;
       document.body.style.overflow = "hidden";
-      // Auto-focus drawer on open
-      setTimeout(() => {
+      // Auto-focus drawer on open with cleanup protection
+      const focusTimer = setTimeout(() => {
         drawerRef.current?.focus();
       }, 50);
 
       return () => {
+        clearTimeout(focusTimer);
         document.removeEventListener("keydown", handleKeyDown);
         document.body.style.overflow = originalOverflow;
       };

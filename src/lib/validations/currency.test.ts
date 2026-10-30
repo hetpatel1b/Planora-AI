@@ -3,6 +3,7 @@ import {
   createRequiredCurrencyAmountSchema,
   createOptionalCurrencyAmountSchema,
   createCurrencyAmountSchema,
+  validateCurrencyValue,
   MIN_CURRENCY_AMOUNT,
   MAX_CURRENCY_AMOUNT,
   MAX_CURRENCY_DECIMALS,
@@ -172,6 +173,38 @@ describe("currency validation", () => {
 
       const defaultSchema = createCurrencyAmountSchema();
       expect(defaultSchema.parse("")).toBe(0);
+    });
+  });
+
+  describe("validateCurrencyValue discriminated union", () => {
+    it("narrows to valid result with amount on success without non-null assertions", () => {
+      const result = validateCurrencyValue(150.25, "Test Amount");
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.amount).toBe(150.25);
+      } else {
+        throw new Error("Expected valid result");
+      }
+    });
+
+    it("narrows to invalid result with error on failure without non-null assertions", () => {
+      const result = validateCurrencyValue(-20, "Test Amount");
+      expect(result.valid).toBe(false);
+      if (!result.valid) {
+        expect(result.error).toContain("Test Amount cannot be negative");
+      } else {
+        throw new Error("Expected invalid result");
+      }
+    });
+
+    it("safely rejects scientific notation with informative error message", () => {
+      const result = validateCurrencyValue("1e4", "Budget");
+      expect(result.valid).toBe(false);
+      if (!result.valid) {
+        expect(result.error).toBe(
+          "Scientific notation is not supported for currency amounts."
+        );
+      }
     });
   });
 });

@@ -32,7 +32,7 @@ export function validateScenarioAmount(
 ): number {
   const result = validateCurrencyValue(val, fieldLabel);
   if (!result.valid) {
-    let detail = result.error!;
+    let detail = result.error;
     if (detail.toLowerCase().includes("scientific notation")) {
       detail = "Scientific notation is not supported for currency amounts.";
     } else if (
@@ -49,7 +49,7 @@ export function validateScenarioAmount(
     throw new Error(`Invalid ${fieldLabel}: ${detail}`);
   }
 
-  return result.amount!;
+  return result.amount;
 }
 
 /**

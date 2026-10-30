@@ -50,9 +50,9 @@ test.describe("Event Workspace & Core User Journey (Objectives B, E & F)", () =>
     await expect(page.locator("h1")).toContainText(/Event Planning Workspace/i);
 
     // 3. Navigate to Event Creation
-    await page.getByRole("link", { name: /create new event/i }).click();
+    await page.getByRole("link", { name: /create (new|your first) event/i }).click();
     await expect(page).toHaveURL(/\/dashboard\/events\/new/);
-    await expect(page.locator("h1")).toContainText(/Intelligent Event Setup/i);
+    await expect(page.locator("h1")).toContainText(/Create Event Workspace/i);
 
     // 4. Form inputs & category chips
     const weddingChip = page.getByRole("button", { name: /Wedding & Reception/i });
@@ -73,7 +73,7 @@ test.describe("Event Workspace & Core User Journey (Objectives B, E & F)", () =>
     await page.locator("input#event-budget").fill("45000");
 
     // 5. Submit Event Form
-    const submitBtn = page.getByRole("button", { name: /Initialize Event Workspace/i });
+    const submitBtn = page.getByRole("button", { name: /Create Event Workspace/i });
     await submitBtn.click();
 
     // 6. Verify navigation to Command Center

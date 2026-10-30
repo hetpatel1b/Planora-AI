@@ -12,12 +12,38 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     const isDev = process.env.NODE_ENV === "development";
+    const isCiOrTest = Boolean(process.env.CI || process.env.PLAYWRIGHT_TEST_BASE_URL);
 
     // In development, Turbopack and React Fast Refresh / source maps may use eval-like mechanisms.
     // In production, 'unsafe-eval' is strictly omitted to defend against string-to-code injection (DOM XSS).
     const scriptSrc = isDev
       ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
       : "script-src 'self' 'unsafe-inline'";
+
+    // Allow local development and CI isolated test containers (e.g. Supabase local instance at 127.0.0.1:54321)
+    const localConnectEndpoints =
+      isDev || isCiOrTest
+        ? " http://127.0.0.1:* http://localhost:* ws://127.0.0.1:* ws://localhost:*"
+        : "";
+
+    const localImgEndpoints =
+      isDev || isCiOrTest ? " http://127.0.0.1:* http://localhost:*" : "";
+
+    let customSupabaseOrigin = "";
+    if (process.env.NEXT_PUBLIC_SUPABASE_URL) {
+      try {
+        const parsedUrl = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL);
+        if (
+          !parsedUrl.hostname.endsWith(".supabase.co") &&
+          !parsedUrl.hostname.includes("127.0.0.1") &&
+          !parsedUrl.hostname.includes("localhost")
+        ) {
+          customSupabaseOrigin = ` ${parsedUrl.origin}`;
+        }
+      } catch {
+        // Ignore unparseable URLs
+      }
+    }
 
     return [
       {
@@ -61,9 +87,9 @@ const nextConfig: NextConfig = {
               "default-src 'self'",
               scriptSrc,
               "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' data: blob: https://*.supabase.co https://avatars.githubusercontent.com",
+              `img-src 'self' data: blob: https://*.supabase.co https://avatars.githubusercontent.com${localImgEndpoints}`,
               "font-src 'self' data:",
-              "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+              `connect-src 'self' https://*.supabase.co wss://*.supabase.co${localConnectEndpoints}${customSupabaseOrigin}`,
               "frame-ancestors 'none'",
               "object-src 'none'",
               "base-uri 'self'",

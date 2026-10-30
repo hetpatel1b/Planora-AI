@@ -42,6 +42,46 @@ describe("next.config.ts security headers and CSP", () => {
     expect(cspValue).toContain("script-src 'self' 'unsafe-inline' 'unsafe-eval'");
   });
 
+  it("omits loopback endpoints from connect-src in pure production", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("CI", "");
+    vi.stubEnv("PLAYWRIGHT_TEST_BASE_URL", "");
+    const headerConfigs = await nextConfig.headers?.();
+    const cspHeader = headerConfigs?.[0]?.headers.find(
+      (h) => h.key === "Content-Security-Policy"
+    );
+    const cspValue = cspHeader?.value ?? "";
+    expect(cspValue).toContain("connect-src 'self' https://*.supabase.co wss://*.supabase.co");
+    expect(cspValue).not.toContain("127.0.0.1");
+    expect(cspValue).not.toContain("localhost");
+  });
+
+  it("permits loopback endpoints in connect-src during development or CI for isolated test containers", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("CI", "true");
+    const headerConfigs = await nextConfig.headers?.();
+    const cspHeader = headerConfigs?.[0]?.headers.find(
+      (h) => h.key === "Content-Security-Policy"
+    );
+    const cspValue = cspHeader?.value ?? "";
+    expect(cspValue).toContain("http://127.0.0.1:*");
+    expect(cspValue).toContain("http://localhost:*");
+    expect(cspValue).toContain("ws://127.0.0.1:*");
+    expect(cspValue).toContain("ws://localhost:*");
+  });
+
+  it("appends custom self-hosted NEXT_PUBLIC_SUPABASE_URL origin to connect-src", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("CI", "");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://supabase.customdomain.org");
+    const headerConfigs = await nextConfig.headers?.();
+    const cspHeader = headerConfigs?.[0]?.headers.find(
+      (h) => h.key === "Content-Security-Policy"
+    );
+    const cspValue = cspHeader?.value ?? "";
+    expect(cspValue).toContain("https://supabase.customdomain.org");
+  });
+
   it("preserves all required baseline security headers", async () => {
     vi.stubEnv("NODE_ENV", "production");
     const headerConfigs = await nextConfig.headers?.();

@@ -69,8 +69,9 @@ test.describe("Authentication & Route Protection (Scenario A)", () => {
     const submitButton = page.getByRole("button", { name: /^sign in$/i });
     await submitButton.click();
 
-    // Alert banner should appear with credentials error or network error
-    const alert = page.locator("[role='alert']");
+    // Alert banner should appear with credentials error or network error (target by ID to avoid ambiguity with Next.js route announcer)
+    const alert = page.locator("#auth-error-banner");
     await expect(alert).toBeVisible({ timeout: 15000 });
+    await expect(alert).toHaveAttribute("role", "alert");
   });
 });

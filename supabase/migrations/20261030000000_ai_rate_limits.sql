@@ -111,7 +111,7 @@ BEGIN
   IF v_count >= p_max_requests THEN
     v_reset_ms := pg_catalog.greatest(
       0,
-      pg_catalog.extract(EPOCH FROM (v_oldest + (p_window_seconds || ' seconds')::INTERVAL - pg_catalog.now())) * 1000
+      EXTRACT(EPOCH FROM (v_oldest + (p_window_seconds || ' seconds')::INTERVAL - pg_catalog.now())) * 1000
     )::INTEGER;
 
     RETURN pg_catalog.jsonb_build_object(

@@ -42,7 +42,7 @@ export function EventForm({
 
   // Form field state
   const [name, setName] = React.useState(initialData?.name ?? "");
-  const [eventType, setEventType] = React.useState(initialData?.event_type ?? "conference");
+  const [eventType, setEventType] = React.useState(initialData?.event_type ?? "wedding");
   const [customEventType, setCustomEventType] = React.useState(
     initialData && !EVENT_TYPE_PRESETS.some((p) => p.value === initialData.event_type)
       ? initialData.event_type
@@ -353,7 +353,7 @@ export function EventForm({
               required
               aria-required="true"
               maxLength={150}
-              placeholder="e.g. Horizon Annual Leadership Summit 2027"
+              placeholder="e.g. Maya & Rohan's Wedding Celebration or Liam's 30th Birthday"
               value={name}
               onChange={(e) => setName(e.target.value)}
               aria-invalid={!!fieldErrors.name}
@@ -383,6 +383,34 @@ export function EventForm({
               </span>
               <span className="sr-only">(required)</span>
             </Label>
+            {/* Core Problem Statement Categories Quick Chips */}
+            <div className="flex flex-wrap items-center gap-1.5 pb-1" role="group" aria-label="Core event categories">
+              <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 mr-1">
+                Core:
+              </span>
+              {[
+                { value: "wedding", label: "💍 Wedding & Reception" },
+                { value: "birthday", label: "🎂 Birthday Party" },
+                { value: "community", label: "🤝 Community Gathering" },
+              ].map((core) => {
+                const isSelected = eventType === core.value;
+                return (
+                  <button
+                    key={core.value}
+                    type="button"
+                    onClick={() => setEventType(core.value)}
+                    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors cursor-pointer ${
+                      isSelected
+                        ? "bg-violet-600 text-white shadow-2xs dark:bg-violet-600 dark:text-white"
+                        : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                    }`}
+                    aria-pressed={isSelected}
+                  >
+                    {core.label}
+                  </button>
+                );
+              })}
+            </div>
             <div className="relative">
               <select
                 id="event-type"

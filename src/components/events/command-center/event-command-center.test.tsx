@@ -221,8 +221,10 @@ describe("EventCommandCenter Component", () => {
     expect(html).toContain('href="#overview"');
     expect(html).toContain('href="#plan"');
     expect(html).toContain('href="#timeline"');
+    expect(html).toContain('href="#vendor-checklist"');
     expect(html).toContain('href="#budget"');
     expect(html).toContain('href="#risks"');
+    expect(html).toContain("Vendor Checklist");
   });
 
   it("renders Area 4 Command Center Overview with calculated health cards and attention summary", () => {
@@ -337,6 +339,46 @@ describe("EventCommandCenter Component", () => {
       expect(html).toContain(`id="${id}"`);
       expect(html).toContain("scroll-mt-28");
     }
+  });
+
+  it("renders personalized concepts and recommendations card in overview when active blueprint has themes", () => {
+    const revisionWithThemes: PlanRevisionRow = {
+      ...mockPlanRevision,
+      structured_plan: {
+        summary: "Custom blueprint",
+        themes: [
+          "Timeless Romance — Warm candlelight and floral greenery",
+          "Modern Minimalist Garden — Clean architectural silhouettes",
+        ],
+        keyRecommendations: [
+          "Contract primary photographer at least 4 months ahead",
+          "Buffer timeline by 15 minutes for guest arrival",
+        ],
+        scheduleMilestones: [],
+        suggestedTasks: [],
+        proposedBudgetItems: [],
+        metadata: {
+          source: "ai",
+          model: "openai/gpt-oss-120b",
+          generatedAt: new Date().toISOString(),
+        },
+      },
+    };
+
+    const html = renderToString(
+      <EventCommandCenter
+        event={mockEvent}
+        budgetItems={mockBudgetItems}
+        planRevision={revisionWithThemes}
+        tasks={mockTasks}
+      />
+    );
+
+    expect(html).toContain("Personalized Concepts &amp; Strategic Recommendations");
+    expect(html).toContain("Curated Themes &amp; Aesthetic Directives");
+    expect(html).toContain("Timeless Romance — Warm candlelight and floral greenery");
+    expect(html).toContain("Key Strategic Tips &amp; Protocols");
+    expect(html).toContain("Contract primary photographer at least 4 months ahead");
   });
 
   describe("Interactive DOM User Operations", () => {

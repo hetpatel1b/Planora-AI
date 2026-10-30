@@ -116,7 +116,7 @@ describe("generateEventPlanAction", () => {
 
     // Exhaust 5 permitted plan generation requests
     for (let i = 0; i < 5; i++) {
-      checkPlanGenerationRateLimit(mockUser.id);
+      await checkPlanGenerationRateLimit(mockUser.id);
     }
 
     const result = await generateEventPlanAction(validEventId);

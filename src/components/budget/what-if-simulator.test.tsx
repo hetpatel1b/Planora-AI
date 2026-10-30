@@ -269,6 +269,60 @@ describe("WhatIfSimulator Component", () => {
       await user.click(screen.getByRole("button", { name: "Cancel" }));
       expect(screen.queryByText("Add New Candidate Expense to Scenario")).toBeNull();
     });
+
+    it("rejects invalid candidate line item submission with whitespace-only name and preserves totals", async () => {
+      const user = userEvent.setup();
+      render(
+        <WhatIfSimulator
+          eventId={eventId}
+          baselineTargetBudget={baselineTargetBudget}
+          baselineItems={baselineItems}
+        />
+      );
+
+      await user.click(screen.getByRole("button", { name: /Add Candidate Item/i }));
+
+      const nameInput = screen.getByPlaceholderText("e.g. Photo Booth Rental");
+      const amountInput = screen.getByPlaceholderText("0.00");
+
+      await user.type(nameInput, "   ");
+      await user.type(amountInput, "2500");
+
+      const form = nameInput.closest("form")!;
+      fireEvent.submit(form);
+
+      // Form remains open and no item was created
+      expect(screen.getByText("Add New Candidate Expense to Scenario")).toBeDefined();
+      expect(screen.queryByText("New")).toBeNull();
+      // Total projected spend remains intact at baseline ₹15,000.00
+      expect(screen.getAllByText("₹15,000.00").length).toBeGreaterThan(0);
+    });
+
+    it("rejects candidate item submission with negative cost and preserves baseline figures", async () => {
+      const user = userEvent.setup();
+      render(
+        <WhatIfSimulator
+          eventId={eventId}
+          baselineTargetBudget={baselineTargetBudget}
+          baselineItems={baselineItems}
+        />
+      );
+
+      await user.click(screen.getByRole("button", { name: /Add Candidate Item/i }));
+
+      const nameInput = screen.getByPlaceholderText("e.g. Photo Booth Rental");
+      const amountInput = screen.getByPlaceholderText("0.00");
+
+      await user.type(nameInput, "Negative Expense");
+      await user.type(amountInput, "-500");
+
+      const form = nameInput.closest("form")!;
+      fireEvent.submit(form);
+
+      // Item rejected; does not appear in scenario workbench
+      expect(screen.queryByText("Negative Expense")).toBeNull();
+      expect(screen.getAllByText("₹15,000.00").length).toBeGreaterThan(0);
+    });
   });
 
   describe("Comparison Matrix & Baseline Reset", () => {

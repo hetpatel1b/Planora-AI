@@ -109,11 +109,17 @@ export function EventRiskRadar({
     },
   }[overallRiskLevel];
 
-  // Helper for scrolling smoothly to related sections
+  // Helper for scrolling to related sections with reduced-motion support
   const scrollToSection = (elementId: string) => {
     const el = document.getElementById(elementId);
     if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      const isReducedMotion =
+        typeof window !== "undefined" &&
+        window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+      el.scrollIntoView({
+        behavior: isReducedMotion ? "auto" : "smooth",
+        block: "start",
+      });
     }
   };
 

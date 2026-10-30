@@ -192,6 +192,33 @@ describe("EventForm Component", () => {
       await user.selectOptions(typeSelect, "conference");
       expect(screen.queryByLabelText(/Custom Event Type Description/i)).toBeNull();
     });
+
+    it("defaults to wedding and allows quick selection of core problem-statement categories", async () => {
+      const user = userEvent.setup();
+      render(<EventForm mode="create" />);
+
+      const typeSelect = screen.getByLabelText(/Event Classification/i) as HTMLSelectElement;
+      expect(typeSelect.value).toBe("wedding");
+
+      // Click Birthday chip
+      const birthdayChip = screen.getByRole("button", { name: /Birthday Party/i });
+      await user.click(birthdayChip);
+      expect(typeSelect.value).toBe("birthday");
+
+      // Click Community Gathering chip
+      const communityChip = screen.getByRole("button", { name: /Community Gathering/i });
+      await user.click(communityChip);
+      expect(typeSelect.value).toBe("community");
+
+      // Click Wedding chip
+      const weddingChip = screen.getByRole("button", { name: /Wedding & Reception/i });
+      await user.click(weddingChip);
+      expect(typeSelect.value).toBe("wedding");
+
+      // Verify other presets like conference remain selectable via dropdown
+      await user.selectOptions(typeSelect, "conference");
+      expect(typeSelect.value).toBe("conference");
+    });
   });
 
   describe("Client Validation & Interactive Error Summaries", () => {
@@ -259,7 +286,7 @@ describe("EventForm Component", () => {
           location: "Moscone West",
           guest_count: 300,
           budget: 50000,
-          event_type: "conference",
+          event_type: "wedding",
           status: "draft",
         })
       );

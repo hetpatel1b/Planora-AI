@@ -361,6 +361,15 @@ export interface Database {
         };
         Returns: Json;
       };
+      check_ai_rate_limit: {
+        Args: {
+          p_user_id: string;
+          p_action: string;
+          p_max_requests: number;
+          p_window_seconds: number;
+        };
+        Returns: Json;
+      };
     };
     Enums: {
       event_status: EventStatus;

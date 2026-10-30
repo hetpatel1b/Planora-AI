@@ -61,7 +61,7 @@ export async function askCopilotAction(
     }
 
     // 2b. Rate Limiting Check
-    const rateLimit = checkCopilotRateLimit(user.id);
+    const rateLimit = await checkCopilotRateLimit(user.id);
     if (!rateLimit.allowed) {
       return {
         success: false,

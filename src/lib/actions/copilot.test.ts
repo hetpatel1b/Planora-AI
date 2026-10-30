@@ -84,7 +84,7 @@ describe("askCopilotAction", () => {
 
     // Exhaust the 15 allowed requests
     for (let i = 0; i < 15; i++) {
-      checkCopilotRateLimit(mockUser.id);
+      await checkCopilotRateLimit(mockUser.id);
     }
 
     const result = await askCopilotAction({

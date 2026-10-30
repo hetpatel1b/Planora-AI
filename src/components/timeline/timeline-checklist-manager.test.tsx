@@ -221,9 +221,10 @@ describe("TimelineChecklistManager Component", () => {
       />
     );
 
-    const toggleButton = screen.getByRole("button", {
+    const toggleButton = screen.getByRole("checkbox", {
       name: `Mark "${sampleTasks[0].title}" as completed`,
     });
+    expect(toggleButton.getAttribute("aria-checked")).toBe("false");
     await user.click(toggleButton);
 
     expect(mockToggleTaskStatusAction).toHaveBeenCalledTimes(1);
@@ -248,9 +249,10 @@ describe("TimelineChecklistManager Component", () => {
       />
     );
 
-    const toggleButton = screen.getByRole("button", {
+    const toggleButton = screen.getByRole("checkbox", {
       name: `Mark "${sampleTasks[0].title}" as completed`,
     });
+    expect(toggleButton.getAttribute("aria-checked")).toBe("false");
     await user.click(toggleButton);
 
     await waitFor(() => {
@@ -258,10 +260,11 @@ describe("TimelineChecklistManager Component", () => {
     });
 
     // Button should revert to asking to mark as completed (since it rolled back to pending)
-    const revertedButton = screen.getByRole("button", {
+    const revertedButton = screen.getByRole("checkbox", {
       name: `Mark "${sampleTasks[0].title}" as completed`,
     });
     expect(revertedButton).toBeDefined();
+    expect(revertedButton.getAttribute("aria-checked")).toBe("false");
   });
 
   it("opens add task dialog when + Add Task button is clicked", async () => {
@@ -290,5 +293,22 @@ describe("TimelineChecklistManager Component", () => {
     );
 
     expect(screen.getByText("Failed to sync remote checklist tasks")).toBeDefined();
+  });
+
+  it("initializes with vendor filter active when activeFilter='vendor' is passed", () => {
+    const handleFilterChange = vi.fn();
+    render(
+      <TimelineChecklistManager
+        eventId={eventId}
+        initialTasks={sampleTasks}
+        activeFilter="vendor"
+        onFilterChange={handleFilterChange}
+      />
+    );
+
+    // Only vendor items should be rendered
+    expect(screen.getByText("Confirm Catering Menu")).toBeDefined();
+    expect(screen.getByText("Book Audio-Visual Production")).toBeDefined();
+    expect(screen.queryByText("Send Invitation Letters")).toBeNull();
   });
 });

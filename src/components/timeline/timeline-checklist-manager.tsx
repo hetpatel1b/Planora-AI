@@ -36,6 +36,8 @@ export interface TimelineChecklistManagerProps {
   eventDate?: string | null;
   initialTasks: TaskRow[];
   initialError?: string | null;
+  activeFilter?: FilterStatus;
+  onFilterChange?: (filter: FilterStatus) => void;
 }
 
 type ViewMode = "timeline" | "checklist";
@@ -77,12 +79,28 @@ export function TimelineChecklistManager({
   eventId,
   initialTasks,
   initialError,
+  activeFilter,
+  onFilterChange,
 }: TimelineChecklistManagerProps) {
   const [tasks, setTasks] = React.useState<TaskRow[]>(initialTasks);
   const [viewMode, setViewMode] = React.useState<ViewMode>("timeline");
   const [searchQuery, setSearchQuery] = React.useState("");
-  const [statusFilter, setStatusFilter] = React.useState<FilterStatus>("ALL");
+  const [statusFilter, setStatusFilter] = React.useState<FilterStatus>(
+    activeFilter ?? "ALL"
+  );
   const [priorityFilter, setPriorityFilter] = React.useState<string>("ALL");
+
+  // Synchronize statusFilter if parent activeFilter updates
+  const [prevActiveFilter, setPrevActiveFilter] = React.useState(activeFilter);
+  if (activeFilter !== undefined && activeFilter !== prevActiveFilter) {
+    setPrevActiveFilter(activeFilter);
+    setStatusFilter(activeFilter);
+  }
+
+  const handleFilterClick = (newFilter: FilterStatus) => {
+    setStatusFilter(newFilter);
+    onFilterChange?.(newFilter);
+  };
 
   // Modal dialog states
   const [isAddOpen, setIsAddOpen] = React.useState(false);
@@ -289,9 +307,11 @@ export function TimelineChecklistManager({
         {/* Toggle Checkbox */}
         <button
           type="button"
+          role="checkbox"
+          aria-checked={isCompleted}
           onClick={() => handleToggleStatus(task)}
           disabled={isPendingToggle}
-          className="mt-0.5 shrink-0 rounded text-slate-500 hover:text-indigo-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:text-slate-400 dark:hover:text-indigo-400"
+          className="mt-0.5 shrink-0 rounded text-slate-500 hover:text-indigo-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:text-slate-400 dark:hover:text-indigo-400 cursor-pointer"
           aria-label={
             isCompleted
               ? `Mark "${task.title}" as incomplete`
@@ -383,7 +403,7 @@ export function TimelineChecklistManager({
             size="icon-xs"
             onClick={() => setEditingTask(task)}
             aria-label={`Edit task "${task.title}"`}
-            className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+            className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
           >
             <Edit2 className="size-3.5" />
           </Button>
@@ -394,7 +414,7 @@ export function TimelineChecklistManager({
             size="icon-xs"
             onClick={() => setDeletingTask(task)}
             aria-label={`Delete task "${task.title}"`}
-            className="text-slate-400 hover:text-rose-600 dark:hover:text-rose-400"
+            className="text-slate-500 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400"
           >
             <Trash2 className="size-3.5" />
           </Button>
@@ -594,9 +614,9 @@ export function TimelineChecklistManager({
         <div className="flex flex-wrap items-center gap-1 rounded-xl border border-slate-200/80 bg-white p-1 dark:border-slate-800 dark:bg-slate-900" role="group" aria-label="Filter tasks by status">
           <button
             type="button"
-            onClick={() => setStatusFilter("ALL")}
+            onClick={() => handleFilterClick("ALL")}
             aria-pressed={statusFilter === "ALL"}
-            className={`rounded-lg px-2.5 py-1 text-xs font-medium transition ${
+            className={`rounded-lg px-2.5 py-1 text-xs font-medium transition cursor-pointer ${
               statusFilter === "ALL"
                 ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900"
                 : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
@@ -606,9 +626,9 @@ export function TimelineChecklistManager({
           </button>
           <button
             type="button"
-            onClick={() => setStatusFilter("pending")}
+            onClick={() => handleFilterClick("pending")}
             aria-pressed={statusFilter === "pending"}
-            className={`rounded-lg px-2.5 py-1 text-xs font-medium transition ${
+            className={`rounded-lg px-2.5 py-1 text-xs font-medium transition cursor-pointer ${
               statusFilter === "pending"
                 ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900"
                 : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
@@ -618,9 +638,9 @@ export function TimelineChecklistManager({
           </button>
           <button
             type="button"
-            onClick={() => setStatusFilter("in_progress")}
+            onClick={() => handleFilterClick("in_progress")}
             aria-pressed={statusFilter === "in_progress"}
-            className={`rounded-lg px-2.5 py-1 text-xs font-medium transition ${
+            className={`rounded-lg px-2.5 py-1 text-xs font-medium transition cursor-pointer ${
               statusFilter === "in_progress"
                 ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900"
                 : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
@@ -630,9 +650,9 @@ export function TimelineChecklistManager({
           </button>
           <button
             type="button"
-            onClick={() => setStatusFilter("completed")}
+            onClick={() => handleFilterClick("completed")}
             aria-pressed={statusFilter === "completed"}
-            className={`rounded-lg px-2.5 py-1 text-xs font-medium transition ${
+            className={`rounded-lg px-2.5 py-1 text-xs font-medium transition cursor-pointer ${
               statusFilter === "completed"
                 ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900"
                 : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
@@ -642,12 +662,12 @@ export function TimelineChecklistManager({
           </button>
           <button
             type="button"
-            onClick={() => setStatusFilter("vendor")}
+            onClick={() => handleFilterClick("vendor")}
             aria-pressed={statusFilter === "vendor"}
-            className={`rounded-lg px-2.5 py-1 text-xs font-medium transition ${
+            className={`rounded-lg px-2.5 py-1 text-xs font-medium transition cursor-pointer ${
               statusFilter === "vendor"
-                ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900"
-                : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                ? "bg-purple-600 text-white shadow-2xs dark:bg-purple-600 dark:text-white"
+                : "text-purple-700 hover:text-purple-900 dark:text-purple-300 dark:hover:text-white"
             }`}
           >
             Vendor ({metrics.vendorCount})

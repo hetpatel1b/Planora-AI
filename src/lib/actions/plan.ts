@@ -76,7 +76,7 @@ export async function generateEventPlanAction(
     }
 
     // Rate Limiting Check
-    const rateLimit = checkPlanGenerationRateLimit(user.id);
+    const rateLimit = await checkPlanGenerationRateLimit(user.id);
     if (!rateLimit.allowed) {
       return {
         success: false,

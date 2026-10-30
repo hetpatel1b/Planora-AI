@@ -1,8 +1,9 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import {
   SlidingWindowRateLimiter,
   checkCopilotRateLimit,
   checkPlanGenerationRateLimit,
+  checkDistributedRateLimit,
   resetAllRateLimits,
 } from "./rate-limiter";
 
@@ -69,23 +70,174 @@ describe("SlidingWindowRateLimiter", () => {
     expect(limiter.check("user-b", 400).allowed).toBe(true);
   });
 
-  it("checkCopilotRateLimit enforces 15 requests per minute", () => {
+  it("checkCopilotRateLimit enforces 15 requests per minute", async () => {
     const user = "copilot-tester";
     for (let i = 0; i < 15; i++) {
-      expect(checkCopilotRateLimit(user).allowed).toBe(true);
+      const res = await checkCopilotRateLimit(user);
+      expect(res.allowed).toBe(true);
     }
-    const blocked = checkCopilotRateLimit(user);
+    const blocked = await checkCopilotRateLimit(user);
     expect(blocked.allowed).toBe(false);
     expect(blocked.remaining).toBe(0);
   });
 
-  it("checkPlanGenerationRateLimit enforces 5 requests per minute", () => {
+  it("checkPlanGenerationRateLimit enforces 5 requests per minute", async () => {
     const user = "plan-tester";
     for (let i = 0; i < 5; i++) {
-      expect(checkPlanGenerationRateLimit(user).allowed).toBe(true);
+      const res = await checkPlanGenerationRateLimit(user);
+      expect(res.allowed).toBe(true);
     }
-    const blocked = checkPlanGenerationRateLimit(user);
+    const blocked = await checkPlanGenerationRateLimit(user);
     expect(blocked.allowed).toBe(false);
     expect(blocked.remaining).toBe(0);
+  });
+
+  it("fails closed when given an empty, whitespace, or invalid identifier", () => {
+    expect(limiter.check("").allowed).toBe(false);
+    expect(limiter.check("").remaining).toBe(0);
+    expect(limiter.check("   ").allowed).toBe(false);
+    expect(limiter.check("   ").remaining).toBe(0);
+    // @ts-expect-error testing runtime defense-in-depth against null
+    expect(limiter.check(null).allowed).toBe(false);
+    // @ts-expect-error testing runtime defense-in-depth against undefined
+    expect(limiter.check(undefined).allowed).toBe(false);
+    // @ts-expect-error testing runtime defense-in-depth against non-string
+    expect(limiter.check(12345).allowed).toBe(false);
+  });
+
+  it("trims whitespace from valid identifiers to prevent key spoofing", () => {
+    const res1 = limiter.check("  user-padded  ", 100);
+    expect(res1.allowed).toBe(true);
+
+    const res2 = limiter.check("user-padded", 200);
+    expect(res2.allowed).toBe(true);
+    expect(res2.remaining).toBe(1); // Shares the same bucket as 'user-padded'
+  });
+});
+
+describe("Distributed Rate Limiting (Supabase RPC Integration)", () => {
+  beforeEach(() => {
+    resetAllRateLimits();
+  });
+
+  it("permits request when check_ai_rate_limit RPC returns allowed: true", async () => {
+    const mockSupabase = {
+      rpc: vi.fn().mockResolvedValue({
+        data: { allowed: true, remaining: 14, reset_ms: 60000 },
+        error: null,
+      }),
+    };
+
+    const result = await checkDistributedRateLimit("user-valid", "copilot", {
+      maxRequests: 15,
+      windowSeconds: 60,
+      supabaseClient: mockSupabase,
+    });
+
+    expect(result.allowed).toBe(true);
+    expect(result.remaining).toBe(14);
+    expect(result.resetMs).toBe(60000);
+    expect(mockSupabase.rpc).toHaveBeenCalledWith("check_ai_rate_limit", {
+      p_user_id: "user-valid",
+      p_action: "copilot",
+      p_max_requests: 15,
+      p_window_seconds: 60,
+    });
+  });
+
+  it("rejects request when check_ai_rate_limit RPC returns allowed: false", async () => {
+    const mockSupabase = {
+      rpc: vi.fn().mockResolvedValue({
+        data: { allowed: false, remaining: 0, reset_ms: 45000 },
+        error: null,
+      }),
+    };
+
+    const result = await checkDistributedRateLimit("user-valid", "copilot", {
+      maxRequests: 15,
+      windowSeconds: 60,
+      supabaseClient: mockSupabase,
+    });
+
+    expect(result.allowed).toBe(false);
+    expect(result.remaining).toBe(0);
+    expect(result.resetMs).toBe(45000);
+  });
+
+  it("falls back to process-local rate limiter when RPC procedure is unprovisioned (error 42883)", async () => {
+    const mockSupabase = {
+      rpc: vi.fn().mockResolvedValue({
+        data: null,
+        error: { code: "42883", message: "function check_ai_rate_limit does not exist" },
+      }),
+    };
+
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    const result = await checkDistributedRateLimit("fallback-user", "copilot", {
+      maxRequests: 15,
+      windowSeconds: 60,
+      supabaseClient: mockSupabase,
+    });
+
+    expect(result.allowed).toBe(true);
+    expect(warnSpy).toHaveBeenCalled();
+    warnSpy.mockRestore();
+  });
+
+  it("fails closed when RPC returns unauthorized error 42501", async () => {
+    const mockSupabase = {
+      rpc: vi.fn().mockResolvedValue({
+        data: null,
+        error: { code: "42501", message: "Unauthorized: Caller identity does not match p_user_id." },
+      }),
+    };
+
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const result = await checkDistributedRateLimit("spoofed-user", "copilot", {
+      maxRequests: 15,
+      windowSeconds: 60,
+      supabaseClient: mockSupabase,
+    });
+
+    expect(result.allowed).toBe(false);
+    expect(result.remaining).toBe(0);
+    errorSpy.mockRestore();
+  });
+
+  it("fails closed when RPC encounters generic database or network error", async () => {
+    const mockSupabase = {
+      rpc: vi.fn().mockResolvedValue({
+        data: null,
+        error: { code: "08006", message: "connection failure" },
+      }),
+    };
+
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const result = await checkDistributedRateLimit("user-db-down", "plan_generation", {
+      maxRequests: 5,
+      windowSeconds: 60,
+      supabaseClient: mockSupabase,
+    });
+
+    expect(result.allowed).toBe(false);
+    expect(result.remaining).toBe(0);
+    errorSpy.mockRestore();
+  });
+
+  it("fails closed when passed an invalid, empty, or whitespace identifier", async () => {
+    const result1 = await checkDistributedRateLimit("", "copilot", {
+      maxRequests: 15,
+      windowSeconds: 60,
+    });
+    expect(result1.allowed).toBe(false);
+
+    const result2 = await checkDistributedRateLimit("   ", "copilot", {
+      maxRequests: 15,
+      windowSeconds: 60,
+    });
+    expect(result2.allowed).toBe(false);
   });
 });

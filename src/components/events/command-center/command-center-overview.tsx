@@ -3,6 +3,7 @@
 import * as React from "react";
 import type { TaskRow } from "@/lib/validations/task";
 import type { BudgetItemRow } from "@/lib/validations/budget";
+import type { PlanRevisionRow } from "@/lib/validations/plan";
 import type { DetectedRisk, RiskAssessmentResult } from "@/lib/risk-engine";
 import { formatCurrency } from "@/lib/currency-utils";
 import {
@@ -28,7 +29,9 @@ export interface CommandCenterOverviewProps {
   isOverBudget: boolean;
   assessment: RiskAssessmentResult;
   activeRevisionNumber: number | null;
+  planRevision?: PlanRevisionRow | null;
   onOpenCopilot?: () => void;
+  onSelectVendorChecklist?: () => void;
 }
 
 export function CommandCenterOverview({
@@ -39,7 +42,9 @@ export function CommandCenterOverview({
   isOverBudget,
   assessment,
   activeRevisionNumber,
+  planRevision,
   onOpenCopilot,
+  onSelectVendorChecklist,
 }: CommandCenterOverviewProps) {
   // Task calculations
   const totalTasks = tasks.length;
@@ -47,6 +52,19 @@ export function CommandCenterOverview({
   const vendorTasks = tasks.filter((t) => t.is_vendor_checklist);
   const totalVendorCount = vendorTasks.length;
   const completedVendorCount = vendorTasks.filter((t) => t.status === "completed").length;
+
+  // Extract themes and recommendations from active plan revision
+  const structuredPlan =
+    planRevision && typeof planRevision.structured_plan === "object" && planRevision.structured_plan !== null
+      ? (planRevision.structured_plan as {
+          themes?: string[];
+          keyRecommendations?: string[];
+        })
+      : null;
+  const themes = Array.isArray(structuredPlan?.themes) ? structuredPlan.themes : [];
+  const keyRecommendations = Array.isArray(structuredPlan?.keyRecommendations)
+    ? structuredPlan.keyRecommendations
+    : [];
   // Overdue task risks evaluated deterministically by the risk engine
   const overdueTaskRisks = assessment.risks.filter(
     (r: DetectedRisk) => r.category === "overdue_tasks"
@@ -335,6 +353,86 @@ export function CommandCenterOverview({
           </div>
         </button>
       </div>
+
+      {/* Personalized Concepts & Strategic Recommendations (from Active Plan Revision) */}
+      {planRevision && structuredPlan && (themes.length > 0 || keyRecommendations.length > 0) && (
+        <div className="rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50/60 via-white to-purple-50/40 p-5 sm:p-6 shadow-xs dark:border-indigo-950/60 dark:bg-gradient-to-r dark:from-indigo-950/30 dark:via-slate-900 dark:to-purple-950/20">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-indigo-100/80 pb-3 dark:border-indigo-900/50">
+            <div className="flex items-center gap-2">
+              <Sparkles className="size-4 text-indigo-600 dark:text-indigo-400" aria-hidden="true" />
+              <h3 className="text-sm font-bold text-slate-950 dark:text-white">
+                Personalized Concepts &amp; Strategic Recommendations
+              </h3>
+            </div>
+            <div className="flex items-center gap-3">
+              {onSelectVendorChecklist && totalVendorCount > 0 && (
+                <button
+                  type="button"
+                  onClick={onSelectVendorChecklist}
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-violet-700 hover:text-violet-900 dark:text-violet-300 dark:hover:text-violet-200 cursor-pointer self-start sm:self-auto"
+                >
+                  <span>Filter Vendor Checklist ({totalVendorCount})</span>
+                  <ArrowRight className="size-3" aria-hidden="true" />
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => scrollToSection("plan")}
+                className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 cursor-pointer self-start sm:self-auto"
+              >
+                <span>View Full Strategy Blueprint</span>
+                <ArrowRight className="size-3" aria-hidden="true" />
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Aesthetic Themes */}
+            {themes.length > 0 && (
+              <div className="space-y-2">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  Curated Themes &amp; Aesthetic Directives
+                </span>
+                <div className="space-y-1.5">
+                  {themes.slice(0, 3).map((theme, idx) => (
+                    <div
+                      key={`theme-${idx}`}
+                      className="flex items-start gap-2 rounded-xl border border-indigo-100/60 bg-white/80 p-2.5 text-xs text-slate-800 dark:border-indigo-900/40 dark:bg-slate-900/80 dark:text-slate-200"
+                    >
+                      <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-[10px] font-bold text-white mt-0.5">
+                        {idx + 1}
+                      </span>
+                      <span className="font-medium leading-relaxed">{theme}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Strategic Recommendations */}
+            {keyRecommendations.length > 0 && (
+              <div className="space-y-2">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  Key Strategic Tips &amp; Protocols
+                </span>
+                <div className="space-y-1.5">
+                  {keyRecommendations.slice(0, 3).map((rec, idx) => (
+                    <div
+                      key={`rec-${idx}`}
+                      className="flex items-start gap-2 rounded-xl border border-purple-100/60 bg-white/80 p-2.5 text-xs text-slate-800 dark:border-purple-900/40 dark:bg-slate-900/80 dark:text-slate-200"
+                    >
+                      <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-purple-600 text-[10px] font-bold text-white mt-0.5">
+                        ✓
+                      </span>
+                      <span className="leading-relaxed">{rec}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Needs Attention Alert Center */}
       <div className="rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-xs dark:border-slate-800 dark:bg-slate-900">

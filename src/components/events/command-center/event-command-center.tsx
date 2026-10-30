@@ -35,9 +35,22 @@ export function EventCommandCenter({
   taskError,
 }: EventCommandCenterProps) {
   const [activeSection, setActiveSection] = React.useState("overview");
+  const [timelineFilter, setTimelineFilter] = React.useState<
+    "ALL" | "pending" | "in_progress" | "completed" | "vendor" | undefined
+  >(undefined);
   const [isCopilotOpen, setIsCopilotOpen] = React.useState(false);
 
   const targetBudget = Number(event.budget) || 0;
+  const vendorCount = tasks.filter((t) => t.is_vendor_checklist).length;
+
+  const handleNavigate = React.useCallback((id: string) => {
+    setActiveSection(id);
+    if (id === "vendor-checklist") {
+      setTimelineFilter("vendor");
+    } else if (id === "timeline") {
+      setTimelineFilter("ALL");
+    }
+  }, []);
 
   // Authoritative calculations matching underlying modules
   const budgetSummary = React.useMemo(
@@ -105,11 +118,12 @@ export function EventCommandCenter({
       {/* AREA 3: Workspace Navigation Jump Bar */}
       <WorkspaceNav
         taskCount={tasks.length}
+        vendorCount={vendorCount}
         totalRisks={assessment.counts.total}
         hasHighRisks={assessment.counts.critical > 0 || assessment.counts.high > 0}
         hasActivePlan={!!planRevision}
         activeSection={activeSection}
-        onNavigate={(id) => setActiveSection(id)}
+        onNavigate={handleNavigate}
       />
 
       {/* Main Workspace Body */}
@@ -132,7 +146,9 @@ export function EventCommandCenter({
             isOverBudget={budgetSummary.isOverBudget}
             assessment={assessment}
             activeRevisionNumber={planRevision?.revision_number ?? null}
+            planRevision={planRevision}
             onOpenCopilot={handleOpenCopilot}
+            onSelectVendorChecklist={() => handleNavigate("vendor-checklist")}
           />
         </section>
 
@@ -166,6 +182,7 @@ export function EventCommandCenter({
           aria-labelledby="timeline-heading"
           className="scroll-mt-28 space-y-4"
         >
+          <div id="vendor-checklist" className="scroll-mt-28" />
           <div className="border-b border-slate-200/80 pb-3 dark:border-slate-800">
             <h2
               id="timeline-heading"
@@ -182,6 +199,8 @@ export function EventCommandCenter({
             eventDate={event.event_date}
             initialTasks={tasks}
             initialError={taskError}
+            activeFilter={timelineFilter}
+            onFilterChange={(f) => setTimelineFilter(f)}
           />
         </section>
 

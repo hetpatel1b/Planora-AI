@@ -11,6 +11,14 @@ const nextConfig: NextConfig = {
     },
   },
   async headers() {
+    const isDev = process.env.NODE_ENV === "development";
+
+    // In development, Turbopack and React Fast Refresh / source maps may use eval-like mechanisms.
+    // In production, 'unsafe-eval' is strictly omitted to defend against string-to-code injection (DOM XSS).
+    const scriptSrc = isDev
+      ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
+      : "script-src 'self' 'unsafe-inline'";
+
     return [
       {
         source: "/:path*",
@@ -51,7 +59,7 @@ const nextConfig: NextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+              scriptSrc,
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob: https://*.supabase.co https://avatars.githubusercontent.com",
               "font-src 'self' data:",

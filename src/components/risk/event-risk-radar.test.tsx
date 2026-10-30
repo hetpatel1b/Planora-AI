@@ -2,7 +2,7 @@
  * @vitest-environment happy-dom
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import React from "react";
 import { renderToString } from "react-dom/server";
 import { render, screen } from "@testing-library/react";
@@ -308,6 +308,118 @@ describe("EventRiskRadar Component", () => {
 
       expect(screen.getByText(/Actual Budget Overrun/)).toBeDefined();
       expect(screen.getByText(/Overdue Task: Sign catering contract/)).toBeDefined();
+    });
+  });
+
+  describe("Accessible Reduced-Motion Section Scrolling", () => {
+    it("uses non-animated instant scrolling when prefers-reduced-motion is active", async () => {
+      const user = userEvent.setup();
+      const mockScrollIntoView = vi.fn();
+      const targetElement = document.createElement("div");
+      targetElement.id = "budget-manager-title";
+      targetElement.scrollIntoView = mockScrollIntoView;
+      document.body.appendChild(targetElement);
+
+      const matchMediaSpy = vi.spyOn(window, "matchMedia").mockImplementation((query: string) => ({
+        matches: query.includes("prefers-reduced-motion: reduce"),
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      }));
+
+      const budgetItems: BudgetItemRow[] = [
+        {
+          id: "item-overrun",
+          event_id: baseEvent.id,
+          user_id: "user-1",
+          plan_revision_id: null,
+          category: "Decor & Styling",
+          item_name: "Floral arrangements",
+          estimated_amount: 1000.0,
+          actual_amount: 60000.0,
+          notes: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+      ];
+
+      render(
+        <EventRiskRadar
+          event={baseEvent}
+          budgetItems={budgetItems}
+          tasks={[]}
+        />
+      );
+
+      const jumpButton = screen.getAllByRole("button", { name: /View Budget/i })[0];
+      await user.click(jumpButton);
+
+      expect(mockScrollIntoView).toHaveBeenCalledWith({
+        behavior: "auto",
+        block: "start",
+      });
+
+      matchMediaSpy.mockRestore();
+      document.body.removeChild(targetElement);
+    });
+
+    it("uses smooth scrolling when prefers-reduced-motion is not requested", async () => {
+      const user = userEvent.setup();
+      const mockScrollIntoView = vi.fn();
+      const targetElement = document.createElement("div");
+      targetElement.id = "budget-manager-title";
+      targetElement.scrollIntoView = mockScrollIntoView;
+      document.body.appendChild(targetElement);
+
+      const matchMediaSpy = vi.spyOn(window, "matchMedia").mockImplementation((query: string) => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      }));
+
+      const budgetItems: BudgetItemRow[] = [
+        {
+          id: "item-overrun",
+          event_id: baseEvent.id,
+          user_id: "user-1",
+          plan_revision_id: null,
+          category: "Decor & Styling",
+          item_name: "Floral arrangements",
+          estimated_amount: 1000.0,
+          actual_amount: 60000.0,
+          notes: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+      ];
+
+      render(
+        <EventRiskRadar
+          event={baseEvent}
+          budgetItems={budgetItems}
+          tasks={[]}
+        />
+      );
+
+      const jumpButton = screen.getAllByRole("button", { name: /View Budget/i })[0];
+      await user.click(jumpButton);
+
+      expect(mockScrollIntoView).toHaveBeenCalledWith({
+        behavior: "smooth",
+        block: "start",
+      });
+
+      matchMediaSpy.mockRestore();
+      document.body.removeChild(targetElement);
     });
   });
 });

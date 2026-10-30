@@ -5,12 +5,14 @@ import {
   LayoutDashboard,
   Layers,
   ListTodo,
+  ClipboardCheck,
   IndianRupee,
   ShieldAlert,
 } from "lucide-react";
 
 export interface WorkspaceNavProps {
   taskCount: number;
+  vendorCount?: number;
   totalRisks: number;
   hasHighRisks: boolean;
   hasActivePlan: boolean;
@@ -20,6 +22,7 @@ export interface WorkspaceNavProps {
 
 export function WorkspaceNav({
   taskCount,
+  vendorCount = 0,
   totalRisks,
   hasHighRisks,
   hasActivePlan,
@@ -48,6 +51,13 @@ export function WorkspaceNav({
       badgeVariant: "default" as const,
     },
     {
+      id: "vendor-checklist",
+      label: "Vendor Checklist",
+      icon: ClipboardCheck,
+      badge: typeof vendorCount === "number" && vendorCount > 0 ? `${vendorCount}` : null,
+      badgeVariant: "default" as const,
+    },
+    {
       id: "budget",
       label: "Budget Manager",
       icon: IndianRupee,
@@ -67,7 +77,8 @@ export function WorkspaceNav({
     if (onNavigate) {
       onNavigate(id);
     }
-    const element = document.getElementById(id);
+    const targetElementId = id === "vendor-checklist" ? "timeline" : id;
+    const element = document.getElementById(targetElementId);
     if (element) {
       const isReducedMotion =
         typeof window !== "undefined" &&

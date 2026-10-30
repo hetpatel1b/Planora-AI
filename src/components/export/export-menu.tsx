@@ -28,8 +28,9 @@ export function ExportMenu({ eventId, eventName, className }: ExportMenuProps) {
 
   const menuRef = React.useRef<HTMLDivElement>(null);
   const triggerRef = React.useRef<HTMLButtonElement>(null);
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
 
-  // Close dropdown on outside click or Escape key
+  // Close dropdown on outside click or Escape key, with focus restoration
   React.useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -56,6 +57,54 @@ export function ExportMenu({ eventId, eventName, className }: ExportMenuProps) {
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [isOpen]);
+
+  // Set focus to the first interactive menu item when opened via keyboard/click
+  React.useEffect(() => {
+    if (isOpen && dropdownRef.current) {
+      const firstItem = dropdownRef.current.querySelector<HTMLElement>(
+        'a[role="menuitem"], button[role="menuitem"]:not([disabled])'
+      );
+      firstItem?.focus();
+    }
+  }, [isOpen]);
+
+  const handleMenuKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!dropdownRef.current) return;
+
+    const items = Array.from(
+      dropdownRef.current.querySelectorAll<HTMLElement>(
+        'a[role="menuitem"], button[role="menuitem"]:not([disabled])'
+      )
+    );
+    if (items.length === 0) return;
+
+    const currentIndex = items.indexOf(document.activeElement as HTMLElement);
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      const nextIndex = currentIndex === -1 || currentIndex === items.length - 1 ? 0 : currentIndex + 1;
+      items[nextIndex]?.focus();
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      const prevIndex = currentIndex <= 0 ? items.length - 1 : currentIndex - 1;
+      items[prevIndex]?.focus();
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      items[0]?.focus();
+    } else if (e.key === "End") {
+      e.preventDefault();
+      items[items.length - 1]?.focus();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      setIsOpen(false);
+      setErrorMessage(null);
+      triggerRef.current?.focus();
+    } else if (e.key === "Tab") {
+      // Natural Tab key closes the menu and allows normal tab progression
+      setIsOpen(false);
+      setErrorMessage(null);
+    }
+  };
 
   const handleDownloadTasks = async () => {
     if (isDownloadingTasks) return;
@@ -107,17 +156,27 @@ export function ExportMenu({ eventId, eventName, className }: ExportMenuProps) {
         id="export-menu-trigger"
         aria-haspopup="true"
         aria-expanded={isOpen}
+        aria-controls={isOpen ? "export-menu-dropdown" : undefined}
         aria-label={`Export options for ${eventName}`}
         onClick={() => {
           setIsOpen(!isOpen);
           setErrorMessage(null);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+            if (!isOpen) {
+              e.preventDefault();
+              setIsOpen(true);
+              setErrorMessage(null);
+            }
+          }
         }}
         className="gap-1.5 text-xs font-medium border-slate-200 text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-900"
       >
         <FileDown className="size-3.5 text-indigo-600 dark:text-indigo-400" />
         <span>Export</span>
         <ChevronDown
-          className={`size-3 text-slate-400 transition-transform duration-150 ${
+          className={`size-3 text-slate-500 dark:text-slate-400 transition-transform duration-150 ${
             isOpen ? "rotate-180" : ""
           }`}
         />
@@ -125,9 +184,12 @@ export function ExportMenu({ eventId, eventName, className }: ExportMenuProps) {
 
       {isOpen && (
         <div
+          ref={dropdownRef}
+          id="export-menu-dropdown"
           role="menu"
           aria-orientation="vertical"
           aria-labelledby="export-menu-trigger"
+          onKeyDown={handleMenuKeyDown}
           className="absolute right-0 z-50 mt-1.5 w-60 sm:w-64 max-w-[calc(100vw-2rem)] origin-top-right rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg ring-1 ring-black/5 focus:outline-none dark:border-slate-800 dark:bg-slate-950 dark:ring-white/10"
         >
           {errorMessage && (
@@ -151,8 +213,12 @@ export function ExportMenu({ eventId, eventName, className }: ExportMenuProps) {
             rel="noopener noreferrer"
             role="menuitem"
             id="export-pdf-action"
-            onClick={() => setIsOpen(false)}
-            className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-200 dark:hover:bg-slate-900 dark:hover:text-white"
+            tabIndex={-1}
+            onClick={() => {
+              setIsOpen(false);
+              triggerRef.current?.focus();
+            }}
+            className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-950 focus:bg-slate-100 focus:text-slate-950 focus:outline-none dark:text-slate-200 dark:hover:bg-slate-900 dark:hover:text-white dark:focus:bg-slate-900 dark:focus:text-white"
           >
             <div className="flex items-center gap-2">
               <FileText className="size-4 text-rose-600 dark:text-rose-400" aria-hidden="true" />
@@ -176,9 +242,10 @@ export function ExportMenu({ eventId, eventName, className }: ExportMenuProps) {
             type="button"
             role="menuitem"
             id="export-tasks-csv-action"
+            tabIndex={-1}
             disabled={isDownloadingAny}
             onClick={handleDownloadTasks}
-            className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-950 disabled:opacity-50 dark:text-slate-200 dark:hover:bg-slate-900 dark:hover:text-white"
+            className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-950 focus:bg-slate-100 focus:text-slate-950 focus:outline-none disabled:opacity-50 dark:text-slate-200 dark:hover:bg-slate-900 dark:hover:text-white dark:focus:bg-slate-900 dark:focus:text-white cursor-pointer"
           >
             <div className="flex items-center gap-2">
               {isDownloadingTasks ? (
@@ -205,9 +272,10 @@ export function ExportMenu({ eventId, eventName, className }: ExportMenuProps) {
             type="button"
             role="menuitem"
             id="export-budget-csv-action"
+            tabIndex={-1}
             disabled={isDownloadingAny}
             onClick={handleDownloadBudget}
-            className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-950 disabled:opacity-50 dark:text-slate-200 dark:hover:bg-slate-900 dark:hover:text-white"
+            className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-950 focus:bg-slate-100 focus:text-slate-950 focus:outline-none disabled:opacity-50 dark:text-slate-200 dark:hover:bg-slate-900 dark:hover:text-white dark:focus:bg-slate-900 dark:focus:text-white cursor-pointer"
           >
             <div className="flex items-center gap-2">
               {isDownloadingBudget ? (

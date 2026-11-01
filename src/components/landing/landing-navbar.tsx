@@ -6,6 +6,7 @@ import { Menu, X, LayoutDashboard, ArrowRight } from "lucide-react";
 import { LandingHeaderAuth, type LandingUser } from "./landing-header-auth";
 import { buttonVariants } from "@/components/ui/button";
 import { PlanoraLogo } from "@/components/ui/planora-logo";
+import { createClient } from "@/lib/supabase/client";
 
 interface LandingNavbarProps {
   initialUser: LandingUser | null;
@@ -15,6 +16,35 @@ export function LandingNavbar({ initialUser }: LandingNavbarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const launcherRef = useRef<HTMLButtonElement | null>(null);
   const mobileNavRef = useRef<HTMLDivElement | null>(null);
+
+  // Pure state derivation: clientUser tracks real-time auth changes without render-phase setState
+  const [clientUser, setClientUser] = useState<LandingUser | null | undefined>(undefined);
+  const user = clientUser !== undefined ? clientUser : initialUser;
+
+  // Real-time auth subscription to keep navbar synchronized with session restoration, login, or logout
+  useEffect(() => {
+    try {
+      const supabase = createClient();
+      const {
+        data: { subscription },
+      } = supabase.auth.onAuthStateChange((event, session) => {
+        if (session?.user) {
+          setClientUser({
+            id: session.user.id,
+            email: session.user.email,
+          });
+        } else if (event === "SIGNED_OUT") {
+          setClientUser(null);
+        }
+      });
+
+      return () => {
+        subscription.unsubscribe();
+      };
+    } catch {
+      // In case client Supabase initialization fails (e.g. mock test environment)
+    }
+  }, []);
 
   // Close mobile menu on Escape key press, handle focus trap, and restore focus
   useEffect(() => {
@@ -120,7 +150,7 @@ export function LandingNavbar({ initialUser }: LandingNavbarProps) {
             aria-label="Primary navigation"
             className="hidden items-center gap-1 text-sm font-medium text-slate-600 lg:gap-2 lg:flex dark:text-slate-300"
           >
-            {initialUser && (
+            {user && (
               <Link
                 href="/dashboard"
                 className="relative px-3 py-1.5 font-semibold text-violet-700 hover:text-violet-900 dark:text-violet-400 dark:hover:text-violet-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 rounded-md"
@@ -174,7 +204,7 @@ export function LandingNavbar({ initialUser }: LandingNavbarProps) {
           <div className="flex items-center gap-2 sm:gap-3">
             {/* Desktop Auth Buttons (Preserves LandingHeaderAuth test contract) */}
             <div className="hidden sm:block">
-              <LandingHeaderAuth initialUser={initialUser} />
+              <LandingHeaderAuth initialUser={user} />
             </div>
 
             {/* Mobile / Tablet Hamburger Button */}
@@ -211,7 +241,7 @@ export function LandingNavbar({ initialUser }: LandingNavbarProps) {
                 Navigation
               </span>
 
-              {initialUser && (
+              {user && (
                 <Link
                   href="/dashboard"
                   onClick={closeMenu}
@@ -266,9 +296,9 @@ export function LandingNavbar({ initialUser }: LandingNavbarProps) {
                   Account
                 </span>
                 <div className="sm:hidden px-1">
-                  <LandingHeaderAuth initialUser={initialUser} />
+                  <LandingHeaderAuth initialUser={user} />
                 </div>
-                {initialUser ? (
+                {user ? (
                   <Link
                     href="/dashboard/events/new"
                     onClick={closeMenu}

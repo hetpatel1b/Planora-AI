@@ -35,7 +35,16 @@ export async function GET(request: NextRequest) {
         await supabase.auth.exchangeCodeForSession(code);
 
       if (!exchangeError) {
-        // Build safe absolute redirect URL
+        // Build safe absolute redirect URL, honoring forwarded proxy headers in production
+        const forwardedHost = request.headers.get("x-forwarded-host");
+        const isLocalEnv = process.env.NODE_ENV === "development";
+
+        if (!isLocalEnv && forwardedHost) {
+          return NextResponse.redirect(
+            new URL(safeDestination, `https://${forwardedHost}`)
+          );
+        }
+
         return NextResponse.redirect(new URL(safeDestination, request.url));
       }
     } catch {

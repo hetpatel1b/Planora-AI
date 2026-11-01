@@ -41,6 +41,33 @@ function SignInContent() {
 
   const safeRedirect = getSafeRedirectUrl(redirectToParam, "/dashboard");
 
+  // If already authenticated (e.g. from restored session on browser reopen or client navigation),
+  // redirect immediately to the safe intended destination.
+  React.useEffect(() => {
+    try {
+      const supabase = createClient();
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user) {
+          router.replace(safeRedirect);
+        }
+      });
+
+      const {
+        data: { subscription },
+      } = supabase.auth.onAuthStateChange((event, session) => {
+        if (session?.user && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
+          router.replace(safeRedirect);
+        }
+      });
+
+      return () => {
+        subscription.unsubscribe();
+      };
+    } catch {
+      // In case client initialization fails (e.g. mock test environment)
+    }
+  }, [router, safeRedirect]);
+
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);

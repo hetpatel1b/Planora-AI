@@ -24,9 +24,7 @@ export function createRedirectResponse(
  */
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
+    request,
   });
 
   const pathname = request.nextUrl.pathname;
@@ -39,7 +37,7 @@ export async function proxy(request: NextRequest) {
     .some(
       (c) =>
         c.name.startsWith("sb-") &&
-        (c.name.endsWith("-auth-token") || c.name.includes("-auth-token."))
+        c.name.includes("-auth-token")
     );
 
   // If visiting an unauthenticated public route without session cookies,
@@ -66,9 +64,7 @@ export async function proxy(request: NextRequest) {
         );
         const prevCookies = response.cookies.getAll();
         response = NextResponse.next({
-          request: {
-            headers: request.headers,
-          },
+          request,
         });
         prevCookies.forEach((c) => response.cookies.set(c));
         cookiesToSet.forEach(({ name, value, options }) =>

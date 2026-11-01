@@ -30,11 +30,27 @@ export function LandingHeaderAuth({ initialUser }: LandingHeaderAuthProps) {
   const user = clientUser !== undefined ? clientUser : initialUser;
 
   useEffect(() => {
+    let mounted = true;
     try {
       const supabase = createClient();
+
+      // Proactively recover restored persistent session from cookies/storage on mount
+      if (typeof supabase.auth.getSession === "function") {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (!mounted) return;
+          if (session?.user) {
+            setClientUser({
+              id: session.user.id,
+              email: session.user.email,
+            });
+          }
+        });
+      }
+
       const {
         data: { subscription },
       } = supabase.auth.onAuthStateChange((event, session) => {
+        if (!mounted) return;
         if (session?.user) {
           setClientUser({
             id: session.user.id,
@@ -46,6 +62,7 @@ export function LandingHeaderAuth({ initialUser }: LandingHeaderAuthProps) {
       });
 
       return () => {
+        mounted = false;
         subscription.unsubscribe();
       };
     } catch {

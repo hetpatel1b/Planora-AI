@@ -23,6 +23,7 @@ describe("LandingHeaderAuth", () => {
     authCallback = null;
     vi.mocked(clientSupabase.createClient).mockReturnValue({
       auth: {
+        getSession: vi.fn().mockResolvedValue({ data: { session: null } }),
         onAuthStateChange: vi.fn().mockImplementation((cb) => {
           authCallback = cb;
           return { data: { subscription: { unsubscribe: mockUnsubscribe } } };
@@ -97,6 +98,25 @@ describe("LandingHeaderAuth", () => {
       expect(screen.getByRole("link", { name: /Open your dashboard/i })).toBeDefined();
       expect(screen.queryByRole("link", { name: /sign in/i })).toBeNull();
     });
+
+    it("proactively restores authenticated state when getSession resolves with active session", async () => {
+      const mockSession = { user: { id: "restored-user", email: "restored@planora.ai" } };
+      vi.mocked(clientSupabase.createClient).mockReturnValue({
+        auth: {
+          getSession: vi.fn().mockResolvedValue({ data: { session: mockSession } }),
+          onAuthStateChange: vi.fn().mockReturnValue({
+            data: { subscription: { unsubscribe: mockUnsubscribe } },
+          }),
+        },
+      } as unknown as ReturnType<typeof clientSupabase.createClient>);
+
+      await act(async () => {
+        render(<LandingHeaderAuth initialUser={null} />);
+      });
+
+      expect(screen.getByRole("link", { name: /Open your dashboard/i })).toBeDefined();
+      expect(screen.queryByRole("link", { name: /sign in/i })).toBeNull();
+    });
   });
 });
 
@@ -109,6 +129,7 @@ describe("LandingHeroCta", () => {
     authCallback = null;
     vi.mocked(clientSupabase.createClient).mockReturnValue({
       auth: {
+        getSession: vi.fn().mockResolvedValue({ data: { session: null } }),
         onAuthStateChange: vi.fn().mockImplementation((cb) => {
           authCallback = cb;
           return { data: { subscription: { unsubscribe: mockUnsubscribe } } };
@@ -165,6 +186,25 @@ describe("LandingHeroCta", () => {
         authCallback?.("SIGNED_IN", {
           user: { id: "signed-in-user", email: "user@planora.ai" },
         });
+      });
+
+      expect(screen.getByRole("link", { name: /Go to Dashboard/i })).toBeDefined();
+      expect(screen.queryByRole("link", { name: /^Start planning$/i })).toBeNull();
+    });
+
+    it("proactively restores 'Go to Dashboard' when getSession resolves with active session", async () => {
+      const mockSession = { user: { id: "restored-user", email: "restored@planora.ai" } };
+      vi.mocked(clientSupabase.createClient).mockReturnValue({
+        auth: {
+          getSession: vi.fn().mockResolvedValue({ data: { session: mockSession } }),
+          onAuthStateChange: vi.fn().mockReturnValue({
+            data: { subscription: { unsubscribe: mockUnsubscribe } },
+          }),
+        },
+      } as unknown as ReturnType<typeof clientSupabase.createClient>);
+
+      await act(async () => {
+        render(<LandingHeroCta initialUser={null} />);
       });
 
       expect(screen.getByRole("link", { name: /Go to Dashboard/i })).toBeDefined();

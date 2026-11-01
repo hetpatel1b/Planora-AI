@@ -22,6 +22,7 @@ describe("LandingNavbar", () => {
     authCallback = null;
     vi.mocked(clientSupabase.createClient).mockReturnValue({
       auth: {
+        getSession: vi.fn().mockResolvedValue({ data: { session: null } }),
         onAuthStateChange: vi.fn().mockImplementation((cb) => {
           authCallback = cb;
           return { data: { subscription: { unsubscribe: mockUnsubscribe } } };
@@ -62,6 +63,24 @@ describe("LandingNavbar", () => {
     });
 
     // Desktop and header Dashboard links appear seamlessly
+    expect(screen.getByRole("link", { name: /^dashboard$/i })).toBeDefined();
+  });
+
+  it("proactively restores authenticated user when getSession resolves with active session", async () => {
+    const mockSession = { user: { id: "restored-user", email: "restored@planora.ai" } };
+    vi.mocked(clientSupabase.createClient).mockReturnValue({
+      auth: {
+        getSession: vi.fn().mockResolvedValue({ data: { session: mockSession } }),
+        onAuthStateChange: vi.fn().mockReturnValue({
+          data: { subscription: { unsubscribe: mockUnsubscribe } },
+        }),
+      },
+    } as unknown as ReturnType<typeof clientSupabase.createClient>);
+
+    await act(async () => {
+      render(<LandingNavbar initialUser={null} />);
+    });
+
     expect(screen.getByRole("link", { name: /^dashboard$/i })).toBeDefined();
   });
 

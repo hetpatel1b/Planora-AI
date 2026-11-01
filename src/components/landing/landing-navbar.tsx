@@ -21,13 +21,29 @@ export function LandingNavbar({ initialUser }: LandingNavbarProps) {
   const [clientUser, setClientUser] = useState<LandingUser | null | undefined>(undefined);
   const user = clientUser !== undefined ? clientUser : initialUser;
 
-  // Real-time auth subscription to keep navbar synchronized with session restoration, login, or logout
+  // Real-time auth subscription & session restoration to keep navbar synchronized with session restoration, login, or logout
   useEffect(() => {
+    let mounted = true;
     try {
       const supabase = createClient();
+
+      // Proactively recover restored persistent session from cookies/storage on mount
+      if (typeof supabase.auth.getSession === "function") {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (!mounted) return;
+          if (session?.user) {
+            setClientUser({
+              id: session.user.id,
+              email: session.user.email,
+            });
+          }
+        });
+      }
+
       const {
         data: { subscription },
       } = supabase.auth.onAuthStateChange((event, session) => {
+        if (!mounted) return;
         if (session?.user) {
           setClientUser({
             id: session.user.id,
@@ -39,6 +55,7 @@ export function LandingNavbar({ initialUser }: LandingNavbarProps) {
       });
 
       return () => {
+        mounted = false;
         subscription.unsubscribe();
       };
     } catch {

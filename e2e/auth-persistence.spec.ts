@@ -68,7 +68,7 @@ test.describe("Authentication Persistence & Session Lifecycle", () => {
 
     // Reopen application at root
     await page.goto("/");
-    await expect(page.locator("nav").getByRole("link", { name: /Dashboard/i })).toBeVisible();
+    await expect(page.locator("header nav").getByRole("link", { name: /Dashboard/i })).toBeVisible();
   });
 
   test("TEST 3 — PAGE RELOAD: Reloading protected dashboard retains session without redirect to sign-in", async ({
@@ -97,22 +97,34 @@ test.describe("Authentication Persistence & Session Lifecycle", () => {
   test("TEST 4 — BROWSER REOPEN: Closing and reopening a separate browser context preserves persistent storage", async ({
     browser,
   }) => {
-    // 1. First browser context: establish persistent cookie with 400-day lifetime matching @supabase/ssr
+    // 1. First browser context: establish persistent session
     const firstContext = await browser.newContext();
-    const futureExpiry = Math.floor(Date.now() / 1000) + 400 * 24 * 60 * 60;
 
-    await firstContext.addCookies([
-      {
-        name: "sb-planora-persistent-test",
-        value: "persistent-session-proof",
-        domain: "localhost",
-        path: "/",
-        httpOnly: false,
-        secure: false,
-        sameSite: "Lax",
-        expires: futureExpiry,
-      },
-    ]);
+    if (testEmail && testPassword) {
+      // Authenticate in first context with provisioned credentials
+      const firstPage = await firstContext.newPage();
+      await firstPage.goto("/sign-in");
+      await firstPage.locator("input#email").fill(testEmail);
+      await firstPage.locator("input#password").fill(testPassword);
+      await firstPage.getByRole("button", { name: /^sign in$/i }).click();
+      await expect(firstPage).toHaveURL(/\/dashboard/, { timeout: 15000 });
+      await expect(firstPage.locator("h1")).toContainText(/Event Planning Workspace/i);
+    } else {
+      // Offline fallback: establish persistent cookie with 400-day lifetime matching @supabase/ssr
+      const futureExpiry = Math.floor(Date.now() / 1000) + 400 * 24 * 60 * 60;
+      await firstContext.addCookies([
+        {
+          name: "sb-planora-persistent-test",
+          value: "persistent-session-proof",
+          domain: "localhost",
+          path: "/",
+          httpOnly: false,
+          secure: false,
+          sameSite: "Lax",
+          expires: futureExpiry,
+        },
+      ]);
+    }
 
     // Save storage state across browser closure
     const storageState = await firstContext.storageState();
@@ -122,18 +134,23 @@ test.describe("Authentication Persistence & Session Lifecycle", () => {
 
     // 3. Simulate reopening new browser context with restored persistent storage
     const reopenedContext = await browser.newContext({ storageState });
-    const reopenedCookies = await reopenedContext.cookies();
 
-    const restoredCookie = reopenedCookies.find((c) => c.name === "sb-planora-persistent-test");
-    expect(restoredCookie).toBeDefined();
-    expect(restoredCookie?.value).toBe("persistent-session-proof");
-    expect(restoredCookie?.expires).toBeGreaterThan(Math.floor(Date.now() / 1000) + 3600);
-
-    // If live credentials are provided, also verify live authenticated dashboard restoration
     if (testEmail && testPassword) {
+      // Verify live authenticated session is preserved across context reopening
       const page = await reopenedContext.newPage();
       await page.goto("/dashboard");
       await expect(page).toHaveURL(/\/dashboard/);
+      await expect(page.locator("h1")).toContainText(/Event Planning Workspace/i);
+
+      // Verify landing page navigation reflects restored authentication
+      await page.goto("/");
+      await expect(page.locator("header nav").getByRole("link", { name: /Dashboard/i })).toBeVisible();
+    } else {
+      const reopenedCookies = await reopenedContext.cookies();
+      const restoredCookie = reopenedCookies.find((c) => c.name === "sb-planora-persistent-test");
+      expect(restoredCookie).toBeDefined();
+      expect(restoredCookie?.value).toBe("persistent-session-proof");
+      expect(restoredCookie?.expires).toBeGreaterThan(Math.floor(Date.now() / 1000) + 3600);
     }
 
     await reopenedContext.close();

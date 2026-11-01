@@ -48,6 +48,43 @@ describe("src/proxy.ts", () => {
     });
   });
 
+  describe("canonical production domain enforcement", () => {
+    it("redirects requests on non-canonical production alias to canonical domain with 308 status", async () => {
+      const request = new NextRequest(
+        "https://planora-ai-b55w-hetpatel1bs-projects.vercel.app/dashboard?filter=upcoming",
+        {
+          headers: {
+            host: "planora-ai-b55w-hetpatel1bs-projects.vercel.app",
+          },
+        }
+      );
+
+      const response = await proxy(request);
+      expect(response.status).toBe(308);
+      expect(response.headers.get("location")).toBe(
+        "https://planora-ai-b55w.vercel.app/dashboard?filter=upcoming"
+      );
+    });
+
+    it("does not redirect requests that are already on the canonical domain", async () => {
+      const request = new NextRequest("https://planora-ai-b55w.vercel.app/", {
+        headers: {
+          host: "planora-ai-b55w.vercel.app",
+        },
+      });
+
+      const response = await proxy(request);
+      expect(response.status).toBe(200);
+    });
+
+    it("does not redirect requests on localhost during development or tests", async () => {
+      const request = new NextRequest("http://localhost:3000/");
+      const response = await proxy(request);
+      expect(response.status).toBe(200);
+      expect(response.headers.get("location")).toBeNull();
+    });
+  });
+
   describe("proxy router enforcement & session persistence", () => {
     it("bypasses Supabase identity check on unauthenticated public routes without session cookies", async () => {
       const request = new NextRequest("https://example.com/");

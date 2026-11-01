@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { getSafeRedirectUrl } from "@/lib/auth-utils";
+import { getSafeRedirectUrl, CANONICAL_HOST, NON_CANONICAL_HOSTS } from "@/lib/auth-utils";
 
 /**
  * Supabase Auth Callback Route Handler.
@@ -35,13 +35,22 @@ export async function GET(request: NextRequest) {
         await supabase.auth.exchangeCodeForSession(code);
 
       if (!exchangeError) {
-        // Build safe absolute redirect URL, honoring forwarded proxy headers in production
+        // Build safe absolute redirect URL, honoring forwarded proxy headers and enforcing canonical domain
         const forwardedHost = request.headers.get("x-forwarded-host");
+        const hostHeader = request.headers.get("host");
+        const effectiveHost = (forwardedHost || hostHeader || "")
+          .split(":")[0]
+          .trim()
+          .toLowerCase();
+        const targetHost = NON_CANONICAL_HOSTS.has(effectiveHost)
+          ? CANONICAL_HOST
+          : effectiveHost;
+
         const isLocalEnv = process.env.NODE_ENV === "development";
 
-        if (!isLocalEnv && forwardedHost) {
+        if (!isLocalEnv && targetHost) {
           return NextResponse.redirect(
-            new URL(safeDestination, `https://${forwardedHost}`)
+            new URL(safeDestination, `https://${targetHost}`)
           );
         }
 

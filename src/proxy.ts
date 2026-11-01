@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import type { Database } from "@/types/database.types";
+import { getCanonicalRedirectUrl } from "@/lib/auth-utils";
 
 /**
  * Creates a redirect response preserving all cookies set on the source response.
@@ -23,6 +24,12 @@ export function createRedirectResponse(
  * Handles Supabase SSR session token refreshes and protects authenticated routes.
  */
 export async function proxy(request: NextRequest) {
+  // Enforce canonical production domain (e.g. 308 permanent redirect from non-canonical aliases)
+  const canonicalRedirectUrl = getCanonicalRedirectUrl(request);
+  if (canonicalRedirectUrl) {
+    return NextResponse.redirect(canonicalRedirectUrl, 308);
+  }
+
   let response = NextResponse.next({
     request,
   });
